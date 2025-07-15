@@ -47,3 +47,4 @@ def handle_login(
         return templates.TemplateResponse("home.html", {"request": request, "user": result["user"]})
     except Exception as e:
         return templates.TemplateResponse("login.html", {"request": request, "error": str(e)})
+    
