@@ -1,0 +1,5 @@
+# Ignorer les fichiers d’environnement et caches
+.env
+__pycache__/
+*.pyc
+.venv/

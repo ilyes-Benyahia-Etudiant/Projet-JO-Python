@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Connexion / Inscription</title>
+  <style>
+    :root{--bg:#0f172a;--panel:#111827;--text:#e5e7eb;--muted:#9ca3af;--primary:#22c55e;--primary-600:#16a34a;--danger:#ef4444}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(135deg,#0b1020,#0d1328);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);min-height:100vh;display:grid;place-items:center;padding:24px}
+    .card{background:rgba(17,24,39,.75);backdrop-filter: blur(10px);border:1px solid rgba(255,255,255,.06);border-radius:16px;max-width:920px;width:100%;display:grid;grid-template-columns:1.2fr 1fr;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+    .visual{position:relative;background:radial-gradient(1200px 500px at -10% -10%, rgba(34,197,94,.25), transparent 60%),radial-gradient(800px 400px at 110% 110%, rgba(34,197,94,.2), transparent 60%),linear-gradient(180deg, rgba(34,197,94,.08), transparent 40%)}
+    .visual-inner{padding:40px;display:flex;flex-direction:column;height:100%}
+    h1{margin:0 0 12px 0;font-weight:800;letter-spacing:.2px;font-size:28px}
+    p.lead{margin:0;color:var(--muted);line-height:1.55}
+    .form{padding:40px;background:linear-gradient(180deg, rgba(255,255,255,.02), transparent)}
+    .tabs{display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);padding:6px;border-radius:10px;margin-bottom:20px}
+    .tab{flex:1;text-align:center;padding:10px 12px;border-radius:8px;cursor:pointer;color:var(--muted);user-select:none;font-weight:600;transition:.18s}
+    .tab.active{background:rgba(34,197,94,.12);color:#d1fae5;border:1px solid rgba(34,197,94,.25)}
+    .group{margin-bottom:14px}
+    .label{display:block;margin-bottom:6px;color:var(--muted);font-size:13px}
+    .input{width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,.08);background:rgba(2,6,23,.6);color:var(--text);border-radius:10px;outline:none;transition:border .15s}
+    .input:focus{border-color:rgba(34,197,94,.35)}
+    .btn{width:100%;padding:12px 14px;border:0;border-radius:10px;background:var(--primary);color:#052e16;font-weight:800;cursor:pointer;transition:background .15s, transform .04s}
+    .btn:hover{background:var(--primary-600)}
+    .btn:active{transform:translateY(1px)}
+    .hint{font-size:12px;color:var(--muted);margin-top:8px}
+    .msg{margin-top:12px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(2,6,23,.5);font-size:14px}
+    .msg.ok{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.08)}
+    .msg.err{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.08)}
+    .footer{margin-top:auto;color:var(--muted);font-size:12px}
+    code.kv{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.08)}
+    @media (max-width: 860px){.card{grid-template-columns:1fr}.visual{display:none}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="visual">
+      <div class="visual-inner">
+        <h1>Bienvenue</h1>
+        <p class="lead">Utilisez l'authentification native Supabase pour vous inscrire et vous connecter en toute sécurité. Ce front-end peut s'intégrer derrière un API Gateway avec un back-end Python.</p>
+        <div class="footer">
+          <p>Configurez vos clés publiques Supabase dans ce fichier: <code class="kv">SUPABASE_URL</code> et <code class="kv">SUPABASE_ANON_KEY</code>.</p>
+        </div>
+      </div>
+    </div>
+    <div class="form">
+      <div class="tabs">
+        <div class="tab active" data-tab="login">Connexion</div>
+        <div class="tab" data-tab="signup">Inscription</div>
+      </div>
+
+      <div id="login" class="panel">
+        <div class="group">
+          <label class="label" for="login-email">Email</label>
+          <input class="input" id="login-email" type="email" placeholder="vous@exemple.com" required />
+        </div>
+        <div class="group">
+          <label class="label" for="login-password">Mot de passe</label>
+          <input class="input" id="login-password" type="password" placeholder="Votre mot de passe" required />
+        </div>
+        <button id="btn-login" class="btn">Se connecter</button>
+        <div class="hint">Besoin d'un compte ? Cliquez sur l'onglet Inscription.</div>
+        <div style="display:flex; gap:8px; margin-top:8px">
+          <button id="btn-me" class="btn" style="background:#60a5fa;color:#0b1220">Mon profil</button>
+          <button id="btn-logout" class="btn" style="background:#f59e0b;color:#0b1220">Se déconnecter</button>
+        </div>
+        <div style="margin-top:8px">
+          <button id="btn-forgot" class="btn" style="background:#a78bfa;color:#0b1220">Mot de passe oublié ?</button>
+        </div>
+        <div id="login-msg" class="msg" style="display:none"></div>
+      </div>
+
+      <div id="signup" class="panel" style="display:none">
+        <div class="group">
+          <label class="label" for="signup-email">Email</label>
+          <input class="input" id="signup-email" type="email" placeholder="vous@exemple.com" required />
+        </div>
+        <div class="group">
+          <label class="label" for="signup-password">Mot de passe</label>
+          <input class="input" id="signup-password" type="password" placeholder="Créez un mot de passe" required />
+        </div>
+        <div class="group">
+          <label class="label" for="signup-password2">Confirmez le mot de passe</label>
+          <input class="input" id="signup-password2" type="password" placeholder="Confirmez le mot de passe" required />
+        </div>
+        <button id="btn-signup" class="btn">Créer un compte</button>
+        <div class="hint">Un email de vérification peut être envoyé selon la configuration de votre projet Supabase.</div>
+        <div style="margin-top:8px">
+          <button id="btn-resend-confirm" class="btn" style="background:#34d399;color:#0b1220">Renvoyer l'email de confirmation</button>
+        </div>
+        <div id="signup-msg" class="msg" style="display:none"></div>
+        <div class="hint">Déjà inscrit ? Revenez à l'onglet Connexion.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau de réinitialisation de mot de passe -->
+  <div id="password-recovery" class="panel" style="display:none; max-width:920px; width:100%; margin-top:16px">
+    <div class="group">
+      <label class="label" for="new-password">Nouveau mot de passe</label>
+      <input class="input" id="new-password" type="password" placeholder="Nouveau mot de passe" required />
+    </div>
+    <div class="group">
+      <label class="label" for="new-password2">Confirmez le mot de passe</label>
+      <input class="input" id="new-password2" type="password" placeholder="Confirmez le mot de passe" required />
+    </div>
+    <button id="btn-update-password" class="btn">Mettre à jour le mot de passe</button>
+    <div id="recovery-msg" class="msg" style="display:none"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    async function loadConfig(){
+      try{
+        const res = await fetch('/config');
+        if(!res.ok) throw new Error('Impossible de charger la config');
+        return await res.json();
+      }catch(e){
+        console.error(e);
+        return null;
+      }
+    }
+
+    (async () => {
+      const cfg = await loadConfig();
+      if(!cfg){
+        alert('Erreur de configuration côté serveur.');
+        return;
+      }
+      const SUPABASE_URL = cfg.supabase_url;
+      const SUPABASE_ANON_KEY = cfg.supabase_anon_key;
+      
+      // Créer un fetch wrapper qui injecte systématiquement l'en-tête apikey
+      const injectApiKeyFetch = (url, options = {}) => {
+        const headers = Object.assign({}, options.headers || {}, {
+          'apikey': SUPABASE_ANON_KEY,
+        });
+        return fetch(url, { ...options, headers });
+      };
+      
+      // Créer le client avec options explicites
+      const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+        },
+        global: {
+          fetch: injectApiKeyFetch,
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+          }
+        }
+      });
+
+      // Détecter le flux de récupération de mot de passe
+      client.auth.onAuthStateChange((event, session) => {
+        if(event === 'PASSWORD_RECOVERY'){
+          const rec = document.getElementById('password-recovery');
+          if(rec) rec.style.display = 'block';
+          const msg = document.getElementById('recovery-msg');
+          if(msg){ msg.style.display='block'; msg.classList.remove('err'); msg.classList.add('ok'); msg.textContent = 'Lien de réinitialisation validé. Choisissez un nouveau mot de passe.'; }
+        }
+      });
+
+      // UI Tabs
+      const tabs = document.querySelectorAll('.tab');
+      const panels = { login: document.getElementById('login'), signup: document.getElementById('signup') };
+      tabs.forEach(t => t.addEventListener('click', () => {
+        tabs.forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        const sel = t.dataset.tab;
+        Object.keys(panels).forEach(k => panels[k].style.display = (k === sel) ? 'block' : 'none');
+      }));
+
+      function showMsg(el, text, ok=false){
+        el.style.display = 'block';
+        el.textContent = text;
+        el.classList.remove('ok','err');
+        el.classList.add(ok ? 'ok' : 'err');
+      }
+      function clearMsg(el){ el.style.display = 'none'; el.textContent = ''; el.classList.remove('ok','err'); }
+
+      async function setServerSession(access){
+        try{
+          await fetch('/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: access })
+          });
+        }catch{}
+      }
+
+      async function fetchMe(){
+        try{
+          const res = await fetch('/me');
+          if(!res.ok) throw new Error('Non authentifié');
+          const data = await res.json();
+          alert(`ID: ${data.id}\nEmail: ${data.email}`);
+        }catch(e){ alert(e.message || 'Erreur /me'); }
+      }
+
+      async function doLogout(){
+        try{
+          await fetch('/logout', { method: 'POST' });
+          alert('Déconnecté.');
+        }catch(e){ alert(e.message || 'Erreur logout'); }
+      }
+
+      // Gestionnaires d'événements
+      document.getElementById('btn-me').addEventListener('click', fetchMe);
+      document.getElementById('btn-logout').addEventListener('click', doLogout);
+      
+      document.getElementById('btn-forgot').addEventListener('click', async () => {
+        const email = document.getElementById('login-email').value.trim();
+        const msg = document.getElementById('login-msg');
+        clearMsg(msg);
+        if(!email){ return showMsg(msg, 'Veuillez saisir votre email pour réinitialiser votre mot de passe.'); }
+        try{
+          const { data, error } = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/' });
+          if(error) return showMsg(msg, error.message || "Échec de l'envoi de l'email de réinitialisation.");
+          showMsg(msg, 'Email de réinitialisation envoyé. Vérifiez votre boîte mail.', true);
+        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+      });
+      
+      document.getElementById('btn-login').addEventListener('click', async () => {
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+        const msg = document.getElementById('login-msg');
+        clearMsg(msg);
+        if(!email || !password){ return showMsg(msg, 'Veuillez remplir tous les champs.'); }
+        try{
+          const { data, error } = await client.auth.signInWithPassword({ email, password });
+          if(error) return showMsg(msg, error.message || 'Échec de la connexion.');
+          const access = data.session?.access_token;
+          if(access){ await setServerSession(access); }
+          showMsg(msg, 'Connexion réussie. Session serveur créée.', true);
+        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+      });
+
+      document.getElementById('btn-signup').addEventListener('click', async () => {
+        const email = document.getElementById('signup-email').value.trim();
+        const password = document.getElementById('signup-password').value;
+        const password2 = document.getElementById('signup-password2').value;
+        const msg = document.getElementById('signup-msg');
+        clearMsg(msg);
+        if(!email || !password || !password2){ return showMsg(msg, 'Veuillez remplir tous les champs.'); }
+        if(password !== password2){ return showMsg(msg, 'Les mots de passe ne correspondent pas.'); }
+        try{
+          const { data, error } = await client.auth.signUp({ email, password });
+          if(error) {
+            const m = (error.message || '').toLowerCase();
+            const already = m.includes('already registered') || m.includes('user already exists') || m.includes('already exists') || m.includes('auth_user_already_exists') || m.includes('duplicate key value');
+            if(error.status === 400 || already) {
+              return showMsg(msg, 'Cet email est déjà utilisé. Connectez-vous ou réinitialisez votre mot de passe.');
+            }
+            return showMsg(msg, error.message || "Échec de l'inscription.");
+          }
+          if(data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
+            // Cas Supabase: aucun provider/identity ajouté => l'utilisateur existe déjà
+            return showMsg(msg, 'Cet email est déjà utilisé. Connectez-vous ou réinitialisez votre mot de passe.');
+          }
+          showMsg(msg, 'Inscription réussie. Vérifiez votre email si une confirmation est requise.', true);
+        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+      });
+
+      // Renvoyer l'email de confirmation
+      document.getElementById('btn-resend-confirm').addEventListener('click', async () => {
+        const email = (document.getElementById('signup-email').value.trim() || document.getElementById('login-email').value.trim());
+        const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+        const msg = activeTab === 'signup' ? document.getElementById('signup-msg') : document.getElementById('login-msg');
+        clearMsg(msg);
+        if(!email){ return showMsg(msg, "Veuillez saisir votre email (onglet Inscription) pour renvoyer la confirmation."); }
+        try{
+          const { data, error } = await client.auth.resend({ type: 'signup', email });
+          if(error) return showMsg(msg, error.message || "Échec de renvoi de l'email de confirmation.");
+          showMsg(msg, 'Email de confirmation renvoyé. Vérifiez votre boîte mail.', true);
+        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+      });
+
+      // Mettre à jour le mot de passe après récupération
+      document.getElementById('btn-update-password').addEventListener('click', async () => {
+        const p1 = document.getElementById('new-password').value;
+        const p2 = document.getElementById('new-password2').value;
+        const msg = document.getElementById('recovery-msg');
+        clearMsg(msg);
+        if(!p1 || !p2){ return showMsg(msg, 'Veuillez remplir les deux champs.'); }
+        if(p1 !== p2){ return showMsg(msg, 'Les mots de passe ne correspondent pas.'); }
+        try{
+          const { data, error } = await client.auth.updateUser({ password: p1 });
+          if(error) return showMsg(msg, error.message || 'Échec de la mise à jour du mot de passe.');
+          showMsg(msg, 'Mot de passe mis à jour. Vous pouvez maintenant vous connecter.', true);
+        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+      });
+    })();
+  </script>
+</body>
+</html>
