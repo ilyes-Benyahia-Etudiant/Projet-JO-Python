@@ -38,9 +38,9 @@
     <div class="visual">
       <div class="visual-inner">
         <h1>Bienvenue</h1>
-        <p class="lead">Utilisez l'authentification native Supabase pour vous inscrire et vous connecter en toute sécurité. Ce front-end peut s'intégrer derrière un API Gateway avec un back-end Python.</p>
+        <p class="lead">Authentification sécurisée avec backend Python FastAPI + Supabase. Toutes les opérations d'authentification passent maintenant par des endpoints Python optimisés.</p>
         <div class="footer">
-          <p>Configurez vos clés publiques Supabase dans ce fichier: <code class="kv">SUPABASE_URL</code> et <code class="kv">SUPABASE_ANON_KEY</code>.</p>
+          <p>Backend Python avec proxy d'authentification vers Supabase. Configuration: <code class="kv">SUPABASE_URL</code> et <code class="kv">SUPABASE_ANON_KEY</code>.</p>
         </div>
       </div>
     </div>
@@ -139,7 +139,7 @@
         return fetch(url, { ...options, headers });
       };
       
-      // Créer le client avec options explicites
+      // Créer le client Supabase (garde pour certaines fonctionnalités comme la détection de PASSWORD_RECOVERY)
       const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         auth: {
           autoRefreshToken: true,
@@ -152,6 +152,29 @@
           }
         }
       });
+
+      // Helper pour poser la session côté serveur (cookie HttpOnly)
+      async function setServerSession(access){
+        try{
+          await fetch('/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ access_token: access })
+          });
+        }catch{}
+      }
+
+      // Si on vient d'un lien de récupération, récupérer le token dans le hash et poser un cookie serveur
+      const hash = window.location.hash || '';
+      if(hash.includes('access_token')){
+        const params = new URLSearchParams(hash.replace(/^#/, ''));
+        const at = params.get('access_token');
+        const type = params.get('type');
+        if(at && type === 'recovery'){
+          await setServerSession(at);
+        }
+      }
 
       // Détecter le flux de récupération de mot de passe
       client.auth.onAuthStateChange((event, session) => {
@@ -181,19 +204,31 @@
       }
       function clearMsg(el){ el.style.display = 'none'; el.textContent = ''; el.classList.remove('ok','err'); }
 
-      async function setServerSession(access){
-        try{
-          await fetch('/session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ access_token: access })
-          });
-        }catch{}
+      // =================== HELPERS POUR APPELS API PYTHON ===================
+      
+      async function callAuthAPI(endpoint, data = null) {
+        const options = {
+          method: data ? 'POST' : 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include' // Important pour les cookies HttpOnly
+        };
+        if (data) {
+          options.body = JSON.stringify(data);
+        }
+        
+        const response = await fetch(endpoint, options);
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.message || 'Erreur réseau');
+        }
+        
+        return result;
       }
 
       async function fetchMe(){
         try{
-          const res = await fetch('/me');
+          const res = await fetch('/me', { credentials: 'include' });
           if(!res.ok) throw new Error('Non authentifié');
           const data = await res.json();
           alert(`ID: ${data.id}\nEmail: ${data.email}`);
@@ -202,12 +237,13 @@
 
       async function doLogout(){
         try{
-          await fetch('/logout', { method: 'POST' });
+          await fetch('/logout', { method: 'POST', credentials: 'include' });
           alert('Déconnecté.');
         }catch(e){ alert(e.message || 'Erreur logout'); }
       }
 
-      // Gestionnaires d'événements
+      // =================== GESTIONNAIRES D'ÉVÉNEMENTS AVEC NOUVEAU SYSTÈME ===================
+      
       document.getElementById('btn-me').addEventListener('click', fetchMe);
       document.getElementById('btn-logout').addEventListener('click', doLogout);
       
@@ -216,11 +252,13 @@
         const msg = document.getElementById('login-msg');
         clearMsg(msg);
         if(!email){ return showMsg(msg, 'Veuillez saisir votre email pour réinitialiser votre mot de passe.'); }
+        
         try{
-          const { data, error } = await client.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/' });
-          if(error) return showMsg(msg, error.message || "Échec de l'envoi de l'email de réinitialisation.");
-          showMsg(msg, 'Email de réinitialisation envoyé. Vérifiez votre boîte mail.', true);
-        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+          const result = await callAuthAPI('/auth/forgot', { email });
+          showMsg(msg, result.message, true);
+        }catch(e){ 
+          showMsg(msg, e.message || 'Erreur lors de la demande de réinitialisation.'); 
+        }
       });
       
       document.getElementById('btn-login').addEventListener('click', async () => {
@@ -229,13 +267,13 @@
         const msg = document.getElementById('login-msg');
         clearMsg(msg);
         if(!email || !password){ return showMsg(msg, 'Veuillez remplir tous les champs.'); }
+        
         try{
-          const { data, error } = await client.auth.signInWithPassword({ email, password });
-          if(error) return showMsg(msg, error.message || 'Échec de la connexion.');
-          const access = data.session?.access_token;
-          if(access){ await setServerSession(access); }
-          showMsg(msg, 'Connexion réussie. Session serveur créée.', true);
-        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+          const result = await callAuthAPI('/auth/login', { email, password });
+          showMsg(msg, result.message, true);
+        }catch(e){ 
+          showMsg(msg, e.message || 'Erreur de connexion.'); 
+        }
       });
 
       document.getElementById('btn-signup').addEventListener('click', async () => {
@@ -246,22 +284,13 @@
         clearMsg(msg);
         if(!email || !password || !password2){ return showMsg(msg, 'Veuillez remplir tous les champs.'); }
         if(password !== password2){ return showMsg(msg, 'Les mots de passe ne correspondent pas.'); }
+        
         try{
-          const { data, error } = await client.auth.signUp({ email, password });
-          if(error) {
-            const m = (error.message || '').toLowerCase();
-            const already = m.includes('already registered') || m.includes('user already exists') || m.includes('already exists') || m.includes('auth_user_already_exists') || m.includes('duplicate key value');
-            if(error.status === 400 || already) {
-              return showMsg(msg, 'Cet email est déjà utilisé. Connectez-vous ou réinitialisez votre mot de passe.');
-            }
-            return showMsg(msg, error.message || "Échec de l'inscription.");
-          }
-          if(data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
-            // Cas Supabase: aucun provider/identity ajouté => l'utilisateur existe déjà
-            return showMsg(msg, 'Cet email est déjà utilisé. Connectez-vous ou réinitialisez votre mot de passe.');
-          }
-          showMsg(msg, 'Inscription réussie. Vérifiez votre email si une confirmation est requise.', true);
-        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+          const result = await callAuthAPI('/auth/signup', { email, password });
+          showMsg(msg, result.message, true);
+        }catch(e){ 
+          showMsg(msg, e.message || 'Erreur lors de l\'inscription.'); 
+        }
       });
 
       // Renvoyer l'email de confirmation
@@ -271,11 +300,13 @@
         const msg = activeTab === 'signup' ? document.getElementById('signup-msg') : document.getElementById('login-msg');
         clearMsg(msg);
         if(!email){ return showMsg(msg, "Veuillez saisir votre email (onglet Inscription) pour renvoyer la confirmation."); }
+        
         try{
-          const { data, error } = await client.auth.resend({ type: 'signup', email });
-          if(error) return showMsg(msg, error.message || "Échec de renvoi de l'email de confirmation.");
-          showMsg(msg, 'Email de confirmation renvoyé. Vérifiez votre boîte mail.', true);
-        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+          const result = await callAuthAPI('/auth/resend', { email, type: 'signup' });
+          showMsg(msg, result.message, true);
+        }catch(e){ 
+          showMsg(msg, e.message || 'Erreur lors du renvoi de l\'email.'); 
+        }
       });
 
       // Mettre à jour le mot de passe après récupération
@@ -286,11 +317,13 @@
         clearMsg(msg);
         if(!p1 || !p2){ return showMsg(msg, 'Veuillez remplir les deux champs.'); }
         if(p1 !== p2){ return showMsg(msg, 'Les mots de passe ne correspondent pas.'); }
+        
         try{
-          const { data, error } = await client.auth.updateUser({ password: p1 });
-          if(error) return showMsg(msg, error.message || 'Échec de la mise à jour du mot de passe.');
-          showMsg(msg, 'Mot de passe mis à jour. Vous pouvez maintenant vous connecter.', true);
-        }catch(e){ showMsg(msg, e.message || 'Erreur inattendue.'); }
+          const result = await callAuthAPI('/auth/update-password', { password: p1 });
+          showMsg(msg, result.message, true);
+        }catch(e){ 
+          showMsg(msg, e.message || 'Erreur lors de la mise à jour du mot de passe.'); 
+        }
       });
     })();
   </script>
