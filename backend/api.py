@@ -32,6 +32,13 @@ FRONTEND_URL = (
 if FRONTEND_URL and not FRONTEND_URL.startswith("http"):
     FRONTEND_URL = f"https://{FRONTEND_URL}"
 
+# Déterminer automatiquement si les cookies doivent être 'secure'
+_cookie_secure_env = os.getenv("COOKIE_SECURE")
+if _cookie_secure_env is not None:
+    COOKIE_SECURE = _cookie_secure_env.strip().lower() in ("1", "true", "yes")
+else:
+    # Par défaut: secure=True si FRONTEND_URL est en HTTPS, sinon False (utile en local)
+    COOKIE_SECURE = FRONTEND_URL.lower().startswith("https://")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 app = FastAPI(title="JO-PROJET API", version="1.0.0")
@@ -127,7 +134,7 @@ async def create_session(request: Request, response: Response):
             key="sb_access",
             value=token,
             httponly=True,
-            secure=False,
+            secure=COOKIE_SECURE,
             samesite="Lax",
             max_age=60*60
         )
@@ -239,7 +246,7 @@ async def auth_signup(request: SignupRequest, response: Response):
                     key="sb_access",
                     value=session["access_token"],
                     httponly=True,
-                    secure=False,
+                    secure=COOKIE_SECURE,
                     samesite="Lax",
                     max_age=60*60
                 )
@@ -272,7 +279,7 @@ async def auth_login(request: LoginRequest, response: Response):
                     key="sb_access",
                     value=access_token,
                     httponly=True,
-                    secure=False,
+                    secure=COOKIE_SECURE,
                     samesite="Lax",
                     max_age=60*60
                 )
