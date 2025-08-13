@@ -10,6 +10,7 @@ import httpx
 import logging
 from supabase import create_client, Client
 from typing import Optional
+import urllib.parse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,16 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 if not SUPABASE_URL or not SUPABASE_ANON_KEY:
     raise RuntimeError("Veuillez définir SUPABASE_URL et SUPABASE_ANON_KEY dans le fichier .env")
+
+# URL de redirection des emails (prod ou local)
+FRONTEND_URL = (
+    os.getenv("PUBLIC_SITE_URL")
+    or os.getenv("FRONTEND_URL")
+    or os.getenv("RENDER_EXTERNAL_URL")
+    or "http://localhost:8000"
+)
+if FRONTEND_URL and not FRONTEND_URL.startswith("http"):
+    FRONTEND_URL = f"https://{FRONTEND_URL}"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -184,9 +195,10 @@ async def supabase_auth_request(method: str, endpoint: str, json_data: dict = No
 @app.post("/auth/signup")
 async def auth_signup(request: SignupRequest, response: Response):
     try:
+        redirect_q = urllib.parse.urlencode({"redirect_to": FRONTEND_URL})
         status_code, data = await supabase_auth_request(
             "POST",
-            "/signup",
+            f"/signup?{redirect_q}",
             {"email": request.email, "password": request.password}
         )
         
@@ -276,7 +288,8 @@ async def auth_login(request: LoginRequest, response: Response):
 @app.post("/auth/forgot")
 async def auth_forgot_password(request: ForgotPasswordRequest):
     try:
-        status_code, data = await supabase_auth_request("POST", "/recover", {"email": request.email})
+        redirect_q = urllib.parse.urlencode({"redirect_to": FRONTEND_URL})
+        status_code, data = await supabase_auth_request("POST", f"/recover?{redirect_q}", {"email": request.email})
         if status_code in (200, 201):
             return {"success": True, "message": "Email de réinitialisation envoyé si l'utilisateur existe."}
         elif status_code == 400:
@@ -290,7 +303,13 @@ async def auth_forgot_password(request: ForgotPasswordRequest):
 async def auth_resend(request: ResendRequest):
     try:
         logger.info("Resend request: email=%s type=%s", request.email, request.type)
-        status_code, data = await supabase_auth_request("POST", "/resend", {"email": request.email, "type": request.type})
+        # Supabase attend `type` dans le corps JSON; on conserve `redirect_to` en query
+        redirect_q = urllib.parse.urlencode({"redirect_to": FRONTEND_URL})
+        status_code, data = await supabase_auth_request(
+            "POST",
+            f"/resend?{redirect_q}",
+            {"email": request.email, "type": request.type}
+        )
         logger.info("Resend response from Supabase - status=%s data=%s", status_code, data)
         
         if status_code in (200, 201):
@@ -299,6 +318,8 @@ async def auth_resend(request: ResendRequest):
             error_msg = data.get("error_description") or data.get("msg") or data.get("message") or "Erreur de renvoi d'email"
             logger.info("Resend error: %s", error_msg)
             return JSONResponse(status_code=400, content={"success": False, "message": error_msg})
+        elif status_code == 429:
+            return JSONResponse(status_code=429, content={"success": False, "message": "Trop de tentatives. Réessayez plus tard."})
         else:
             logger.warning("Resend unexpected status: %s", status_code)
             return JSONResponse(status_code=status_code, content={"success": False, "message": "Erreur lors du renvoi d'email"})
