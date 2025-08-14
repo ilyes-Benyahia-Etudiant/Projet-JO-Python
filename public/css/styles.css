@@ -352,3 +352,16 @@ code.kv {
     padding: 14px 16px;
   }
 }
+/* ===============================================
+   Composant: Carte Utilisateur
+   =============================================== */
+.user-card {
+  padding: 12px 14px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-subtle);
+  background: var(--overlay-bg);
+}
+.user-placeholder {
+  color: var(--text-secondary);
+  font-size: 14px;
+}

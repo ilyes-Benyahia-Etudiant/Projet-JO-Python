@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ma Session</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+  <div class="card">
+    <div class="visual">
+      <div class="visual-inner">
+        <h1>Session Active</h1>
+        <p class="lead">Bienvenue dans votre espace personnel. Vous pouvez consulter votre profil ou vous déconnecter en toute sécurité.</p>
+        <div class="footer">
+          <p>Session sécurisée avec authentification <code class="kv">Supabase</code> et cookies <code class="kv">HttpOnly</code>.</p>
+        </div>
+      </div>
+    </div>
+    <div class="form">
+      <div id="user-info" class="group">
+        <div class="label">Informations utilisateur</div>
+        <div id="user-details" class="user-card">
+          <div class="user-placeholder">Chargement des informations...</div>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button id="btn-profile" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Mon Profil
+        </button>
+        <button id="btn-logout" class="btn btn-warning">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16,17 21,12 16,7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Déconnexion
+        </button>
+      </div>
+
+      <div class="btn-single">
+        <button id="btn-back-login" class="btn btn-accent">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15,18 9,12 15,6"></polyline>
+          </svg>
+          Retour à la connexion
+        </button>
+      </div>
+
+      <div id="session-msg" class="msg" style="display:none"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/static/js/session.js"></script>
+</body>
+</html>

@@ -66,6 +66,12 @@ def root():
     index_path = os.path.join(public_dir, "index.html")
     return FileResponse(index_path)
 
+# Nouvelle route de session côté backend
+@app.get("/session", response_class=FileResponse)
+def session_page():
+    session_path = os.path.join(public_dir, "session.html")
+    return FileResponse(session_path)
+
 class PublicKeys(BaseModel):
     supabase_url: str
     supabase_anon_key: str
@@ -268,14 +274,38 @@ async def auth_signup(request: SignupRequest, response: Response):
         return JSONResponse(status_code=500, content={"success": False, "message": f"Erreur serveur: {str(e)}"})
 
 @app.post("/auth/login")
-async def auth_login(request: LoginRequest, response: Response):
+async def auth_login(request: Request, response: Response):
     try:
-        payload = {"email": request.email, "password": request.password}
+        # Support both JSON and form-encoded data
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            body = await request.json()
+            email = body.get("email")
+            password = body.get("password")
+        elif "application/x-www-form-urlencoded" in content_type:
+            form = await request.form()
+            email = form.get("email")
+            password = form.get("password")
+        else:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Type de contenu non supporté"})
+        
+        if not email or not password:
+            if "application/json" in content_type:
+                return JSONResponse(status_code=400, content={"success": False, "message": "Email et mot de passe requis"})
+            else:
+                # For form submission, redirect back with error (could be improved with session flash messages)
+                return JSONResponse(status_code=400, content={"success": False, "message": "Email et mot de passe requis"})
+        
+        payload = {"email": email, "password": password}
         status_code, data = await supabase_auth_request("POST", "/token?grant_type=password", payload)
+        
         if status_code in (200, 201):
             access_token = data.get("access_token")
+            # Construire la réponse de redirection et y attacher le cookie
+            from fastapi.responses import RedirectResponse
+            redirect = RedirectResponse(url="/session", status_code=303)
             if access_token:
-                response.set_cookie(
+                redirect.set_cookie(
                     key="sb_access",
                     value=access_token,
                     httponly=True,
@@ -283,7 +313,8 @@ async def auth_login(request: LoginRequest, response: Response):
                     samesite="Lax",
                     max_age=60*60
                 )
-            return {"success": True, "message": "Connexion réussie", "data": {"provider_token": data.get("provider_token"), "expires_in": data.get("expires_in")}}
+            return redirect
+                
         elif status_code == 400:
             error_msg = data.get("error_description") or data.get("error") or data.get("msg") or "Identifiants invalides"
             return JSONResponse(status_code=400, content={"success": False, "message": error_msg})

@@ -24,15 +24,17 @@
       </div>
 
       <div id="login" class="panel">
-        <div class="group">
-          <label class="label" for="login-email">Email</label>
-          <input class="input" id="login-email" type="email" placeholder="vous@exemple.com" required />
-        </div>
-        <div class="group">
-          <label class="label" for="login-password">Mot de passe</label>
-          <input class="input" id="login-password" type="password" placeholder="Votre mot de passe" required />
-        </div>
-        <button id="btn-login" class="btn">Se connecter</button>
+        <form id="login-form" action="/auth/login" method="POST">
+          <div class="group">
+            <label class="label" for="login-email">Email</label>
+            <input class="input" id="login-email" name="email" type="email" placeholder="vous@exemple.com" required />
+          </div>
+          <div class="group">
+            <label class="label" for="login-password">Mot de passe</label>
+            <input class="input" id="login-password" name="password" type="password" placeholder="Votre mot de passe" required />
+          </div>
+          <button type="submit" class="btn">Se connecter</button>
+        </form>
         <div class="hint">Besoin d'un compte ? Cliquez sur l'onglet Inscription.</div>
         <div class="btn-group">
           <button id="btn-me" class="btn btn-secondary">Mon profil</button>
@@ -82,7 +84,9 @@
     <div id="recovery-msg" class="msg" style="display:none"></div>
   </div>
 
+  <!-- Supabase pour fonctionnalités avancées si nécessaire -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- app.js activé: gestion des onglets, inscription, renvoi email, etc. -->
   <script src="/static/js/app.js"></script>
 </body>
 </html>

@@ -73,23 +73,41 @@ async function loadConfig(){
     }
   });
 
+  // Helper sécurisé pour attacher des événements
+  const bind = (id, evt, handler) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(evt, handler);
+  };
+
   // UI Tabs
   const tabs = document.querySelectorAll('.tab');
   const panels = { login: document.getElementById('login'), signup: document.getElementById('signup') };
-  tabs.forEach(t => t.addEventListener('click', () => {
-    tabs.forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    const sel = t.dataset.tab;
-    Object.keys(panels).forEach(k => panels[k].style.display = (k === sel) ? 'block' : 'none');
-  }));
+  tabs.forEach(t => {
+    if (t) {
+      t.addEventListener('click', () => {
+        tabs.forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        const sel = t.dataset.tab;
+        Object.keys(panels).forEach(k => {
+          if (panels[k]) panels[k].style.display = (k === sel) ? 'block' : 'none';
+        });
+      });
+    }
+  });
 
   function showMsg(el, text, ok=false){
+    if(!el) return;
     el.style.display = 'block';
     el.textContent = text;
     el.classList.remove('ok','err');
     el.classList.add(ok ? 'ok' : 'err');
   }
-  function clearMsg(el){ el.style.display = 'none'; el.textContent = ''; el.classList.remove('ok','err'); }
+  function clearMsg(el){ 
+    if(!el) return;
+    el.style.display = 'none'; 
+    el.textContent = ''; 
+    el.classList.remove('ok','err'); 
+  }
 
   // =================== HELPERS POUR APPELS API PYTHON ===================
   
@@ -138,11 +156,11 @@ async function loadConfig(){
 
   // =================== GESTIONNAIRES D'ÉVÉNEMENTS AVEC NOUVEAU SYSTÈME ===================
   
-  document.getElementById('btn-me').addEventListener('click', fetchMe);
-  document.getElementById('btn-logout').addEventListener('click', doLogout);
+  bind('btn-me', 'click', fetchMe);
+  bind('btn-logout', 'click', doLogout);
   
-  document.getElementById('btn-forgot').addEventListener('click', async () => {
-    const email = document.getElementById('login-email').value.trim();
+  bind('btn-forgot', 'click', async () => {
+    const email = document.getElementById('login-email')?.value.trim();
     const msg = document.getElementById('login-msg');
     clearMsg(msg);
     if(!email){ return showMsg(msg, 'Veuillez saisir votre email pour réinitialiser votre mot de passe.'); }
@@ -155,25 +173,12 @@ async function loadConfig(){
     }
   });
   
-  document.getElementById('btn-login').addEventListener('click', async () => {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    const msg = document.getElementById('login-msg');
-    clearMsg(msg);
-    if(!email || !password){ return showMsg(msg, 'Veuillez remplir tous les champs.'); }
-    
-    try{
-      const result = await callAuthAPI('/auth/login', { email, password });
-      showMsg(msg, result.message, true);
-    }catch(e){ 
-      showMsg(msg, e.message || 'Erreur de connexion.'); 
-    }
-  });
+  // (Connexion via formulaire HTML, pas de gestionnaire JS ici)
 
-  document.getElementById('btn-signup').addEventListener('click', async () => {
-    const email = document.getElementById('signup-email').value.trim();
-    const password = document.getElementById('signup-password').value;
-    const password2 = document.getElementById('signup-password2').value;
+  bind('btn-signup', 'click', async () => {
+    const email = document.getElementById('signup-email')?.value.trim();
+    const password = document.getElementById('signup-password')?.value;
+    const password2 = document.getElementById('signup-password2')?.value;
     const msg = document.getElementById('signup-msg');
     clearMsg(msg);
     if(!email || !password || !password2){ return showMsg(msg, 'Veuillez remplir tous les champs.'); }
@@ -188,9 +193,9 @@ async function loadConfig(){
   });
 
   // Renvoyer l'email de confirmation avec anti-spam
-  document.getElementById('btn-resend-confirm').addEventListener('click', async (e) => {
+  bind('btn-resend-confirm', 'click', async (e) => {
     const btn = e.currentTarget;
-    const email = (document.getElementById('signup-email').value.trim() || document.getElementById('login-email').value.trim());
+    const email = (document.getElementById('signup-email')?.value.trim() || document.getElementById('login-email')?.value.trim());
     const activeTab = document.querySelector('.tab.active')?.dataset.tab;
     const msg = activeTab === 'signup' ? document.getElementById('signup-msg') : document.getElementById('login-msg');
     clearMsg(msg);
@@ -228,9 +233,9 @@ async function loadConfig(){
   });
 
   // Mettre à jour le mot de passe après récupération
-  document.getElementById('btn-update-password').addEventListener('click', async () => {
-    const p1 = document.getElementById('new-password').value;
-    const p2 = document.getElementById('new-password2').value;
+  bind('btn-update-password', 'click', async () => {
+    const p1 = document.getElementById('new-password')?.value;
+    const p2 = document.getElementById('new-password2')?.value;
     const msg = document.getElementById('recovery-msg');
     clearMsg(msg);
     if(!p1 || !p2){ return showMsg(msg, 'Veuillez remplir les deux champs.'); }
