@@ -202,8 +202,23 @@ p.lead {
 }
 
 /* ===============================================
-   Boutons
+   Groupes de Boutons
    =============================================== */
+.btn-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-group .btn {
+  flex: 1;
+}
+
+.btn-single {
+  margin-top: 8px;
+}
+
 .btn {
   width: 100%;
   padding: 12px 16px;
