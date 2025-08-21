@@ -38,6 +38,8 @@ async function loadConfig(){
         const emailEl = byId('user-email');
         if(nameEl) nameEl.textContent = data.id;
         if(emailEl) emailEl.textContent = data.email;
+        const roleEl = byId('user-role');
+        if(roleEl) roleEl.textContent = data.role || 'user';
       }catch(e){
         // si non authentifié, retourner à la page d'accueil
         window.location.href = '/';
@@ -62,30 +64,61 @@ async function loadConfig(){
   // Charger et afficher les infos utilisateur
   const details = document.getElementById('user-details');
   const msg = document.getElementById('session-msg');
+  let me = null;
+  
   try{
-    const me = await getMe();
+    me = await getMe();
     details.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px">
         <div style="width:40px;height:40px;border-radius:9999px;background:rgba(255,255,255,0.06);display:grid;place-items:center;font-weight:700;color:#d1fae5">${(me.email||'U')[0].toUpperCase()}</div>
         <div>
           <div style="font-weight:700">${me.email}</div>
           <div style="font-size:12px;color:#9ca3af">ID: ${me.id}</div>
+          <div style="font-size:12px;color:#9ca3af">Rôle: ${me.role || 'user'}</div>
         </div>
       </div>`;
+  
+  // Redirection admin côté frontend supprimée: désormais gérée côté backend au login
+  // if (me && me.role === 'admin') {
+  //   window.location.href = '/admin';
+  //   return;
+  // }
   }catch(e){
     details.innerHTML = '<div class="user-placeholder">Session invalide. Veuillez vous reconnecter.</div>';
     showMsg(msg, 'Session expirée ou invalide. Redirection...', false);
     setTimeout(() => { window.location.href = '/'; }, 1500);
+    return; // Arrêter l'exécution si pas d'utilisateur
   }
 
-  // Boutons
-  document.getElementById('btn-profile').addEventListener('click', async () => {
-    try{
-      const me = await getMe();
-      alert(`ID: ${me.id}\nEmail: ${me.email}`);
-    }catch(e){ alert('Impossible de charger le profil.'); }
-  });
+  // Boutons - maintenant avec accès à 'me'
+  const btnProfile = document.getElementById('btn-profile');
+  if (btnProfile) {
+    btnProfile.addEventListener('click', async () => {
+      alert(`ID: ${me.id}\nEmail: ${me.email}\nRôle: ${me.role || 'user'}`);
+    });
+  }
 
-  document.getElementById('btn-logout').addEventListener('click', doLogout);
-  document.getElementById('btn-back-login').addEventListener('click', () => window.location.href = '/');
+  const btnAdmin = document.getElementById('btn-admin');
+  const btnLogout = document.getElementById('logout');
+  const btnBackLogin = document.getElementById('btn-back-login');
+  
+  // Afficher le bouton Admin seulement si rôle admin
+  if (btnAdmin) { 
+    btnAdmin.style.display = me.role === 'admin' ? 'inline-flex' : 'none'; 
+  }
+  
+  // Gestionnaire de déconnexion
+  if (btnLogout) { 
+    btnLogout.addEventListener('click', async () => { 
+      try { 
+        await fetch('/logout', { method: 'POST', credentials: 'include' }); 
+      } catch {} 
+      window.location.href = '/'; 
+    }); 
+  }
+  
+  // Bouton retour
+  if (btnBackLogin) {
+    btnBackLogin.addEventListener('click', () => window.location.href = '/');
+  }
 })();

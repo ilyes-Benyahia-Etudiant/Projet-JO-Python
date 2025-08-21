@@ -11,6 +11,7 @@ import logging
 from supabase import create_client, Client
 from typing import Optional
 import urllib.parse
+from datetime import datetime, timezone
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +40,16 @@ if _cookie_secure_env is not None:
 else:
     # Par défaut: secure=True si FRONTEND_URL est en HTTPS, sinon False (utile en local)
     COOKIE_SECURE = FRONTEND_URL.lower().startswith("https://")
+
+# Liste blanche des emails admin (séparés par des virgules), comparés en minuscules
+_admin_emails_env = os.getenv("ADMIN_EMAILS", "")
+ADMIN_EMAILS = {e.strip().lower() for e in _admin_emails_env.split(",") if e.strip()}
+# Log de diagnostic (dev): combien d'emails admin chargés
+logger.info("Admin allowlist loaded: %d email(s)", len(ADMIN_EMAILS))
+
+def is_admin_email(email: Optional[str]) -> bool:
+    return (email or "").strip().lower() in ADMIN_EMAILS
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 app = FastAPI(title="JO-PROJET API", version="1.0.0")
@@ -65,6 +76,11 @@ app.mount("/static", StaticFiles(directory=public_dir), name="public_static")
 def root():
     index_path = os.path.join(public_dir, "index.html")
     return FileResponse(index_path)
+
+@app.get("/auth", response_class=FileResponse)
+def auth_page():
+    auth_path = os.path.join(public_dir, "Authentification.html")
+    return FileResponse(auth_path)
 
 # Nouvelle route de session côté backend
 @app.get("/session", response_class=FileResponse)
@@ -162,7 +178,18 @@ async def me(request: Request):
             raise HTTPException(status_code=401, detail="Token invalide")
         uid = user.get('id') if isinstance(user, dict) else getattr(user, 'id', None)
         uemail = user.get('email') if isinstance(user, dict) else getattr(user, 'email', None)
-        return {"id": uid, "email": uemail}
+        # Fallback: on regarde aussi le user_metadata.role renvoyé par Supabase (utile en dev)
+        user_metadata = None
+        if isinstance(user, dict):
+            user_metadata = (user.get('user_metadata') or user.get('app_metadata') or {})
+        else:
+            user_metadata = getattr(user, 'user_metadata', None) or getattr(user, 'app_metadata', None) or {}
+        role_meta = None
+        if isinstance(user_metadata, dict):
+            role_meta = user_metadata.get('role')
+        is_admin = is_admin_email(uemail) or (str(role_meta).strip().lower() == 'admin')
+        role = "admin" if is_admin else "user"
+        return {"id": uid, "email": uemail, "role": role}
     except HTTPException:
         raise
     except Exception as e:
@@ -172,6 +199,50 @@ async def me(request: Request):
 async def logout(response: Response):
     response.delete_cookie("sb_access")
     return {"ok": True}
+
+@app.get("/admin", response_class=FileResponse)
+def admin_page(request: Request):
+    # Vérifier si l'utilisateur a un cookie de session valide
+    token = request.cookies.get("sb_access")
+    if not token:
+        # Rediriger vers la page de connexion si pas de token
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/", status_code=302)
+    
+    try:
+        # Vérifier le token et le rôle
+        res = supabase.auth.get_user(token)
+        user = getattr(res, 'user', None) or (res.get('user') if isinstance(res, dict) else None)
+        if not user:
+            from fastapi.responses import RedirectResponse
+            return RedirectResponse(url="/", status_code=302)
+        
+        uemail = user.get('email') if isinstance(user, dict) else getattr(user, 'email', None)
+        user_metadata = None
+        if isinstance(user, dict):
+            user_metadata = (user.get('user_metadata') or user.get('app_metadata') or {})
+        else:
+            user_metadata = getattr(user, 'user_metadata', None) or getattr(user, 'app_metadata', None) or {}
+        
+        role_meta = None
+        if isinstance(user_metadata, dict):
+            role_meta = user_metadata.get('role')
+        
+        is_admin = is_admin_email(uemail) or (str(role_meta).strip().lower() == 'admin')
+        
+        if not is_admin:
+            # Rediriger vers la page de session si pas admin
+            from fastapi.responses import RedirectResponse
+            return RedirectResponse(url="/session", status_code=302)
+        
+        # Si admin, servir la page admin
+        admin_path = os.path.join(public_dir, "admin.html")
+        return FileResponse(admin_path)
+        
+    except Exception as e:
+        logger.warning("Admin route access error: %s", e)
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/", status_code=302)
 
 class SignupRequest(BaseModel):
     email: str
@@ -209,10 +280,15 @@ async def supabase_auth_request(method: str, endpoint: str, json_data: dict = No
 async def auth_signup(request: SignupRequest, response: Response):
     try:
         redirect_q = urllib.parse.urlencode({"redirect_to": FRONTEND_URL})
+        # Déterminer le rôle attendu selon l'allowlist
+        desired_role = "admin" if is_admin_email(request.email) else "user"
+        logger.info("Signup attempt: email=%s desired_role=%s", request.email, desired_role)
+        
+        payload = {"email": request.email, "password": request.password, "data": {"role": desired_role}}
         status_code, data = await supabase_auth_request(
             "POST",
             f"/signup?{redirect_q}",
-            {"email": request.email, "password": request.password}
+            payload
         )
         
         # Debug: log what Supabase actually returns
@@ -232,6 +308,31 @@ async def auth_signup(request: SignupRequest, response: Response):
                 session = None
             logger.info("Parsed signup (normalized): user=%s session=%s", bool(user), bool(session))
             
+            # AJOUT: Si l'utilisateur a été créé avec succès ET qu'on a accès au user_id,
+            # on force la mise à jour des métadonnées pour s'assurer que le rôle est bien sauvé
+            user_id = None
+            if user and isinstance(user, dict):
+                user_id = user.get("id")
+                current_metadata = user.get("user_metadata", {})
+                logger.info("User created with metadata: %s", current_metadata)
+                
+                # Si le rôle n'est pas correctement défini dans les métadonnées, on le force
+                if current_metadata.get("role") != desired_role:
+                    logger.warning("Role mismatch in metadata, attempting to update user metadata")
+                    # Utiliser l'API admin de Supabase pour forcer la mise à jour (nécessite service role key)
+                    # Ou utiliser l'endpoint /user avec un token temporaire si disponible
+                    if session and session.get("access_token"):
+                        try:
+                            update_status, update_data = await supabase_auth_request(
+                                "PUT", 
+                                "/user", 
+                                {"data": {"role": desired_role}}, 
+                                token=session["access_token"]
+                            )
+                            logger.info("Metadata update response: status=%s data=%s", update_status, update_data)
+                        except Exception as e:
+                            logger.error("Failed to update user metadata: %s", e)
+            
             # Cas: utilisateur renvoyé sans session -> peut être une nouvelle inscription ou un email déjà existant
             if user and not session:
                 email_confirmed_at = user.get("email_confirmed_at") if isinstance(user, dict) else None
@@ -244,7 +345,7 @@ async def auth_signup(request: SignupRequest, response: Response):
                         content={"success": False, "message": "Email déjà utilisé. Veuillez vous connecter ou réinitialiser votre mot de passe. Si vous n'avez pas reçu l'email, utilisez le bouton Renvoyer."}
                     )
                 # Succès: email de confirmation envoyé pour une nouvelle inscription
-                return {"success": True, "message": "Inscription réussie. Vérifiez votre boîte mail pour confirmer votre adresse.", "data": {"user_id": user.get("id") if isinstance(user, dict) else None}}
+                return {"success": True, "message": "Inscription réussie. Vérifiez votre boîte mail pour confirmer votre adresse.", "data": {"user_id": user.get("id") if isinstance(user, dict) else None, "role": desired_role}}
             
             # Cas: inscription réussie avec session (ex: confirmation auto)
             if session and session.get("access_token"):
@@ -301,9 +402,75 @@ async def auth_login(request: Request, response: Response):
         
         if status_code in (200, 201):
             access_token = data.get("access_token")
+            
+            # Déterminer si l'utilisateur est admin pour choisir la redirection finale
+            is_admin_user = False
+            
+            # Option A: synchroniser user_metadata.role à la connexion si allowlist => admin
+            if access_token:
+                try:
+                    u_status, u_data = await supabase_auth_request("GET", "/user", token=access_token)
+                    if u_status in (200, 201) and isinstance(u_data, dict):
+                        uemail = u_data.get("email") or email
+                        user_id = u_data.get("id")
+                        meta = u_data.get("user_metadata") or {}
+                        desired_admin = is_admin_email(uemail)
+                        current_role = str((meta.get("role") or "")).strip().lower()
+                        
+                        # Synchroniser user_metadata.role dans Supabase auth
+                        if desired_admin and current_role != "admin":
+                            upd_status, upd_data = await supabase_auth_request(
+                                "PUT",
+                                "/user",
+                                {"data": {"role": "admin"}},
+                                token=access_token
+                            )
+                            logger.info("Login role sync: PUT /user status=%s", upd_status)
+                        
+                        # Déterminer le rôle admin effectif
+                        is_admin_user = desired_admin or current_role == "admin"
+                        
+                        # Synchroniser public.users.role dans la DB relationnelle
+                        if user_id and uemail:
+                            try:
+                                expected_role = "admin" if is_admin_user else "user"
+                                # Authentifier les requêtes PostgREST avec le token du user (RLS)
+                                supabase.postgrest.auth(access_token)
+                                upsert_payload = {
+                                    "id": user_id,
+                                    "email": uemail,
+                                    "role": expected_role,
+                                    # laisser la DB/trigger gérer created_at/updated_at
+                                    "last_sign_in": datetime.now(timezone.utc).isoformat(),
+                                }
+                                upsert_result = supabase.table("users").upsert(
+                                    upsert_payload,
+                                    on_conflict="id"
+                                ).execute()
+                                logger.info("DB users table upsert: success=%s", bool(getattr(upsert_result, 'data', None)))
+                            except Exception as db_e:
+                                logger.warning("Failed to sync users table: %s", db_e)
+                            finally:
+                                # Réinitialiser l'auth PostgREST
+                                try:
+                                    supabase.postgrest.auth(None)
+                                except Exception:
+                                    pass
+                                    
+                except Exception as e:
+                    logger.warning("Login role sync failed: %s", e)
+            
+            # Fallback si on n'a pas pu lire le profil
+            if not is_admin_user:
+                try:
+                    is_admin_user = is_admin_email(email)
+                except Exception:
+                    is_admin_user = False
+            
             # Construire la réponse de redirection et y attacher le cookie
             from fastapi.responses import RedirectResponse
-            redirect = RedirectResponse(url="/session", status_code=303)
+            target = "/admin" if is_admin_user else "/session"
+            redirect = RedirectResponse(url=target, status_code=303)
             if access_token:
                 redirect.set_cookie(
                     key="sb_access",

@@ -143,7 +143,7 @@ async function loadConfig(){
       const res = await fetch('/me', { credentials: 'include' });
       if(!res.ok) throw new Error('Non authentifié');
       const data = await res.json();
-      alert(`ID: ${data.id}\nEmail: ${data.email}`);
+      alert(`ID: ${data.id}\nEmail: ${data.email}\nRôle: ${data.role}`);
     }catch(e){ alert(e.message || 'Erreur /me'); }
   }
 
