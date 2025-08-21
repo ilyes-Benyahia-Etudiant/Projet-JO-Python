@@ -7,6 +7,11 @@ PORT = int(os.environ.get('PORT', 8000))
 
 class Handler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
+        # Supporter le préfixe /static/ pour mimer le backend FastAPI
+        if path.startswith('/static/'):
+            path = path[len('/static'):]
+        elif path == '/static':
+            path = '/'
         # Toujours servir depuis WEB_DIR
         path = super().translate_path(path)
         rel = os.path.relpath(path, os.getcwd())

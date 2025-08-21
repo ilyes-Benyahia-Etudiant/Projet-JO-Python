@@ -4,11 +4,10 @@
   --fg: #111827;
   --muted: #6b7280;
   --brand: #111827;
+  --navbar-height: 80px; /* utilisé pour calculer la hauteur du carrousel plein écran */
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
@@ -17,68 +16,384 @@ body {
   background: #fff;
 }
 
+
+
 /* Navbar */
 .navbar {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
+  align-items: center;
   background: #fff;
+  padding: 16px 32px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  position: relative;
+  z-index: 10;
 }
 
-.brand {
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  color: var(--brand);
-}
+.navbar-left { display: flex; align-items: center; }
 
-nav a {
-  margin-right: 14px;
-  text-decoration: none;
-  color: var(--fg);
-}
+/* Anneaux stylisés (fallback au lieu d'images) */
+.olympic-rings { display: flex; gap: 0; align-items: center; }
+.ring { width: 20px; height: 20px; border: 3px solid; border-radius: 50%; margin-left: -6px; background: transparent; }
+.ring.blue { border-color: #3cb4e7; margin-left: 0; }
+.ring.yellow { border-color: #f7d038; }
+.ring.black { border-color: #222; }
+.ring.green { border-color: #3cc47c; }
+.ring.red { border-color: #e94b4b; }
 
-nav a:last-child {
-  margin-right: 0;
-}
+.navbar-title { font-size: 1.25rem; font-weight: 600; color: #222; margin-left: 12px; }
 
-/* Boutons */
-.btn {
-  padding: 8px 14px;
-  border: 1px solid var(--fg);
-  background: #fff;
-  color: var(--fg);
-  cursor: pointer;
-  border-radius: 8px;
-  text-decoration: none;
-  display: inline-block;
-}
+/* Liens navbar */
+.navbar-links { list-style: none; display: flex; gap: 24px; margin: 0 auto; padding: 0; align-items: center; }
+.navbar-links li { display: flex; }
+.navbar-links a { text-decoration: none; color: #222; font-size: 1rem; font-weight: 500; transition: color 0.2s, border-bottom 0.2s; padding: 4px 0; border-bottom: 2px solid transparent; }
+.navbar-links a:hover { color: #3cb4e7; background-image: linear-gradient(90deg, #3cb4e7, #4fbbe9, #222, #2a98c6, #e94b4b); background-size: 100% 2px; background-repeat: no-repeat; background-position: left bottom; }
 
-.btn:hover {
-  background: var(--fg);
-  color: #fff;
-}
+/* Actions navbar */
+.navbar-actions { display: flex; align-items: center; margin-left: auto; }
+.btn-login { background: #222; color: #fff; border: none; border-radius: 6px; padding: 8px 22px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-left: 30px; text-decoration: none; display: inline-block; }
+.btn-login:hover { background: #fff; color: #222; border: 2px solid #222; }
+
+/* Hamburger */
+.hamburger { display: none; flex-direction: column; justify-content: center; gap: 6px; cursor: pointer; margin-left: 20px; }
+.hamburger span { display: block; width: 28px; height: 3px; background: #555; border-radius: 2px; }
 
 /* Layout */
-.container {
-  max-width: 980px;
-  margin: 24px auto;
-  padding: 0 16px;
+.container { max-width: 980px; margin: 24px auto; padding: 0 16px; }
+.hero { padding: 0; }
+.hero h1 { margin: 0 0 8px; font-size: 28px; }
+.hero p { margin: 0 0 16px; color: var(--muted); }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .navbar-links { display: none; position: absolute; right: 32px; top: 64px; margin: 0; background: #fff; flex-direction: column; gap: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-radius: 8px; min-width: 160px; z-index: 100; padding: 8px 12px; }
+  .navbar-links.open { display: flex; }
+  .hamburger { display: flex !important; }
 }
 
-.hero {
-  padding: 48px 0;
+@media (min-width: 1025px) {
+  .hamburger { display: none !important; }
+  .navbar-links { display: flex !important; position: static; gap: 24px; box-shadow: none; border-radius: 0; min-width: unset; z-index: auto; margin: 0 auto; }
 }
 
-.hero h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
+
+/* ===== Modal Auth ===== */
+.modal-auth { display: none; position: fixed; z-index: 9999; inset: 0; justify-content: center; align-items: center; }
+.modal-auth.open { display: flex; }
+.modal-auth-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.45); animation: fadeInModalBg 0.3s; }
+@keyframes fadeInModalBg { from { background: rgba(0,0,0,0); } to { background: rgba(0,0,0,0.45); } }
+.modal-auth-content { position: relative; z-index: 2; background: #fff; border-radius: 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); padding: 36px 32px 28px 32px; min-width: 320px; max-width: 90vw; width: 400px; animation: modalPopIn 0.3s; font-family: 'Open Sans', Arial, sans-serif; }
+@keyframes modalPopIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal-auth-close { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 2rem; color: #222; cursor: pointer; z-index: 3; transition: color 0.2s; }
+.modal-auth-close:hover { color: #3cb4e7; }
+.auth-tabs { display: flex; justify-content: center; gap: 16px; margin-bottom: 24px; }
+.auth-tab { background: none; border: none; font-size: 1.1rem; font-weight: 600; color: #222; padding: 8px 24px; cursor: pointer; border-bottom: 2px solid transparent; transition: border 0.2s, color 0.2s; }
+.auth-tab.active { color: #3cb4e7; border-bottom: 2px solid #3cb4e7; }
+.auth-form { display: flex; flex-direction: column; gap: 18px; }
+.auth-title { text-align: center; margin-bottom: 8px; color: #222; font-size: 1.6rem; font-weight: bold; }
+.auth-form input { padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; transition: border 0.2s; background: #f8f8f8; }
+.auth-form input:focus { border-color: #3cb4e7; background: #fff; }
+.auth-options { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; }
+.auth-btn { background: #222; color: #fff; border: none; border-radius: 8px; padding: 12px 0; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+.auth-btn:hover { background: #3cb4e7; }
+.auth-btn-google { background: #fff; color: #222; border: 1px solid #ddd; border-radius: 8px; padding: 10px 0; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+.auth-google-icon { width: 20px; height: 20px; }
+.auth-divider { text-align: center; color: #666; font-size: 0.9rem; margin: 8px 0; }
+.msg.ok { color: #0d9488; }
+.msg.err { color: #dc2626; }
+
+
+/* carousel */
+.carousel {
+  position: relative;
+  width: 100vw; /* pleine largeur viewport */
+  height: calc(100vh - var(--navbar-height)); /* pleine hauteur visible moins navbar */
+  overflow: hidden;
+  margin-top: 0;
+  z-index: 1;
+  border-radius: 0; /* pleine largeur = pas d’arrondi */
 }
 
-.hero p {
-  margin: 0 0 16px;
-  color: var(--muted);
+.carousel-container { position: relative; width: 100%; margin: 0 auto; }
+.carousel-track { position: relative; width: 100%; height: 100%; }
+
+.carousel-img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1);
+  transition: opacity 0.6s ease, transform 1.5s ease;
+  pointer-events: none;
+  filter: none; /* supprimer le grisage */
 }
+
+.carousel-img.active {
+  opacity: 1;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+/* Variables overlay pour le carrousel */
+:root {
+  --carousel-overlay-start: rgba(17, 24, 39, 0.18); /* top */
+  --carousel-overlay-end: rgba(17, 24, 39, 0.5);   /* bottom */
+}
+
+/* Désactiver le filtre (overlay) du carrousel */
+.carousel::after {
+  content: none !important;
+  background: none !important;
+}
+
+/* Mise en évidence du contenu hero par-dessus l’overlay */
+.carousel .hero-content {
+  position: absolute;
+  left: 32px;
+  bottom: 32px;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  max-width: 70%;
+  pointer-events: auto;
+  display: block;
+  opacity: 1;
+
+  z-index: 3; /* au-dessus de l’overlay */
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+
+.carousel .hero-content h1 {
+  font-size: 2.2rem;
+  line-height: 1.2;
+  margin: 0 0 10px 0;
+  letter-spacing: 0.2px;
+}
+
+.carousel .hero-content p {
+  font-size: 1.05rem;
+  margin: 0 0 12px 0;
+  color: #f3f4f6;
+}
+
+/* Bouton mis en avant */
+.hero .btn-primary {
+  background: #3cb4e7;
+  color: #111;
+  border: none;
+  padding: 12px 20px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(60, 180, 231, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.hero .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(60, 180, 231, 0.45);
+}
+
+@media (max-width: 768px) {
+  .carousel .hero-content {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    padding: 14px 16px;
+  }
+  .carousel .hero-content h1 { font-size: 1.6rem; }
+  .carousel .hero-content p { font-size: 0.98rem; }
+  .hero .btn-primary { padding: 10px 16px; }
+}
+.carousel-title {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 2.8rem;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.7);
+  z-index: 2;
+  width: 90vw;
+  pointer-events: none;
+}
+
+/* faire déborder la section hero de .container pour pleine largeur */
+.container .hero {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  width: 100vw;
+}
+
+
+/* supprimer l’espace entre le header (navbar) et le carrousel */
+header + .container,
+header + main,
+header + main.container,
+header + main .container:first-child {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+
+/* ===== Events ===== */
+.events-section {
+  padding: 80px 32px;
+  background: #fff;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.5rem;
+  color: #222;
+  margin-bottom: 48px;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .events-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 20px;
+    padding: 20px;
+    scroll-padding: 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .event-card {
+    flex: 0 0 300px;
+    scroll-snap-align: start;
+  }
+
+  .event-card:hover {
+    transform: scale(1.03);
+  }
+}
+
+.event-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.event-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.event-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.event-content {
+  padding: 24px;
+}
+
+.event-content h3 {
+  font-size: 1.5rem;
+  color: #222;
+  margin: 0 0 12px 0;
+}
+
+.event-content p {
+  color: #666;
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+}
+
+.event-btn {
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.event-btn:hover {
+  background: #fff;
+  color: #222;
+  border: 2px solid #222;
+}
+
+.arrow {
+  font-size: 1.2rem;
+  transition: transform 0.3s;
+}
+
+.event-btn:hover .arrow {
+  transform: scale(1.2);
+}
+
+.event-btn:hover {
+  background: #fff;
+  color: #222;
+  border: 2px solid #222;
+}
+.auth-tab.active { color: #3cb4e7; border-bottom: 2px solid #3cb4e7; }
+.auth-form { display: flex; flex-direction: column; gap: 18px; }
+.auth-title { text-align: center; margin-bottom: 8px; color: #222; font-size: 1.6rem; font-weight: bold; }
+.auth-form input { padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; transition: border 0.2s; background: #f8f8f8; }
+.auth-form input:focus { border-color: #3cb4e7; background: #fff; }
+.auth-options { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; }
+.auth-btn { background: #222; color: #fff; border: none; border-radius: 8px; padding: 12px 0; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+.auth-btn:hover { background: #3cb4e7; }
+.auth-btn-google { background: #fff; color: #222; border: 1px solid #ddd; border-radius: 8px; padding: 10px 0; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+.auth-google-icon { width: 20px; height: 20px; }
+.auth-divider { text-align: center; color: #666; font-size: 0.9rem; margin: 8px 0; }
+.msg.ok { color: #0d9488; }
+.msg.err { color: #dc2626; }
+
+
+/* Utilitaires #webcrumbs — extensions nécessaires pour la section "Pourquoi choisir OlympicTickets?" */
+#webcrumbs .max-w-\[1280px\] { max-width: 1280px; }
+@media (min-width: 640px) {
+  #webcrumbs .sm\:px-6 { padding-left: 24px; padding-right: 24px; }
+}
+.auth-tab.active { color: #3cb4e7; border-bottom: 2px solid #3cb4e7; }
+.auth-form { display: flex; flex-direction: column; gap: 18px; }
+.auth-title { text-align: center; margin-bottom: 8px; color: #222; font-size: 1.6rem; font-weight: bold; }
+.auth-form input { padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; transition: border 0.2s; background: #f8f8f8; }
+.auth-form input:focus { border-color: #3cb4e7; background: #fff; }
+.auth-options { display: flex; justify-content: space-between; align-items: center; font-size: 0.95rem; }
+.auth-btn { background: #222; color: #fff; border: none; border-radius: 8px; padding: 12px 0; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+.auth-btn:hover { background: #3cb4e7; }
+.auth-btn-google { background: #fff; color: #222; border: 1px solid #ddd; border-radius: 8px; padding: 10px 0; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+.auth-google-icon { width: 20px; height: 20px; }
+.auth-divider { text-align: center; color: #666; font-size: 0.9rem; margin: 8px 0; }
+.msg.ok { color: #0d9488; }
+.msg.err { color: #dc2626; }
+
+
+/* Fin du fichier: déduplication Material Symbols (gardée une seule fois plus haut) */
+/* .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; } */
