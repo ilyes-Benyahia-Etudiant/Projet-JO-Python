@@ -1,8 +1,8 @@
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
   const modal = document.getElementById('modal-auth');
   const bg = document.getElementById('modal-auth-bg');
   const closeBtn = document.getElementById('modal-auth-close');
-  const btnsOpen = [document.querySelector('.btn-login'), document.getElementById('open-login')].filter(Boolean);
+  const btnsOpen = [...document.querySelectorAll('.btn-login'), document.getElementById('open-login')].filter(Boolean);
 
   const openModal = (e) => { if(e) e.preventDefault(); if(modal){ modal.classList.add('open'); } };
   const closeModal = (e) => { if(e) e.preventDefault(); if(modal){ modal.classList.remove('open'); } };
@@ -158,4 +158,4 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-});
+})();

@@ -4,47 +4,308 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ma Session</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="/static/css/index.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-  <div class="card">
-    <div class="visual">
-      <div class="visual-inner">
-        <h1>Session Active</h1>
-        <p class="lead">Bienvenue dans votre espace personnel. Vous pouvez consulter votre profil ou vous déconnecter en toute sécurité.</p>
-        <div class="footer">
-          <p>Session sécurisée avec authentification <code class="kv">Supabase</code> et cookies <code class="kv">HttpOnly</code>.</p>
+  <!-- Navbar (identique à billeterie.html) -->
+  <header>
+    <nav class="navbar">
+      <div class="navbar-left">
+        <div class="olympic-rings">
+          <span class="ring blue"></span>
+          <span class="ring yellow"></span>
+          <span class="ring black"></span>
+          <span class="ring green"></span>
+          <span class="ring red"></span>
+          <span class="navbar-title">Olympic Games</span>
         </div>
       </div>
-    </div>
-    <div class="form">
-      <div id="user-info" class="group">
-        <div class="label">Informations utilisateur</div>
-        <div id="user-details" class="user-card">
-          <div class="user-placeholder">Chargement des informations...</div>
+      <ul class="navbar-links" id="primary-navigation">
+        <li><a href="/">Accueil</a></li>
+        <li><a href="/billets.html">Evenements</a></li>
+        <li><a href="/billeterie.html">Billeterie</a></li>
+      </ul>
+      <div class="navbar-actions">
+        <a class="btn-login" href="#">Connexion</a>
+        <button class="btn-logout" aria-label="Déconnexion" style="display:none">Déconnexion</button>
+        <div class="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
         </div>
       </div>
+    </nav>
+  </header>
 
-      <div class="btn-group">
-        <a href="/" class="btn btn-secondary">Accueil</a>
-        <a id="btn-admin" href="/admin" class="btn" style="display:none">Admin</a>
-        <button id="logout" class="btn btn-warning">Déconnexion</button>
+  <main>
+    <!-- Section Session (préserve la logique existante) -->
+    <section class="session-section" style="margin: 24px 0;">
+      <div class="card">
+        <div class="visual">
+          <div class="visual-inner">
+            <h1>Session Active</h1>
+            <p class="lead">Bienvenue dans votre espace personnel. Vous pouvez consulter votre profil ou vous déconnecter en toute sécurité.</p>
+            <div class="footer">
+              <p>Session sécurisée avec authentification <code class="kv">Supabase</code> et cookies <code class="kv">HttpOnly</code>.</p>
+            </div>
+          </div>
+        </div>
+        <div class="form">
+          <div id="user-info" class="group">
+            <div class="label">Informations utilisateur</div>
+            <div id="user-details" class="user-card">
+              <div class="user-placeholder">Chargement des informations...</div>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            
+            <a id="btn-admin" href="/admin" class="btn" style="display:none">Admin</a>
+            
+          </div>
+
+          <div class="btn-single" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <button id="btn-my-tickets" class="btn btn-accent" type="button">
+              <span class="material-symbols-outlined" style="font-size:18px">confirmation_number</span>
+              Mes billets achetés
+            </button>
+            <button id="btn-cart" class="btn btn-secondary" type="button" style="margin-left:auto; position:relative;">
+              Panier
+              <span id="cart-count" style="margin-left:8px; background:#3cb4e7; color:#111; border-radius:9999px; padding:2px 8px; font-weight:700;">0</span>
+            </button>
+          </div>
+
+          
+
+          <div id="session-msg" class="msg" style="display:none"></div>
+        </div>
       </div>
+    </section>
 
-      <div class="btn-single">
-        <button id="btn-back-login" class="btn btn-accent">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15,18 9,12 15,6"></polyline>
-          </svg>
-          Retour à la connexion
-        </button>
+    <!-- Section offres (reprend billeterie.html) -->
+    <section class="events-section">
+      <h2 class="section-title">Nos Offres</h2>
+      <div class="events-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <!-- Offre Solo -->
+        <div class="event-card">
+          <img src="/static/images/olympic games.jpg" alt="Offre Solo" class="event-img">
+          <div class="event-content">
+            <h3>Offre Solo</h3>
+            <p>Accès pour 1 personne à l'événement de votre choix.</p>
+            <p style="margin-top:8px;color:#444">Idéal pour vivre l'expérience des Jeux en solo.</p>
+            <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px">
+              <a href="#" class="btn-login">Choisir</a>
+            </div>
+          </div>
+        </div>
+        <!-- Offre Duo -->
+        <div class="event-card">
+          <img src="/static/images/Design sans titre.png" alt="Offre Duo" class="event-img">
+          <div class="event-content">
+            <h3>Offre Duo</h3>
+            <p>Accès pour 2 personnes, partagez l'émotion à deux.</p>
+            <p style="margin-top:8px;color:#444">Parfait pour un couple ou deux amis.</p>
+            <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px">
+              <a href="#" class="btn-login">Choisir</a>
+            </div>
+          </div>
+        </div>
+        <!-- Offre Familiale -->
+        <div class="event-card">
+          <img src="/static/images/olympic games Paris.jpg" alt="Offre Familiale" class="event-img">
+          <div class="event-content">
+            <h3>Offre Familiale</h3>
+            <p>Accès pour 4 personnes, pour des souvenirs inoubliables.</p>
+            <p style="margin-top:8px;color:#444">L'option idéale pour toute la famille.</p>
+            <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px">
+              <a href="#" class="btn-login">Choisir</a>
+            </div>
+          </div>
+        </div>
       </div>
+    </section>
+  </main>
 
-      <div id="session-msg" class="msg" style="display:none"></div>
+  <div id="webcrumbs">
+    <div class="max-w-[1280px] mx-auto px-4 sm:px-6">
+      <footer class="text-gray-600 border-t border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 pt-5">
+          <div>
+            <h3 class="font-bold text-lg mb-4">À propos</h3>
+            <ul class="space-y-2">
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Qui sommes-nous</a></li>
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Partenaires officiels</a></li>
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Carrières</a></li>
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Presse</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-bold text-lg mb-4">Support</h3>
+            <ul class="space-y-2">
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Centre d'aide</a></li>
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Contacter le support</a></li>
+              <li><a href="#" class="hover:text-primary-700 transition-colors">FAQ</a></li>
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Conditions de vente</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-bold text-lg mb-4">Informations légales</h3>
+            <ul class="space-y-2">
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Conditions d'utilisation</a></li>
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Politique de confidentialité</a></li>
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Mentions légales</a></li>
+              <li><a href="#" class="hover:text-primary-700 transition-colors">Cookies</a></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="font-bold text-lg mb-4">Suivez-nous</h3>
+            <div class="flex space-x-4 mb-4">
+              <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
+                <i class="fa-brands fa-facebook text-lg"></i>
+              </a>
+              <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
+                <i class="fa-brands fa-twitter text-lg"></i>
+              </a>
+              <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
+                <i class="fa-brands fa-instagram text-lg"></i>
+              </a>
+              <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
+                <i class="fa-brands fa-youtube text-lg"></i>
+              </a>
+            </div>
+            <p class="text-sm">Téléchargez notre application</p>
+            <div class="flex space-x-2 mt-2">
+              <a href="#" class="transition-transform hover:scale-105">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store" class="h-10" keywords="app store, download, ios app"/>
+              </a>
+              <a href="#" class="transition-transform hover:scale-105">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" class="h-10" keywords="google play, download, android app"/>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="border-t pt-6 pb-4 flex flex-col md:flex-row justify-between items-center">
+          <p>© 2025 OlympicTickets. Tous droits réservés.</p>
+          <div class="flex items-center space-x-2 mt-4 md:mt-0">
+            <img src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_1280.png" alt="Visa" class="h-6" keywords="visa, payment method, credit card"/>
+            <img src="https://images.unsplash.com/photo-1628625194933-ac2b3c0109e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxtYXN0ZXJjYXJkfGVufDB8fHx8MTc0NjI1NDcwN3ww&ixlib=rb-4.0.3&q=80&w=1080" alt="Mastercard" class="h-6" keywords="mastercard, payment method, credit card"/>
+            <img src="https://images.unsplash.com/photo-1587906697341-bfbde76785c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxwYXlwYWx8ZW58MHx8fHwxNzQ2Mzc2MTM4fDA&ixlib=rb-4.0.3&q=80&w=1080" alt="Paypal" class="h-6" keywords="paypal, payment method, online payment"/>
+          </div>
+        </div>
+      </footer>
     </div>
   </div>
 
+  <!-- Modal d'authentification (identique à billeterie.html) -->
+  <div class="modal-auth" id="modal-auth" aria-hidden="true">
+    <div class="modal-auth-bg" id="modal-auth-bg" aria-hidden="true"></div>
+    <div class="modal-auth-content" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <button class="modal-auth-close" id="modal-auth-close" aria-label="Fermer">&times;</button>
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" id="tab-login" role="tab" aria-selected="true" aria-controls="login-form">Connexion</button>
+        <button class="auth-tab" id="tab-register" role="tab" aria-selected="false" aria-controls="register-form">Inscription</button>
+      </div>
+
+      <form class="auth-form" id="login-form" method="POST" action="/auth/login">
+        <h2 class="auth-title" id="auth-title">Connexion</h2>
+        <input id="modal-login-email" name="email" type="email" placeholder="Email" autocomplete="email" required>
+        <input id="modal-login-password" name="password" type="password" placeholder="Mot de passe" autocomplete="current-password" required>
+        <div class="auth-options">
+          <label><input type="checkbox" id="remember-me"> Se souvenir de moi</label>
+          <a href="#" class="auth-link" id="modal-forgot">Mot de passe oublié ?</a>
+        </div>
+        <div id="modal-login-msg" class="msg" style="display:none"></div>
+        <button type="submit" class="auth-btn" id="modal-btn-login">Se connecter</button>
+        <div class="auth-divider"><span>ou continuer avec</span></div>
+        <button type="button" class="auth-btn-google" id="modal-btn-google">
+          <svg class="auth-google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path></svg>
+          Se connecter avec Google
+        </button>
+      </form>
+
+      <form class="auth-form" id="register-form" style="display:none;">
+        <h2 class="auth-title">Inscription</h2>
+        <input id="modal-signup-name" name="full_name" type="text" placeholder="Nom complet" autocomplete="name" required>
+        <input id="modal-signup-email" name="email" type="email" placeholder="Email" autocomplete="email" required>
+        <input id="modal-signup-password" name="password" type="password" placeholder="Mot de passe" autocomplete="new-password" required>
+        <input id="modal-signup-password2" name="password2" type="password" placeholder="Confirmer le mot de passe" autocomplete="new-password" required>
+        <div id="modal-signup-msg" class="msg" style="display:none"></div>
+        <button type="submit" class="auth-btn" id="modal-btn-signup">S'inscrire</button>
+      </form>
+
+      <div class="auth-footer">
+        <p class="auth-footer-text">
+          Pas encore de compte ?
+          <a href="#" class="auth-link" id="switch-to-register">Inscrivez-vous</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/navbar.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/static/js/session.js"></script>
+
+  <!-- Modal Panier -->
+  <div class="modal-cart" id="modal-cart" aria-hidden="true">
+    <div class="modal-cart-bg" id="modal-cart-bg" aria-hidden="true"></div>
+    <div class="modal-cart-content" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+      <button class="modal-cart-close" id="modal-cart-close" aria-label="Fermer">&times;</button>
+      <h3 id="cart-title" style="font-weight:800;font-size:1.25rem;margin-bottom:12px">Votre panier</h3>
+      <div id="cart-items" class="cart-items"></div>
+      <div class="cart-total">Total: <span id="cart-total">0€</span></div>
+      <div class="cart-actions" style="margin-top:12px">
+        <button id="cart-continue" class="btn btn-secondary" type="button">Ajouter d'autres articles</button>
+        <button id="cart-clear" class="btn btn-secondary" type="button">Vider</button>
+        <button id="cart-pay" class="btn btn-accent" type="button">Payer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tickets Modal -->
+  <div id="modal-tickets" class="modal-tickets" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="tickets-title">
+    <div id="modal-tickets-bg" class="modal-tickets-bg" aria-hidden="true"></div>
+    <div class="modal-tickets-content" role="document">
+      <button id="modal-tickets-close" class="modal-tickets-close" type="button" aria-label="Fermer la fenêtre des billets">×</button>
+      <h2 id="tickets-title">Historique de vos commandes et billets</h2>
+      <p class="subtitle">Billets électroniques avec QR code. Impression disponible pour chaque commande.</p>
+  
+      <div id="tickets-empty" class="tickets-empty" style="display:none">Vous n'avez pas encore de billets. Revenez après l'achat.</div>
+  
+      <section id="tickets-list" class="tickets-list" aria-live="polite"></section>
+  
+      <!-- Exemple statique (au cas où, masqué par défaut; peut servir de squelette) -->
+      <template id="ticket-card-template">
+        <article class="ticket-card">
+          <div class="ticket-info">
+            <div class="title">Commande #0001</div>
+            <div class="type">Type de billet: <strong>Billet Catégorie A</strong></div>
+          </div>
+          <div class="ticket-right">
+            <div class="ticket-qr">
+              <svg class="ticket-qr-svg" width="112" height="112" viewBox="0 0 64 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR exemple">
+                <rect width="64" height="64" fill="#fff"/>
+                <rect x="2" y="2" width="20" height="20" fill="#000"/>
+                <rect x="42" y="2" width="20" height="20" fill="#000"/>
+                <rect x="2" y="42" width="20" height="20" fill="#000"/>
+                <rect x="28" y="28" width="8" height="8" fill="#000"/>
+                <text x="32" y="70" text-anchor="middle" font-size="6" fill="#111">#0001</text>
+              </svg>
+            </div>
+            <button class="btn btn-secondary btn-print" type="button">Imprimer le QR</button>
+          </div>
+        </article>
+      </template>
+  
+      <div class="tickets-actions">
+        <button id="tickets-back" class="btn btn-primary" type="button">Retour</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -4,6 +4,7 @@ import os
 # Servir le dossier public/
 WEB_DIR = os.path.join(os.path.dirname(__file__), 'public')
 PORT = int(os.environ.get('PORT', 8000))
+HOST = os.environ.get('HOST', '127.0.0.1')
 
 class Handler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
@@ -19,6 +20,6 @@ class Handler(SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     os.chdir(WEB_DIR)
-    httpd = HTTPServer(('0.0.0.0', PORT), Handler)
-    print(f"Server running at http://localhost:{PORT}/")
+    httpd = HTTPServer((HOST, PORT), Handler)
+    print(f"Server running at http://{HOST}:{PORT}/")
     httpd.serve_forever()

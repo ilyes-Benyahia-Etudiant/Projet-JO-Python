@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Accueil — Mon Application</title>
     <!-- Consolidation: un seul fichier CSS global -->
-    <link rel="stylesheet" href="/static/css/index.css">
+     <script src="https://cdn.tailwindcss.com"></script>
+     <link rel="stylesheet" href="/static/css/index.css">
     <link rel="stylesheet" href="/static/css/styles.css">
     <!-- Packs d'icônes -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
@@ -25,9 +26,9 @@
           </div>
         </div>
         <ul class="navbar-links" id="primary-navigation">
-          <li><a href="/">Accueil</a></li>
-          <li><a href="/">Evenements</a></li>
-          <li><a href="/billets">Billeterie</a></li>
+          <li><a href="/" aria-current="page">Accueil</a></li>
+          <li><a href="/billeterie.html">Evenements</a></li>
+          <li><a href="/billeterie.html">Billeterie</a></li>
         </ul>
         <div class="navbar-actions">
           <a class="btn-login" href="#">Connexion</a>
@@ -53,7 +54,7 @@
             <div class="hero-content">
               <h1>Bienvenue Jeux Olympiques 2024</h1>
               <p>Retrouvez les informations sur les Jeux Olympiques 2024, les épreuves, les billets et bien plus encore.</p>
-              <a href="/billets" class="btn-primary">Réservez vos billets</a>
+              <a href="/billets.html" class="btn-primary">Réservez vos billets</a>
             </div>
           </div>
         </div>

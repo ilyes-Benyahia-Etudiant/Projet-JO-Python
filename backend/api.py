@@ -88,6 +88,28 @@ def session_page():
     session_path = os.path.join(public_dir, "session.html")
     return FileResponse(session_path)
 
+# Routes supplémentaires pour servir d'autres pages statiques
+@app.get("/mes-billets.html", response_class=FileResponse)
+def mes_billets_page():
+    path = os.path.join(public_dir, "mes-billets.html")
+    return FileResponse(path)
+
+@app.get("/billeterie.html", response_class=FileResponse)
+def billeterie_page():
+    path = os.path.join(public_dir, "billeterie.html")
+    return FileResponse(path)
+
+# Routes de compatibilité pour d'anciens liens
+@app.get("/Authentification.html")
+def auth_compat():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/auth", status_code=302)
+
+@app.get("/admin.html")
+def admin_compat():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/admin", status_code=302)
+
 class PublicKeys(BaseModel):
     supabase_url: str
     supabase_anon_key: str

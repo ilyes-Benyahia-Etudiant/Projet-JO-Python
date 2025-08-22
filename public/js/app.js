@@ -3,20 +3,17 @@ async function loadConfig(){
     const res = await fetch('/config');
     if(!res.ok) throw new Error('Impossible de charger la config');
     return await res.json();
-  }catch(e){
-    console.error(e);
-    return null;
-  }
+  }catch(e){ console.warn('[config]', e); return null; }
 }
 
 (async () => {
   const cfg = await loadConfig();
   if(!cfg){
-    alert('Erreur de configuration côté serveur.');
-    return;
+    console.warn('Config indisponible, l\'interface continue en mode limité.');
   }
-  const SUPABASE_URL = cfg.supabase_url;
-  const SUPABASE_ANON_KEY = cfg.supabase_anon_key;
+  const SUPABASE_URL = cfg?.supabase_url || '';
+  const SUPABASE_ANON_KEY = cfg?.supabase_anon_key || '';
+  const hasSupabaseConfig = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase && typeof window.supabase.createClient === 'function');
   
   // Créer un fetch wrapper qui injecte systématiquement l'en-tête apikey
   const injectApiKeyFetch = (url, options = {}) => {
@@ -26,20 +23,12 @@ async function loadConfig(){
     return fetch(url, { ...options, headers });
   };
   
-  // Créer le client Supabase (garde pour certaines fonctionnalités comme la détection de PASSWORD_RECOVERY)
-  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-    },
-    global: {
-      fetch: injectApiKeyFetch,
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-      }
-    }
-  });
-
+  // Créer le client Supabase seulement si la config est présente
+  const client = hasSupabaseConfig ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { autoRefreshToken: true, persistSession: true },
+    global: { fetch: injectApiKeyFetch, headers: { 'apikey': SUPABASE_ANON_KEY } }
+  }) : null;
+  
   // Helper pour poser la session côté serveur (cookie HttpOnly)
   async function setServerSession(access){
     try{
@@ -64,14 +53,16 @@ async function loadConfig(){
   }
 
   // Détecter le flux de récupération de mot de passe
-  client.auth.onAuthStateChange((event, session) => {
-    if(event === 'PASSWORD_RECOVERY'){
-      const rec = document.getElementById('password-recovery');
-      if(rec) rec.style.display = 'block';
-      const msg = document.getElementById('recovery-msg');
-      if(msg){ msg.style.display='block'; msg.classList.remove('err'); msg.classList.add('ok'); msg.textContent = 'Lien de réinitialisation validé. Choisissez un nouveau mot de passe.'; }
-    }
-  });
+  if (client) {
+    client.auth.onAuthStateChange((event, session) => {
+      if(event === 'PASSWORD_RECOVERY'){
+        const rec = document.getElementById('password-recovery');
+        if(rec) rec.style.display = 'block';
+        const msg = document.getElementById('recovery-msg');
+        if(msg){ msg.style.display='block'; msg.classList.remove('err'); msg.classList.add('ok'); msg.textContent = 'Lien de réinitialisation validé. Choisissez un nouveau mot de passe.'; }
+      }
+    });
+  }
 
   // Helper sécurisé pour attacher des événements
   const bind = (id, evt, handler) => {
