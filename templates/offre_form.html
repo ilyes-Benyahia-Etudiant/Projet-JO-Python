@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% if mode == 'edit' %}Modifier une offre{% else %}Ajouter une offre{% endif %}</title>
+  <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body>
+  <div class="card">
+    <div class="visual">
+      <div class="visual-inner">
+        <h1>{% if mode == 'edit' %}Modifier une offre{% else %}Ajouter une offre{% endif %}</h1>
+        <p class="lead">{% if mode == 'edit' %}Mettre à jour les champs ci-dessous{% else %}Renseigner les champs de la nouvelle offre{% endif %}</p>
+      </div>
+    </div>
+    <div class="form">
+      <form method="post" action="{{ action_url }}">
+        <div class="group">
+          <label class="label" for="f_title">title</label>
+          <input id="f_title" name="title" type="text" required value="{{ values.get('title','') }}">
+        </div>
+
+        <div class="group">
+          <label class="label" for="f_price">price</label>
+          <input id="f_price" name="price" type="number" step="0.01" min="0" required value="{{ values.get('price','') }}">
+        </div>
+
+        <div class="group">
+          <label class="label" for="f_category">category</label>
+          <input id="f_category" name="category" type="text" value="{{ values.get('category','') }}">
+        </div>
+
+        <div class="group">
+          <label class="label" for="f_stock">stock</label>
+          <input id="f_stock" name="stock" type="number" step="1" min="0" value="{{ values.get('stock',0) }}">
+        </div>
+
+        <div class="group">
+          <label class="label" for="f_active">active</label>
+          <input id="f_active" name="active" type="checkbox" {% if values.get('active', True) %}checked{% endif %}>
+        </div>
+
+        <div class="group">
+          <label class="label" for="f_description">description</label>
+          <textarea id="f_description" name="description" rows="4">{{ values.get('description','') }}</textarea>
+        </div>
+
+        <div class="group">
+          <label class="label" for="f_image">image (URL)</label>
+          <input id="f_image" name="image" type="text" value="{{ values.get('image','') }}">
+        </div>
+
+        <div class="btn-group">
+          <a class="btn btn-secondary" href="/admin">Annuler</a>
+          <button class="btn" type="submit">{% if mode == 'edit' %}Enregistrer{% else %}Créer{% endif %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
