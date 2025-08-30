@@ -13,6 +13,8 @@ from typing import Optional
 import urllib.parse
 from datetime import datetime, timezone
 from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from contextlib import contextmanager
 
 
 # Configure logging
@@ -77,6 +79,59 @@ app.mount("/static", StaticFiles(directory=public_dir), name="public_static")
 # Initialiser le moteur de templates (Jinja)
 templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
 templates = Jinja2Templates(directory=templates_dir)
+
+def recuperer_informations_utilisateur_depuis_cookie(request: Request) -> Optional[dict]:
+    """
+    Récupère l'utilisateur connecté via le cookie 'sb_access'.
+    Retourne un dictionnaire avec 'access_token', 'email', 'user_id', 'is_administrator'.
+    Retourne None si non connecté ou si le jeton est invalide.
+    """
+    jeton_acces = request.cookies.get("sb_access")
+    if not jeton_acces:
+        return None
+    try:
+        resultat = supabase.auth.get_user(jeton_acces)
+        utilisateur = getattr(resultat, "user", None) or (resultat.get("user") if isinstance(resultat, dict) else None)
+        if not utilisateur:
+            return None
+
+        if isinstance(utilisateur, dict):
+            identifiant_utilisateur = utilisateur.get("id")
+            email_utilisateur = utilisateur.get("email")
+            metadonnees = (utilisateur.get("user_metadata") or utilisateur.get("app_metadata") or {})
+        else:
+            identifiant_utilisateur = getattr(utilisateur, "id", None)
+            email_utilisateur = getattr(utilisateur, "email", None)
+            metadonnees = getattr(utilisateur, "user_metadata", None) or getattr(utilisateur, "app_metadata", None) or {}
+
+        role_dans_metadonnees = metadonnees.get("role") if isinstance(metadonnees, dict) else None
+        est_administrateur = is_admin_email(email_utilisateur) or (str(role_dans_metadonnees).strip().lower() == "admin")
+
+        return {
+            "access_token": jeton_acces,
+            "email": email_utilisateur,
+            "user_id": identifiant_utilisateur,
+            "is_administrator": est_administrateur,
+        }
+    except Exception:
+        return None
+
+@contextmanager
+def postgrest_authentifie(jeton_acces: Optional[str]):
+    """
+    Authentifie PostgREST avec le jeton utilisateur pendant le bloc 'with',
+    puis réinitialise l'état à la fin (même en cas d'exception).
+    """
+    try:
+        supabase.postgrest.auth(jeton_acces)
+        yield
+    finally:
+        try:
+            supabase.postgrest.auth(None)
+        except Exception:
+            pass
+
+# ===== Fin des helpers =====
 
 @app.get("/", response_class=FileResponse)
 def root():
@@ -239,46 +294,6 @@ async def logout_get(response: Response):
     response.delete_cookie("sb_access")
     return RedirectResponse(url="/index.html", status_code=302)
 
-
-@app.get("/admin", response_class=FileResponse)
-def admin_page(request: Request):
-    token = request.cookies.get("sb_access")
-    if not token:
-        return RedirectResponse(url="/", status_code=302)
-    try:
-        # Vérifier admin
-        res = supabase.auth.get_user(token)
-        user = getattr(res, 'user', None) or (res.get('user') if isinstance(res, dict) else None)
-        if not user:
-            return RedirectResponse(url="/", status_code=302)
-
-        uemail = user.get('email') if isinstance(user, dict) else getattr(user, 'email', None)
-        user_metadata = (user.get('user_metadata') or user.get('app_metadata') or {}) if isinstance(user, dict) else (getattr(user, 'user_metadata', None) or getattr(user, 'app_metadata', None) or {})
-        role_meta = user_metadata.get('role') if isinstance(user_metadata, dict) else None
-        is_admin = is_admin_email(uemail) or (str(role_meta).strip().lower() == 'admin')
-        if not is_admin:
-            return RedirectResponse(url="/session", status_code=302)
-
-        # Charger offres (plus récentes d’abord)
-        try:
-            supabase.postgrest.auth(token)
-            result = supabase.table("offres").select("*").order("created_at", desc=True).execute()
-            rows = getattr(result, 'data', None) or []
-        finally:
-            try:
-                supabase.postgrest.auth(None)
-            except Exception:
-                pass
-
-        msg = request.query_params.get("msg")
-        # Les en-têtes de colonnes sont fixées dans le template, 'cols' est optionnel
-        return templates.TemplateResponse(
-            "admin.html",
-            {"request": request, "email": uemail, "role": "admin", "offres": rows, "msg": msg},
-        )
-    except Exception as e:
-        logger.warning("Admin route access error: %s", e)
-        return RedirectResponse(url="/", status_code=302)
 
 class SignupRequest(BaseModel):
     email: str
@@ -584,251 +599,246 @@ async def auth_update_password(request: UpdatePasswordRequest, http_request: Req
     except Exception as e:
         return JSONResponse(status_code=500, content={"success": False, "message": f"Erreur serveur: {str(e)}"})
 
-# Version Jinja de /admin (rendue côté serveur avec tableau et actions)
-@app.get("/admin")
-def admin_page_jinja(request: Request):
-    token = request.cookies.get("sb_access")
-    if not token:
+@app.get("/admin", response_class=HTMLResponse)
+def admin_page(request: Request):
+    """
+    Page d'administration (HTML Jinja) listant les offres.
+    Accès strictement réservé aux administrateurs.
+    """
+    informations_utilisateur = recuperer_informations_utilisateur_depuis_cookie(request)
+    if not informations_utilisateur:
         return RedirectResponse(url="/", status_code=302)
+    if not informations_utilisateur["is_administrator"]:
+        return RedirectResponse(url="/session", status_code=302)
+
     try:
-        # Vérifier admin
-        res = supabase.auth.get_user(token)
-        user = getattr(res, 'user', None) or (res.get('user') if isinstance(res, dict) else None)
-        if not user:
-            return RedirectResponse(url="/", status_code=302)
-        uemail = user.get('email') if isinstance(user, dict) else getattr(user, 'email', None)
-        user_metadata = (user.get('user_metadata') or user.get('app_metadata') or {}) if isinstance(user, dict) else (getattr(user, 'user_metadata', None) or getattr(user, 'app_metadata', None) or {})
-        role_meta = user_metadata.get('role') if isinstance(user_metadata, dict) else None
-        is_admin = is_admin_email(uemail) or (str(role_meta).strip().lower() == 'admin')
-        if not is_admin:
-            return RedirectResponse(url="/session", status_code=302)
-
-        # Charger offres
-        try:
-            supabase.postgrest.auth(token)
-            result = supabase.table("offres").select("*").execute()
-            rows = getattr(result, 'data', None) or []
-        finally:
-            try:
-                supabase.postgrest.auth(None)
-            except Exception:
-                pass
-
-        cols = sorted({k for row in rows for k in (row or {}).keys()}) if rows else []
-        msg = request.query_params.get("msg")
+        # Charger les offres les plus récentes en premier
+        with postgrest_authentifie(informations_utilisateur["access_token"]):
+            resultat = supabase.table("offres").select("*").order("created_at", desc=True).execute()
+            lignes_offres = getattr(resultat, "data", None) or []
+        message = request.query_params.get("msg")
         return templates.TemplateResponse(
             "admin.html",
-            {"request": request, "email": uemail, "role": "admin", "cols": cols, "offres": rows, "msg": msg},
+            {
+                "request": request,
+                "email": informations_utilisateur["email"],
+                "role": "admin",
+                "offres": lignes_offres,
+                "msg": message,
+            },
         )
-    except Exception as e:
-        logger.warning("Admin route access error: %s", e)
+    except Exception as erreur:
+        logger.warning("Erreur d'accès à la page admin: %s", erreur)
         return RedirectResponse(url="/", status_code=302)
 
-# Formulaire de création d’offre
-@app.get("/admin/offres/new")
-def new_offre_form(request: Request):
-    token = request.cookies.get("sb_access")
-    if not token:
+        
+@app.get("/admin/offres/new", response_class=HTMLResponse)
+@app.get("/admin/offres/new/", response_class=HTMLResponse)
+def nouvelle_offre_formulaire(request: Request):
+    """
+    Affiche le formulaire de création d'une nouvelle offre.
+    Accès réservé aux administrateurs.
+    """
+    informations_utilisateur = recuperer_informations_utilisateur_depuis_cookie(request)
+    if not informations_utilisateur:
         return RedirectResponse(url="/", status_code=302)
+    if not informations_utilisateur["is_administrator"]:
+        return RedirectResponse(url="/session", status_code=302)
+
+    contexte = {
+        "request": request,
+        "mode": "create",
+        "action_url": "/admin/offres",
+        "values": {
+            "title": "",
+            "price": 0,
+            "category": "",
+            "stock": 0,
+            "active": True,
+            "description": "",
+            "image": "",
+        },
+        "message": request.query_params.get("msg"),
+    }
+    return templates.TemplateResponse("offre_form.html", contexte)
+
+@app.get("/admin/offres/{offre_id}/edit", response_class=HTMLResponse)
+@app.get("/admin/offres/{offre_id}/edit/", response_class=HTMLResponse)
+def modifier_offre_formulaire(offre_id: str, request: Request):
+    """
+    Affiche le formulaire d'édition pour une offre existante.
+    Accès réservé aux administrateurs.
+    """
+    informations_utilisateur = recuperer_informations_utilisateur_depuis_cookie(request)
+    if not informations_utilisateur:
+        return RedirectResponse(url="/", status_code=302)
+    if not informations_utilisateur["is_administrator"]:
+        return RedirectResponse(url="/session", status_code=302)
+
     try:
-        res = supabase.auth.get_user(token)
-        user = getattr(res, 'user', None) or (res.get('user') if isinstance(res, dict) else None)
-        uemail = user.get('email') if isinstance(user, dict) else getattr(user, 'email', None)
-        meta = (user.get('user_metadata') or user.get('app_metadata') or {}) if isinstance(user, dict) else (getattr(user, 'user_metadata', None) or getattr(user, 'app_metadata', None) or {})
-        is_admin = is_admin_email(uemail) or (str((meta.get('role') or '')).strip().lower() == 'admin')
-        if not is_admin:
-            return RedirectResponse(url="/session", status_code=302)
+        with postgrest_authentifie(informations_utilisateur["access_token"]):
+            resultat = supabase.table("offres").select("*").eq("id", offre_id).single().execute()
+            ligne = getattr(resultat, "data", None)
+            if not ligne:
+                return JSONResponse(status_code=404, content={"message": "Offre introuvable"})
+    except Exception as erreur:
+        return JSONResponse(status_code=500, content={"message": f"Erreur de chargement: {erreur}"})
 
-        # Champs selon ton schéma
-        fields = ["title", "price", "category", "stock", "active", "description", "image"]
-        default_values = {"active": True, "stock": 0}
-        return templates.TemplateResponse(
-            "offre_form.html",
-            {"request": request, "mode": "create", "action_url": "/admin/offres", "fields": fields, "values": default_values},
-        )
-    except Exception:
-        return RedirectResponse(url="/", status_code=302)
+    contexte = {
+        "request": request,
+        "mode": "edit",
+        "action_url": f"/admin/offres/{offre_id}/update",
+        "values": ligne,
+        "message": request.query_params.get("msg"),
+    }
+    return templates.TemplateResponse("offre_form.html", contexte)
 
-# Création (POST)
+
 @app.post("/admin/offres")
-async def create_offre(request: Request):
-    token = request.cookies.get("sb_access")
-    if not token:
+@app.post("/admin/offres/")
+async def creer_offre(request: Request):
+    """
+    Crée une nouvelle offre à partir des données du formulaire.
+    Accès réservé aux administrateurs.
+    """
+    informations_utilisateur = recuperer_informations_utilisateur_depuis_cookie(request)
+    if not informations_utilisateur:
         return RedirectResponse(url="/", status_code=302)
+    if not informations_utilisateur["is_administrator"]:
+        return RedirectResponse(url="/session", status_code=302)
+
+    formulaire = await request.form()
+    titre = (formulaire.get("title") or "").strip()
+    categorie = (formulaire.get("category") or "").strip()
+    description = (formulaire.get("description") or "").strip()
+    image = (formulaire.get("image") or "").strip()
+
     try:
-        res = supabase.auth.get_user(token)
-        user = getattr(res, 'user', None) or (res.get('user') if isinstance(res, dict) else None)
-        uemail = user.get('email') if isinstance(user, dict) else getattr(user, 'email', None)
-        meta = (user.get('user_metadata') or user.get('app_metadata') or {}) if isinstance(user, dict) else (getattr(user, 'user_metadata', None) or getattr(user, 'app_metadata', None) or {})
-        is_admin = is_admin_email(uemail) or (str((meta.get('role') or '')).strip().lower() == 'admin')
-        if not is_admin:
-            return RedirectResponse(url="/session", status_code=302)
+        prix = float(formulaire.get("price", 0))
+        stock = int(formulaire.get("stock", 0))
+        est_actif = True if formulaire.get("active") in ("on", "true", "1") else False
+    except Exception:
+        message_erreur = "Champs numériques invalides (price ou stock)."
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
 
-        form = await request.form()
-        # Extraction/typage
-        title = (form.get("title") or "").strip()
-        price_raw = (form.get("price") or "").strip()
-        category = (form.get("category") or "").strip() or None
-        stock_raw = (form.get("stock") or "").strip()
-        active_raw = form.get("active")  # "on" si coché
-        description = (form.get("description") or "").strip() or None
-        image = (form.get("image") or "").strip() or None
+    if not titre:
+        message_erreur = "Le champ 'title' est obligatoire."
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
+    if prix < 0:
+        message_erreur = "Le prix doit être supérieur ou égal à 0."
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
+    if stock < 0:
+        message_erreur = "Le stock doit être supérieur ou égal à 0."
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
 
-        # Validations minimales
-        if not title:
-            return RedirectResponse(url="/admin?msg=Title+requis", status_code=303)
-        try:
-            price = float(price_raw)
-            if price < 0:
-                raise ValueError()
-        except Exception:
-            return RedirectResponse(url="/admin?msg=Prix+invalide", status_code=303)
-        try:
-            stock = int(stock_raw or "0")
-            if stock < 0:
-                raise ValueError()
-        except Exception:
-            return RedirectResponse(url="/admin?msg=Stock+invalide", status_code=303)
-        active = True if active_raw is not None else False
+    nouvelle_offre = {
+        "title": titre,
+        "price": prix,
+        "description": description,
+        "image": image,
+        "category": categorie,
+        "stock": stock,
+        "active": est_actif,
+    }
 
-        payload = {
-            "title": title,
-            "price": price,
-            "category": category,
-            "stock": stock,
-            "active": active,
-            "description": description,
-            "image": image,
-        }
+    try:
+        with postgrest_authentifie(informations_utilisateur["access_token"]):
+            resultat = supabase.table("offres").insert(nouvelle_offre).execute()
+            donnees = getattr(resultat, "data", None) or []
+            if not donnees:
+                message_erreur = "Impossible de créer l'offre."
+                return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
+    except Exception as erreur:
+        message_erreur = f"Erreur lors de la création: {erreur}"
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
 
-        try:
-            supabase.postgrest.auth(token)
-            supabase.table("offres").insert(payload).execute()
-        finally:
-            try: supabase.postgrest.auth(None)
-            except Exception: pass
+    message_succes = "Offre créée avec succès."
+    return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_succes)}", status_code=303)
 
-        return RedirectResponse(url="/admin?msg=Offre+cr%C3%A9%C3%A9e", status_code=303)
-    except Exception as e:
-        logger.error("create_offre error: %s", e)
-        return RedirectResponse(url="/admin?msg=Erreur+cr%C3%A9ation", status_code=303)
 
-# Formulaire d’édition
-@app.get("/admin/offres/{offre_id}/edit")
-def edit_offre_form(request: Request, offre_id: str):
-    token = request.cookies.get("sb_access")
-    if not token:
+@app.post("/admin/offres/{offre_id}/update/")
+async def mettre_a_jour_offre(offre_id: str, request: Request):
+    """
+    Met à jour une offre existante avec les données du formulaire.
+    Accès réservé aux administrateurs.
+    """
+    informations_utilisateur = recuperer_informations_utilisateur_depuis_cookie(request)
+    if not informations_utilisateur:
         return RedirectResponse(url="/", status_code=302)
+    if not informations_utilisateur["is_administrator"]:
+        return RedirectResponse(url="/session", status_code=302)
+
+    formulaire = await request.form()
+    titre = (formulaire.get("title") or "").strip()
+    categorie = (formulaire.get("category") or "").strip()
+    description = (formulaire.get("description") or "").strip()
+    image = (formulaire.get("image") or "").strip()
+
     try:
-        res = supabase.auth.get_user(token)
-        user = getattr(res, 'user', None) or (res.get('user') if isinstance(res, dict) else None)
-        uemail = user.get('email') if isinstance(user, dict) else getattr(user, 'email', None)
-        meta = (user.get('user_metadata') or user.get('app_metadata') or {}) if isinstance(user, dict) else (getattr(user, 'user_metadata', None) or getattr(user, 'app_metadata', None) or {})
-        is_admin = is_admin_email(uemail) or (str((meta.get('role') or '')).strip().lower() == 'admin')
-        if not is_admin:
-            return RedirectResponse(url="/session", status_code=302)
+        prix = float(formulaire.get("price", 0))
+        stock = int(formulaire.get("stock", 0))
+        est_actif = True if formulaire.get("active") in ("on", "true", "1") else False
+    except Exception:
+        message_erreur = "Champs numériques invalides (price ou stock)."
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
 
-        try:
-            supabase.postgrest.auth(token)
-            res = supabase.table("offres").select("*").eq("id", offre_id).single().execute()
-            row = getattr(res, "data", None) or {}
-        finally:
-            try: supabase.postgrest.auth(None)
-            except Exception: pass
+    if not titre:
+        message_erreur = "Le champ 'title' est obligatoire."
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
+    if prix < 0:
+        message_erreur = "Le prix doit être supérieur ou égal à 0."
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
+    if stock < 0:
+        message_erreur = "Le stock doit être supérieur ou égal à 0."
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
 
-        if not row:
-            return RedirectResponse(url="/admin?msg=Offre+introuvable", status_code=303)
+    donnees_mise_a_jour = {
+        "title": titre,
+        "price": prix,
+        "description": description,
+        "image": image,
+        "category": categorie,
+        "stock": stock,
+        "active": est_actif,
+    }
 
-        fields = ["title", "price", "category", "stock", "active", "description", "image"]
-        return templates.TemplateResponse(
-            "offre_form.html",
-            {"request": request, "mode": "edit", "action_url": f"/admin/offres/{offre_id}/update", "fields": fields, "values": row},
-        )
-    except Exception as e:
-        logger.error("edit_offre_form error: %s", e)
-        return RedirectResponse(url="/admin?msg=Erreur+chargement", status_code=303)
+    try:
+        with postgrest_authentifie(informations_utilisateur["access_token"]):
+            resultat = supabase.table("offres").update(donnees_mise_a_jour).eq("id", offre_id).execute()
+            lignes_affectees = getattr(resultat, "data", None) or []
+            if not lignes_affectees:
+                message_erreur = "Mise à jour impossible ou offre introuvable."
+                return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
+    except Exception as erreur:
+        message_erreur = f"Erreur lors de la mise à jour: {erreur}"
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
 
-# Mise à jour (POST)
-@app.post("/admin/offres/{offre_id}/update")
-async def update_offre(request: Request, offre_id: str):
-    token = request.cookies.get("sb_access")
-    if not token:
+    message_succes = "Offre mise à jour avec succès."
+    return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_succes)}", status_code=303)
+
+#@app.post("/admin/offres/{offre_id}/delete")
+@app.post("/admin/offres/{offre_id}/delete/")
+async def supprimer_offre(offre_id: str, request: Request):
+    """
+    Supprime une offre existante.
+    Accès réservé aux administrateurs.
+    """
+    informations_utilisateur = recuperer_informations_utilisateur_depuis_cookie(request)
+    if not informations_utilisateur:
         return RedirectResponse(url="/", status_code=302)
+    if not informations_utilisateur["is_administrator"]:
+        return RedirectResponse(url="/session", status_code=302)
+
     try:
-        res = supabase.auth.get_user(token)
-        user = getattr(res, 'user', None) or (res.get('user') if isinstance(res, dict) else None)
-        uemail = user.get('email') if isinstance(user, dict) else getattr(user, 'email', None)
-        meta = (user.get('user_metadata') or user.get('app_metadata') or {}) if isinstance(user, dict) else (getattr(user, 'user_metadata', None) or getattr(user, 'app_metadata', None) or {})
-        is_admin = is_admin_email(uemail) or (str((meta.get('role') or '')).strip().lower() == 'admin')
-        if not is_admin:
-            return RedirectResponse(url="/session", status_code=302)
+        with postgrest_authentifie(informations_utilisateur["access_token"]):
+            resultat = supabase.table("offres").delete().eq("id", offre_id).execute()
+            lignes_supprimees = getattr(resultat, "data", None) or []
+            if not lignes_supprimees:
+                message_erreur = "Suppression impossible ou offre introuvable."
+                return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
+    except Exception as erreur:
+        message_erreur = f"Erreur lors de la suppression: {erreur}"
+        return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_erreur)}", status_code=303)
 
-        form = await request.form()
-        # Re-typage + nettoyage
-        title = (form.get("title") or "").strip()
-        price_raw = (form.get("price") or "").strip()
-        category = (form.get("category") or "").strip() or None
-        stock_raw = (form.get("stock") or "").strip()
-        active_raw = form.get("active")
-        description = (form.get("description") or "").strip() or None
-        image = (form.get("image") or "").strip() or None
-
-        payload = {}
-        if title: payload["title"] = title
-        if price_raw:
-            try:
-                price = float(price_raw)
-                if price < 0: raise ValueError()
-                payload["price"] = price
-            except Exception:
-                return RedirectResponse(url="/admin?msg=Prix+invalide", status_code=303)
-        if stock_raw:
-            try:
-                stock = int(stock_raw)
-                if stock < 0: raise ValueError()
-                payload["stock"] = stock
-            except Exception:
-                return RedirectResponse(url="/admin?msg=Stock+invalide", status_code=303)
-        payload["category"] = category
-        payload["description"] = description
-        payload["image"] = image
-        payload["active"] = True if active_raw is not None else False
-
-        try:
-            supabase.postgrest.auth(token)
-            supabase.table("offres").update(payload).eq("id", offre_id).execute()
-        finally:
-            try: supabase.postgrest.auth(None)
-            except Exception: pass
-
-        return RedirectResponse(url="/admin?msg=Offre+mise+%C3%A0+jour", status_code=303)
-    except Exception as e:
-        logger.error("update_offre error: %s", e)
-        return RedirectResponse(url="/admin?msg=Erreur+mise+%C3%A0+jour", status_code=303)
-
-# Suppression
-@app.post("/admin/offres/{offre_id}/delete")
-def delete_offre(request: Request, offre_id: str):
-    token = request.cookies.get("sb_access")
-    if not token:
-        return RedirectResponse(url="/", status_code=302)
-    try:
-        res = supabase.auth.get_user(token)
-        user = getattr(res, 'user', None) or (res.get('user') if isinstance(res, dict) else None)
-        uemail = user.get('email') if isinstance(user, dict) else getattr(user, 'email', None)
-        meta = (user.get('user_metadata') or user.get('app_metadata') or {}) if isinstance(user, dict) else (getattr(user, 'user_metadata', None) or getattr(user, 'app_metadata', None) or {})
-        is_admin = is_admin_email(uemail) or (str((meta.get('role') or '')).strip().lower() == 'admin')
-        if not is_admin:
-            return RedirectResponse(url="/session", status_code=302)
-
-        try:
-            supabase.postgrest.auth(token)
-            supabase.table("offres").delete().eq("id", offre_id).execute()
-        finally:
-            try: supabase.postgrest.auth(None)
-            except Exception: pass
-
-        return RedirectResponse(url="/admin?msg=Offre+supprim%C3%A9e", status_code=303)
-    except Exception as e:
-        logger.error("delete_offre error: %s", e)
-        return RedirectResponse(url="/admin?msg=Erreur+suppression", status_code=303)
+    message_succes = "Offre supprimée avec succès."
+    return RedirectResponse(url=f"/admin?msg={urllib.parse.quote(message_succes)}", status_code=303)
