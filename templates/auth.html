@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Authentification</title>
+  <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body>
+  <div class="card" style="max-width:920px;margin:32px auto">
+    <h1>Authentification</h1>
+    {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
+    {% if message %}<div class="msg ok">{{ message }}</div>{% endif %}
+
+    <div style="display:flex; gap:24px; align-items:flex-start">
+      <form method="post" action="/auth/login" style="flex:1">
+        <h2>Connexion</h2>
+        <div class="group">
+          <label>Email</label>
+          <input class="input" name="email" type="email" required/>
+        </div>
+        <div class="group">
+          <label>Mot de passe</label>
+          <input class="input" name="password" type="password" required/>
+        </div>
+        <button class="btn" type="submit">Se connecter</button>
+      </form>
+
+      <form method="post" action="/auth/signup" style="flex:1">
+        <h2>Inscription</h2>
+        <div class="group">
+          <label>Email</label>
+          <input class="input" name="email" type="email" required/>
+        </div>
+        <div class="group">
+          <label>Mot de passe</label>
+          <input class="input" name="password" type="password" required/>
+        </div>
+        
+        <button class="btn" type="submit">Créer un compte</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

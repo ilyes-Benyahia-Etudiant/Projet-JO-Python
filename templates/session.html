@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Espace Utilisateur</title>
+  <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body>
+  <header style="padding:12px 16px;border-bottom:1px solid #eee">
+    <a href="#" style="text-decoration:none">Mon profil</a> 
+    
+    <form action="/auth/logout" method="post" style="display:inline; margin-left: 12px;">
+      <button type="submit" class="btn btn-logout">Déconnexion</button>
+    </form>
+  </header>
+  <main style="max-width:1100px;margin:24px auto">
+    <div style="display:flex; gap:24px; align-items:flex-start">
+      <section id="catalogue" style="flex:1">
+        <h1>Catalogue</h1>
+        {% if offres and offres|length > 0 %}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
+          {% for o in offres %}
+          <article style="border:1px solid #eee;border-radius:8px;padding:12px">
+            <h3>{{ o.title }}</h3>
+            {% if o.image %}<img src="{{ o.image }}" alt="{{ o.title }}" style="max-width:100%;height:auto"/>{% endif %}
+            <p>Catégorie: {{ o.category }}</p>
+            <p>Prix: {{ o.price }} €</p>
+            <p>Stock: {{ o.stock }}</p>
+            {% if o.description %}<p>{{ o.description }}</p>{% endif %}
+            <button
+              class="btn-add-to-cart"
+              data-id="{{ o.id or o.title }}"
+              data-title="{{ o.title }}"
+              data-price="{{ o.price }}"
+              data-image="{{ o.image }}"
+              style="margin-top:8px"
+            >Ajouter au panier</button>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p>Aucune offre disponible.</p>
+        {% endif %}
+
+        {% if commandes and commandes|length > 0 %}
+        <section style="margin-top:32px">
+          <h2>Mes commandes</h2>
+          <div style="overflow:auto">
+            <table style="width:100%;border-collapse:collapse">
+              <thead>
+                <tr>
+                  <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">Offre</th>
+                  <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">Prix payé</th>
+                  <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">Token</th>
+                  <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in commandes %}
+                <tr>
+                  <td style="padding:8px;border-bottom:1px solid #f3f3f3">
+                    {% if c.offres %}{{ c.offres.title }}{% else %}{{ c.offre_id }}{% endif %}
+                  </td>
+                  <td style="padding:8px;border-bottom:1px solid #f3f3f3">{{ c.price_paid }} €</td>
+                  <td style="padding:8px;border-bottom:1px solid #f3f3f3">{{ c.token }}</td>
+                  <td style="padding:8px;border-bottom:1px solid #f3f3f3">{{ c.created_at }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        {% endif %}
+      </section>
+
+      <aside id="cart" style="width:320px; border:1px solid #eee; border-radius:8px; padding:12px; position:sticky; top:12px;">
+        <h2 style="margin-top:0">Panier</h2>
+        <div id="cart-items"></div>
+        <p id="cart-empty" style="color:#666">Votre panier est vide.</p>
+        <div id="cart-summary" style="margin-top:12px; display:flex; align-items:center; justify-content:space-between">
+          <strong>Total: <span id="cart-total">0,00 €</span></strong>
+          <button id="cart-pay" class="btn">Payer</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <!-- Retirer l'ancien bloc (function() { ... }) s’il est présent -->
+  <script src="/public/js/payment-confirm.js"></script>
+  <script src="/public/js/cart.js"></script>
+<script>
+  (function () {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("payment") === "success") {
+        localStorage.removeItem("cart.v1");
+      }
+    } catch {}
+  })();
+</script>
+</body>
+</html>

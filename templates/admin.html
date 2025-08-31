@@ -25,19 +25,16 @@
           <div><strong>Rôle:</strong> {{ role or '' }}</div>
         </div>
       </div>
-
       <div class="btn-group">
         <a href="/admin" class="btn">Rafraîchir</a>
         <a href="/admin/offres/new" class="btn">Ajouter une offre</a>
-        <form action="/logout" method="post" style="display:inline;">
+        <form action="/auth/logout" method="post" style="display:inline;">
           <button type="submit" class="btn btn-warning">Déconnexion</button>
         </form>
       </div>
-
       {% if msg %}
         <div class="msg ok" style="display:block">{{ msg }}</div>
       {% endif %}
-
       <div class="group">
         <div class="label">Liste des offres</div>
         {% if offres %}
@@ -84,6 +81,52 @@
         </div>
         {% else %}
           <div class="user-placeholder">Aucune offre disponible</div>
+        {% endif %}
+      </div>
+      <!-- Nouvelle section: Commandes -->
+      <div class="group">
+        <div class="label">Commandes</div>
+        {% if commandes %}
+        <div class="table-wrap" style="overflow:auto;">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>id</th>
+                <th>utilisateur</th>
+                <th>offre</th>
+                <th>prix payé</th>
+                <th>token</th>
+                <th>créée le</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in commandes %}
+              <tr>
+                <td>{{ c['id'] }}</td>
+                <td>
+                  {% if c.get('users') %}
+                    {{ c['users']['email'] }}
+                  {% else %}
+                    {{ c['user_id'] }}
+                  {% endif %}
+                </td>
+                <td>
+                  {% if c.get('offres') %}
+                    {{ c['offres']['title'] }}
+                  {% else %}
+                    {{ c['offre_id'] }}
+                  {% endif %}
+                </td>
+                <td>{{ c['price_paid'] }}</td>
+                <td>{{ c['token'] }}</td>
+                <td>{{ c['created_at'] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="user-placeholder">Aucune commande</div>
         {% endif %}
       </div>
     </div>
