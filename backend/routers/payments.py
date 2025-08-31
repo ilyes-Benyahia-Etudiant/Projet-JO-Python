@@ -2,8 +2,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from typing import Dict, Any
-from uuid import uuid4
-import json
 import logging
 
 from backend.utils.security import require_user, COOKIE_NAME
@@ -82,7 +80,6 @@ async def confirm_checkout(request: Request, session_id: str, user: dict = Depen
         raise HTTPException(status_code=403, detail="Session appartenant à un autre utilisateur")
 
     # Récupère le JWT utilisateur depuis le cookie pour des INSERT compatibles RLS
-    from backend.utils.security import COOKIE_NAME
     user_token = request.cookies.get(COOKIE_NAME)
 
     created = cart_utils.process_cart_purchase(user.get("id"), cart_list, user_token=user_token)

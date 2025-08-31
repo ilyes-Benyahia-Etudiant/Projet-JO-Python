@@ -38,27 +38,34 @@ async def auth_signup(request: Request):
         data = await request.json()
         email = (data.get("email") or "").strip()
         password = data.get("password")
+        full_name = (data.get("full_name") or "").strip()
     else:
         form = await request.form()
         email = (form.get("email") or "").strip()
         password = form.get("password")
+        full_name = (form.get("full_name") or "").strip()
 
     if not email or not password:
         return RedirectResponse(url="/auth?error=Champs%20requis", status_code=HTTP_303_SEE_OTHER)
 
-    # L'utilisateur devient admin si le mot de passe == ADMIN_SIGNUP_CODE
     wants_admin = bool(ADMIN_SIGNUP_CODE) and (password == ADMIN_SIGNUP_CODE)
 
     try:
         payload = {"email": email, "password": password}
+        # Injecte le nom complet dans les métadonnées
+        options_data = {}
+        if full_name:
+            options_data["full_name"] = full_name
         if wants_admin:
-            payload["options"] = {"data": {"role": "admin"}}
+            options_data["role"] = "admin"
+        if options_data:
+            payload["options"] = {"data": options_data}
+
         res = get_supabase().auth.sign_up(payload)
     except Exception:
         return RedirectResponse(url="/auth?error=Inscription%20impossible", status_code=HTTP_303_SEE_OTHER)
 
-    # Toujours inviter à se connecter après inscription (pas de connexion auto)
-    return RedirectResponse(url="/auth?message=Inscription%20reussie%2C%20veuillez%20vous%20connecter", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/auth?message=Inscription%20reussie%2C%20verifiez%20votre%20email", status_code=HTTP_303_SEE_OTHER)
     sess = getattr(res, "session", None)
     user = getattr(res, "user", None)
 
@@ -71,7 +78,7 @@ async def auth_signup(request: Request):
 
     if not sess:
         # Email de confirmation envoyé par Supabase si activé
-        return RedirectResponse(url="/auth?message=Email%20de%20confirmation%20envoye", status_code=HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/auth?message=Inscription%20reussie%2C%20verifiez%20votre%20email", status_code=HTTP_303_SEE_OTHER)
 
     access_token = getattr(sess, "access_token", None)
     role = determine_role(getattr(user, "email", None), getattr(user, "user_metadata", None))
@@ -128,7 +135,8 @@ async def auth_forgot(request: Request):
     return RedirectResponse(url="/auth?message=Email%20de%20reinitialisation%20envoye", status_code=HTTP_303_SEE_OTHER)
 
 @router.get("/reset", response_class=HTMLResponse)
-def password_reset_page(request: Request, user = Depends(require_user), error: Optional[str] = None, message: Optional[str] = None):
+def password_reset_page(request: Request, error: Optional[str] = None, message: Optional[str] = None):
+    # La page de reset doit être publique: on retire require_user ici
     return templates.TemplateResponse("reset_password.html", {"request": request, "error": error, "message": message})
 
 @router.post("/reset")
@@ -149,4 +157,23 @@ def auth_me(user = Depends(require_user)):
 def auth_logout():
     redirect = RedirectResponse(url="/auth?message=Deconnecte", status_code=HTTP_303_SEE_OTHER)
     clear_session_cookie(redirect)
+    return redirect
+
+@router.post("/recover/session")
+async def recover_session(request: Request):
+    """
+    Réception du lien Supabase (type=recovery) côté frontend:
+    - Le frontend lit window.location.hash, extrait access_token
+    - Il POST ici pour que le backend pose le cookie de session
+    - Redirection vers /auth/reset pour afficher le formulaire
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    access_token = (data.get("access_token") or data.get("accessToken") or "").strip()
+    if not access_token:
+        return JSONResponse({"error": "access_token requis"}, status_code=400)
+    redirect = RedirectResponse(url="/auth/reset", status_code=HTTP_303_SEE_OTHER)
+    set_session_cookie(redirect, access_token)
     return redirect

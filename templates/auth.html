@@ -17,17 +17,24 @@
         <h2>Connexion</h2>
         <div class="group">
           <label>Email</label>
-          <input class="input" name="email" type="email" required/>
+          <input class="input" name="email" id="login-email" type="email" required/>
         </div>
         <div class="group">
           <label>Mot de passe</label>
           <input class="input" name="password" type="password" required/>
+        </div>
+        <div class="group">
+          <a href="#" id="forgot-link" class="auth-link">Mot de passe oublié ?</a>
         </div>
         <button class="btn" type="submit">Se connecter</button>
       </form>
 
       <form method="post" action="/auth/signup" style="flex:1">
         <h2>Inscription</h2>
+        <div class="group">
+          <label>Nom et prénom</label>
+          <input class="input" name="full_name" type="text" autocomplete="name" required/>
+        </div>
         <div class="group">
           <label>Email</label>
           <input class="input" name="email" type="email" required/>
@@ -36,10 +43,10 @@
           <label>Mot de passe</label>
           <input class="input" name="password" type="password" required/>
         </div>
-        
         <button class="btn" type="submit">Créer un compte</button>
       </form>
     </div>
   </div>
+  <script src="/public/js/auth.js"></script>
 </body>
 </html>

@@ -32,10 +32,10 @@ ADMIN_SIGNUP_CODE = os.getenv("ADMIN_SIGNUP_CODE", "")  # <-- code secret pour c
 # CORS (dev)
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
-RESET_REDIRECT_URL = os.getenv("RESET_REDIRECT_URL", "http://localhost:8001/auth?message=Mot%20de%20passe%20reinitialise")
-STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY", "")
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+RESET_REDIRECT_URL = os.getenv("RESET_REDIRECT_URL", "http://localhost:8000/auth/reset")
+STRIPE_PUBLIC_KEY = _clean_env(os.getenv("STRIPE_PUBLIC_KEY") or "")
+STRIPE_SECRET_KEY = _clean_env(os.getenv("STRIPE_SECRET_KEY") or "")
+STRIPE_WEBHOOK_SECRET = _clean_env(os.getenv("STRIPE_WEBHOOK_SECRET") or "")
 CHECKOUT_SUCCESS_PATH = os.getenv("CHECKOUT_SUCCESS_PATH", "/session?payment=success")
 CHECKOUT_CANCEL_PATH = os.getenv("CHECKOUT_CANCEL_PATH", "/session?payment=cancel")
 SUPABASE_SERVICE_KEY = _clean_env(os.getenv("SUPABASE_SERVICE_KEY") or "")
