@@ -1,4 +1,3 @@
-// Attache le bouton "Connexion" pour aller sur /auth
 document.addEventListener("DOMContentLoaded", () => {
   // 1) Si on revient de Supabase avec un hash (#access_token&type=recovery ...),
   //    on poste le token au backend pour poser les cookies puis on navigue vers /auth/reset.
@@ -8,6 +7,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const params = new URLSearchParams(hash.slice(1));
       const type = params.get("type");
       const accessToken = params.get("access_token");
+
+      // Ajout: confirmation d’inscription => redirection vers /auth avec message
+      if (type === "signup") {
+        // Nettoyer l’URL (on retire le token du hash)
+        history.replaceState({}, "", window.location.pathname + window.location.search);
+        // Rediriger vers la page de connexion avec un message de succès
+        window.location.href = "/auth?message=Votre%20compte%20a%20%C3%A9t%C3%A9%20confirm%C3%A9%2C%20vous%20pouvez%20vous%20connecter";
+        return;
+      }
+
       if (type === "recovery" && accessToken) {
         // Utiliser fetch pour transmettre en JSON proprement
         fetch("/auth/recover/session", {
@@ -21,7 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
           if (res.redirected) {
             window.location.href = res.url;
           } else if (res.ok) {
-            // fallback: aller vers /auth/reset
             window.location.href = "/auth/reset";
           }
         })

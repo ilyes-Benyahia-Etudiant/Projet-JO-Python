@@ -33,6 +33,7 @@ ADMIN_SIGNUP_CODE = os.getenv("ADMIN_SIGNUP_CODE", "")  # <-- code secret pour c
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 RESET_REDIRECT_URL = os.getenv("RESET_REDIRECT_URL", "http://localhost:8000/auth/reset")
+SIGNUP_REDIRECT_URL = os.getenv("SIGNUP_REDIRECT_URL", "http://localhost:8000/auth")
 STRIPE_PUBLIC_KEY = _clean_env(os.getenv("STRIPE_PUBLIC_KEY") or "")
 STRIPE_SECRET_KEY = _clean_env(os.getenv("STRIPE_SECRET_KEY") or "")
 STRIPE_WEBHOOK_SECRET = _clean_env(os.getenv("STRIPE_WEBHOOK_SECRET") or "")

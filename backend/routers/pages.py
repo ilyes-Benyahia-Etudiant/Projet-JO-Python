@@ -11,16 +11,21 @@ router = APIRouter(tags=["Pages"])
 def root_redirect():
     return RedirectResponse(url="/public/index.html", status_code=HTTP_303_SEE_OTHER)
 
-@router.get("/billeterie.html", include_in_schema=False)
-def redirect_billeterie():
-    return RedirectResponse(url="/public/billeterie.html", status_code=HTTP_303_SEE_OTHER)
+@router.get("/billeterie", response_class=HTMLResponse)
+@router.get("/billeterie.html", response_class=HTMLResponse)
+def billeterie_page(request: Request):
+    return templates.TemplateResponse("billeterie.html", {"request": request})
 
 @router.get("/billets.html", include_in_schema=False)
 def redirect_billets():
-    return RedirectResponse(url="/public/billeterie.html", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/billeterie", status_code=HTTP_303_SEE_OTHER)
 
 @router.get("/session", response_class=HTMLResponse)
 def user_session(request: Request, user = Depends(require_user)):
     offres = fetch_offres()
     commandes = fetch_user_commandes(user.get("id"))
-    return templates.TemplateResponse("session.html", {"request": request, "offres": offres, "commandes": commandes, "user": user})
+    resp = templates.TemplateResponse("session.html", {"request": request, "offres": offres, "commandes": commandes, "user": user})
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp

@@ -30,9 +30,17 @@ def determine_role(email: str, metadata: Dict[str, Any] | None) -> str:
     return "user"
 
 def get_current_user(request: Request) -> Dict[str, Any]:
-    token = request.cookies.get(COOKIE_NAME)
+    # Hybride: priorité au Bearer, fallback cookie
+    token = None
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+    if not token:
+        token = request.cookies.get(COOKIE_NAME)
+
     if not token:
         raise HTTPException(status_code=401, detail="Non authentifié")
+
     try:
         res = get_supabase().auth.get_user(token)
         user = getattr(res, "user", None) or {}
@@ -40,7 +48,7 @@ def get_current_user(request: Request) -> Dict[str, Any]:
         metadata = getattr(user, "user_metadata", None) or (user.get("user_metadata") if isinstance(user, dict) else None)
         role = determine_role(email, metadata)
         uid = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
-        return {"id": uid, "email": email, "metadata": metadata or {}, "role": role}
+        return {"id": uid, "email": email, "metadata": metadata or {}, "role": role, "token": token}
     except Exception:
         raise HTTPException(status_code=401, detail="Session invalide")
 

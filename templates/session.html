@@ -15,6 +15,13 @@
     </form>
   </header>
   <main style="max-width:1100px;margin:24px auto">
+    <!-- Nouveau bloc d'accueil -->
+    <section style="margin-bottom:16px; padding:12px; border:1px solid #eee; border-radius:8px; background:#fafafa">
+      <h1 style="margin:0 0 6px 0;">
+        Bienvenue {{ user.metadata.full_name or user.metadata.name or user.email  }}
+      </h1>
+      <p style="margin:0; color:#555">Connecté avec l’adresse <strong>{{ user.email }}</strong></p>
+    </section>
     <div style="display:flex; gap:24px; align-items:flex-start">
       <section id="catalogue" style="flex:1">
         <h1>Catalogue</h1>
@@ -88,15 +95,20 @@
   <!-- Retirer l'ancien bloc (function() { ... }) s’il est présent -->
   <script src="/public/js/payment-confirm.js"></script>
   <script src="/public/js/cart.js"></script>
-<script>
-  (function () {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("payment") === "success") {
-        localStorage.removeItem("cart.v1");
+  <script>
+    // Si la page revient du Back/Forward Cache, on force un reload pour revalider la session côté serveur
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) {
+        window.location.reload();
+      } else {
+        try {
+          var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+          if (nav && nav.type === 'back_forward') {
+            window.location.reload();
+          }
+        } catch (_) {}
       }
-    } catch {}
-  })();
-</script>
+    });
+  </script>
 </body>
 </html>

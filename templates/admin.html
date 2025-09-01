@@ -131,5 +131,20 @@
       </div>
     </div>
   </div>
+  <script>
+    // Même protection BFCache côté admin
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) {
+        window.location.reload();
+      } else {
+        try {
+          var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+          if (nav && nav.type === 'back_forward') {
+            window.location.reload();
+          }
+        } catch (_) {}
+      }
+    });
+  </script>
 </body>
 </html>
