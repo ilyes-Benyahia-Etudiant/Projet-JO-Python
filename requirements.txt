@@ -1,6 +1,7 @@
 supabase==2.18.1
 python-dotenv==1.0.1
 fastapi==0.115.4
+pydantic[email]
 uvicorn==0.30.6
 pyjwt==2.10.1
 python-multipart==0.0.12
