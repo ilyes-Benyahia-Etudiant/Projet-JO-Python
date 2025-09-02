@@ -16,7 +16,7 @@ class AuthResponse:
 
 def sign_in(email: str, password: str) -> AuthResponse:
     try:
-        email = (email or "").strip()
+        email = (email or "").trim()
         res = get_supabase().auth.sign_in_with_password({"email": email, "password": password})
         sess = getattr(res, "session", None)
         user = getattr(res, "user", None)
@@ -40,6 +40,17 @@ def sign_in(email: str, password: str) -> AuthResponse:
 def sign_up(email: str, password: str, full_name: Optional[str] = None, wants_admin: bool = False) -> AuthResponse:
     try:
         email = (email or "").strip()
+
+        # Vérification serveur: email déjà existant
+        from backend.utils.db import get_user_by_email
+        try:
+            existing = get_user_by_email(email)
+            if existing:
+                return AuthResponse(False, error="Utilisateur existe déjà")
+        except Exception:
+            # En cas d’erreur de lookup, on laisse l’inscription tenter sa chance
+            pass
+
         payload = {"email": email, "password": password}
         options_data = {}
         if full_name:
@@ -72,8 +83,15 @@ def sign_up(email: str, password: str, full_name: Optional[str] = None, wants_ad
             return AuthResponse(True, user=user_dict, session=session_dict)
         return AuthResponse(True, error="Inscription réussie, vérifiez votre email")
     except Exception as e:
+        # Normaliser certains messages d’erreurs Supabase en “Utilisateur existe déjà”
+        msg = str(e)
+        low = msg.lower()
+        if "already" in low and ("register" in low or "registered" in low or "exists" in low):
+            return AuthResponse(False, error="Utilisateur existe déjà")
+        if "database error saving new user" in low:
+            return AuthResponse(False, error="Utilisateur existe déjà")
         logger.exception("Erreur sign_up")
-        return AuthResponse(False, error=f"Erreur d'inscription: {str(e)}")
+        return AuthResponse(False, error=f"Erreur d'inscription: {msg}")
 
 def send_reset_email(email: str, redirect_to: str) -> AuthResponse:
     try:
