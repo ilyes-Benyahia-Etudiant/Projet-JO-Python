@@ -16,7 +16,7 @@ class AuthResponse:
 
 def sign_in(email: str, password: str) -> AuthResponse:
     try:
-        email = (email or "").trim()
+        email = (email or "").strip()
         res = get_supabase().auth.sign_in_with_password({"email": email, "password": password})
         sess = getattr(res, "session", None)
         user = getattr(res, "user", None)

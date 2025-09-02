@@ -68,4 +68,121 @@ document.addEventListener("DOMContentLoaded", () => {
       form.submit();
     });
   }
+
+  // 3) Helpers UI pour messages
+  function setMsg(el, text, kind = "err") {
+    if (!el) return;
+    el.textContent = text || "";
+    el.classList.remove("ok", "err");
+    el.classList.add(kind === "ok" ? "ok" : "err");
+    el.style.display = text ? "" : "none";
+    el.setAttribute("role", "alert");
+  }
+
+  // 4) Inscription - Modale (#register-form) pour Accueil/Billetterie
+  const modalRegisterForm = document.getElementById("register-form");
+  if (modalRegisterForm) {
+    const msgEl = document.getElementById("modal-signup-msg");
+    const btn = modalRegisterForm.querySelector("#modal-btn-signup");
+
+    modalRegisterForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const full_name = (document.getElementById("modal-signup-name")?.value || "").trim();
+      const email = (document.getElementById("modal-signup-email")?.value || "").trim();
+      const password = (document.getElementById("modal-signup-password")?.value || "").trim();
+      const password2 = (document.getElementById("modal-signup-password2")?.value || "").trim();
+
+      if (password !== password2) {
+        setMsg(msgEl, "Les mots de passe ne correspondent pas", "err");
+        return;
+      }
+      if (!email || !password || !full_name) {
+        setMsg(msgEl, "Veuillez remplir tous les champs requis", "err");
+        return;
+      }
+
+      try {
+        btn && (btn.disabled = true);
+        setMsg(msgEl, "Inscription en cours...", "ok");
+
+        const resp = await fetch("/api/v1/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, full_name }),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          const message = data?.message || "Inscription réussie, vérifiez votre email";
+          setMsg(msgEl, message, "ok");
+        } else {
+          let err = "Erreur d'inscription";
+          try {
+            const j = await resp.json();
+            err = j?.detail || j?.message || err;
+          } catch (_) {}
+          setMsg(msgEl, err, "err");
+        }
+      } catch (ex) {
+        setMsg(msgEl, "Erreur réseau, veuillez réessayer", "err");
+      } finally {
+        btn && (btn.disabled = false);
+      }
+    });
+  }
+
+  // 5) Inscription - Page /auth (form[action="/auth/signup"])
+  const webSignupForm = document.querySelector('form[action="/auth/signup"]');
+  if (webSignupForm) {
+    // Crée une zone de message si absente
+    let webMsg = webSignupForm.querySelector(".msg.auth-signup");
+    if (!webMsg) {
+      webMsg = document.createElement("div");
+      webMsg.className = "msg auth-signup";
+      webMsg.style.display = "none";
+      webSignupForm.insertBefore(webMsg, webSignupForm.firstChild);
+    }
+    const btn = webSignupForm.querySelector('button[type="submit"]');
+
+    webSignupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(webSignupForm);
+      const email = (formData.get("email") || "").toString().trim();
+      const password = (formData.get("password") || "").toString().trim();
+      const full_name = (formData.get("full_name") || "").toString().trim();
+
+      if (!email || !password || !full_name) {
+        setMsg(webMsg, "Veuillez remplir tous les champs requis", "err");
+        return;
+      }
+
+      try {
+        btn && (btn.disabled = true);
+        setMsg(webMsg, "Inscription en cours...", "ok");
+
+        const resp = await fetch("/api/v1/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, full_name }),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          const message = data?.message || "Inscription réussie, vérifiez votre email";
+          setMsg(webMsg, message, "ok");
+        } else {
+          let err = "Erreur d'inscription";
+          try {
+            const j = await resp.json();
+            err = j?.detail || j?.message || err;
+          } catch (_) {}
+          setMsg(webMsg, err, "err");
+        }
+      } catch (ex) {
+        setMsg(webMsg, "Erreur réseau, veuillez réessayer", "err");
+      } finally {
+        btn && (btn.disabled = false);
+      }
+    });
+  }
 });
