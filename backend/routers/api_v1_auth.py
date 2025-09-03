@@ -27,16 +27,15 @@ def api_login(req: LoginRequest):
     result = sign_in(req.email, req.password)
     if not result.success:
         raise HTTPException(status_code=401, detail=result.error or "Identifiants invalides")
-    return {"access_token": result.access_token, "token_type": "bearer", "user": result.user}
+    return {"access_token": (result.session or {}).get("access_token"), "token_type": "bearer", "user": result.user}
 
 @router.post("/signup")
 def api_signup(req: SignupRequest):
-    # Pas d’élévation admin côté API publique
     result = sign_up(req.email, req.password, req.full_name, wants_admin=False)
     if not result.success:
         raise HTTPException(status_code=400, detail=result.error or "Erreur inscription")
-    if result.access_token:
-        return {"access_token": result.access_token, "token_type": "bearer", "user": result.user}
+    if (result.session or {}).get("access_token"):
+        return {"access_token": (result.session or {}).get("access_token"), "token_type": "bearer", "user": result.user}
     return {"message": result.error or "Inscription réussie, vérifiez votre email"}
 
 @router.get("/me")

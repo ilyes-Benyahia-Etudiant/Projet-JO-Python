@@ -30,7 +30,7 @@
         <li><a href="/billeterie.html" aria-current="page">Billeterie</a></li>
       </ul>
       <div class="navbar-actions">
-        <a class="btn-login" href="#">Connexion</a>
+        <a class="btn-login" href="/auth">Connexion</a>
         <div class="hamburger">
           <span></span>
           <span></span>
@@ -53,7 +53,7 @@
             <p>Accès pour 1 personne à l'événement de votre choix.</p>
             <p style="margin-top:8px;color:#444">Idéal pour vivre l'expérience des Jeux en solo.</p>
             <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px">
-              <a href="#" class="btn-login">Choisir</a>
+              <a href="/auth" class="btn-login">Choisir</a>
             </div>
           </div>
         </div>
@@ -65,7 +65,7 @@
             <p>Accès pour 2 personnes, partagez l'émotion à deux.</p>
             <p style="margin-top:8px;color:#444">Parfait pour un couple ou deux amis.</p>
             <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px">
-              <a href="#" class="btn-login">Choisir</a>
+              <a href="/auth" class="btn-login">Choisir</a>
             </div>
           </div>
         </div>
@@ -77,7 +77,7 @@
             <p>Accès pour 4 personnes, pour des souvenirs inoubliables.</p>
             <p style="margin-top:8px;color:#444">L'option idéale pour toute la famille.</p>
             <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px">
-              <a href="#" class="btn-login">Choisir</a>
+              <a href="/auth" class="btn-login">Choisir</a>
             </div>
           </div>
         </div>
@@ -153,53 +153,9 @@
     </footer>
   </div>
 </div>
-<!-- Modal d'authentification -->
-<div class="modal-auth" id="modal-auth" aria-hidden="true">
-  <div class="modal-auth-bg" id="modal-auth-bg" aria-hidden="true"></div>
-  <div class="modal-auth-content" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-    <button class="modal-auth-close" id="modal-auth-close" aria-label="Fermer">&times;</button>
-    <div class="auth-tabs" role="tablist">
-      <button class="auth-tab active" id="tab-login" role="tab" aria-selected="true" aria-controls="login-form">Connexion</button>
-      <button class="auth-tab" id="tab-register" role="tab" aria-selected="false" aria-controls="register-form">Inscription</button>
-    </div>
 
-    <form class="auth-form" id="login-form" method="POST" action="/auth/login">
-      <h2 class="auth-title" id="auth-title">Connexion</h2>
-      <input id="modal-login-email" name="email" type="email" placeholder="Email" autocomplete="email" required>
-      <input id="modal-login-password" name="password" type="password" placeholder="Mot de passe" autocomplete="current-password" required>
-      <div class="auth-options">
-        <label><input type="checkbox" id="remember-me"> Se souvenir de moi</label>
-        <a href="#" class="auth-link" id="modal-forgot">Mot de passe oublié ?</a>
-      </div>
-      <div id="modal-login-msg" class="msg" style="display:none"></div>
-      <button type="submit" class="auth-btn" id="modal-btn-login">Se connecter</button>
-      <div class="auth-divider"><span>ou continuer avec</span></div>
-      <button type="button" class="auth-btn-google" id="modal-btn-google">
-        <svg class="auth-google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path></svg>
-        Se connecter avec Google
-      </button>
-    </form>
 
-    <form class="auth-form" id="register-form" style="display:none;">
-      <h2 class="auth-title">Inscription</h2>
-      <input id="modal-signup-name" name="full_name" type="text" placeholder="Nom complet" autocomplete="name" required>
-      <input id="modal-signup-email" name="email" type="email" placeholder="Email" autocomplete="email" required>
-      <input id="modal-signup-password" name="password" type="password" placeholder="Mot de passe" autocomplete="new-password" required>
-      <input id="modal-signup-password2" name="password2" type="password" placeholder="Confirmer le mot de passe" autocomplete="new-password" required>
-      <div id="modal-signup-msg" class="msg" style="display:none"></div>
-      <button type="submit" class="auth-btn" id="modal-btn-signup">S'inscrire</button>
-    </form>
-
-    <div class="auth-footer">
-      <p class="auth-footer-text">
-        Pas encore de compte ?
-        <a href="#" class="auth-link" id="switch-to-register">Inscrivez-vous</a>
-      </p>
-    </div>
-  </div>
-</div>
-
-<script src="/static/js/auth.js"></script>
+<script src="/public/js/auth.js"></script>
 <script src="/static/js/navbar.js"></script>
  </body>
 </html>
