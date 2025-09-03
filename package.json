@@ -1,0 +1,13 @@
+{
+  "name": "projet-jo-python-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Frontend TypeScript build for public/js",
+  "scripts": {
+    "build": "tsc -p .",
+    "dev": "tsc -w -p ."
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}

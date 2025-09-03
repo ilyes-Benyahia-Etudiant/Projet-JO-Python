@@ -11,7 +11,7 @@ if __name__ == "__main__":
     reload_flag = os.environ.get("UVICORN_RELOAD", "").lower() in ("1", "true", "yes")
     log_level = os.environ.get("LOG_LEVEL", "info")
     uvicorn.run(
-        "backend.api:app",
+        "backend.asgi:app",
         host="0.0.0.0",
         port=port,
         reload=reload_flag,

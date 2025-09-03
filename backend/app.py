@@ -6,10 +6,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.status import HTTP_303_SEE_OTHER
 from backend.config import PUBLIC_DIR, CORS_ORIGINS, ALLOWED_HOSTS, SUPABASE_URL
-from backend.routers.pages import router as pages_router
-from backend.routers.web_auth import router as web_auth_router  # Remplace l'ancien auth_router
-from backend.routers.api_v1_auth import router as api_auth_router  # Nouveau router API JSON
-from backend.routers.admin_offres import router as admin_router
+from backend.views.pages import router as pages_router
+from backend.views.web_auth import router as web_auth_router  # Remplace l'ancien auth_router
+from backend.views.api_v1_auth import router as api_auth_router  # Nouveau router API JSON
+from backend.views.admin_offres import router as admin_router
 import logging
 from urllib.parse import urlparse
 
@@ -27,8 +27,8 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS + ["*"] if
 app.mount("/public", StaticFiles(directory=str(PUBLIC_DIR)), name="public")
 app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR)), name="static")
 
-from backend.routers.health import router as health_router
-from backend.routers.payments import router as payments_router
+from backend.views.health import router as health_router
+from backend.views.payments import router as payments_router
 app.include_router(health_router)
 app.include_router(pages_router)
 app.include_router(web_auth_router)      # /auth (HTML + cookies)

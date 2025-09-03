@@ -2,7 +2,7 @@ from fastapi import Request, HTTPException, Depends
 from fastapi.responses import Response
 from typing import Optional, Dict, Any
 from backend.config import COOKIE_SECURE, ADMIN_EMAILS
-from backend.utils.db import get_supabase
+from backend.models.db import get_supabase
 
 COOKIE_NAME = "sb_access"
 

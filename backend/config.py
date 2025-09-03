@@ -1,3 +1,4 @@
+# backend.config
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -17,6 +18,7 @@ def _clean_env(v: str) -> str:
 # Supabase
 SUPABASE_URL = _clean_env(os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "")
 SUPABASE_KEY = _clean_env(os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY") or "")
+SUPABASE_ANON = _clean_env(os.getenv("SUPABASE_ANON_KEY") or "")
 
 # Normalisations utiles
 if SUPABASE_URL and not SUPABASE_URL.startswith("http"):
