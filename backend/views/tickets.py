@@ -3,6 +3,7 @@ from typing import Dict, Any, List
 from backend.utils.security import require_user
 from backend.models import fetch_user_commandes
 from backend.utils.qrcode_utils import generate_qr_code
+from backend.config import BASE_URL
 
 router = APIRouter(prefix="/api/tickets", tags=["Tickets"])
 
@@ -16,7 +17,8 @@ def get_user_tickets(user: Dict[str, Any] = Depends(require_user)):
     # Ajouter un QR code à chaque commande
     for commande in commandes:
         if "token" in commande:
-            commande["qr_code"] = generate_qr_code(commande["token"])
+            validate_url = f"{BASE_URL}/validate?token={commande['token']}"
+            commande["qr_code"] = generate_qr_code(validate_url)
     
     return commandes
 
@@ -32,4 +34,5 @@ def get_ticket_qrcode(ticket_token: str, user: Dict[str, Any] = Depends(require_
     if not ticket:
         raise HTTPException(status_code=404, detail="Billet non trouvé")
     
-    return {"qr_code": generate_qr_code(ticket_token)}
+    validate_url = f"{BASE_URL}/validate?token={ticket_token}"
+    return {"qr_code": generate_qr_code(validate_url)}

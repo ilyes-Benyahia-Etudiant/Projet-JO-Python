@@ -42,3 +42,5 @@ STRIPE_WEBHOOK_SECRET = _clean_env(os.getenv("STRIPE_WEBHOOK_SECRET") or "")
 CHECKOUT_SUCCESS_PATH = os.getenv("CHECKOUT_SUCCESS_PATH", "/session?payment=success")
 CHECKOUT_CANCEL_PATH = os.getenv("CHECKOUT_CANCEL_PATH", "/session?payment=cancel")
 SUPABASE_SERVICE_KEY = _clean_env(os.getenv("SUPABASE_SERVICE_KEY") or "")
+
+BASE_URL = _clean_env(os.getenv("BASE_URL") or "http://localhost:8000")

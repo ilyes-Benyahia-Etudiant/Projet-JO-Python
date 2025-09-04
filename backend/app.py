@@ -12,6 +12,7 @@ from backend.views.api_v1_auth import router as api_auth_router  # Nouveau route
 from backend.views.admin_offres import router as admin_router
 import logging
 from urllib.parse import urlparse
+from backend.views.validate import router as validate_router
 
 app = FastAPI(title="Projet JO Python")
 
@@ -30,6 +31,7 @@ app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR)), name="static")
 from backend.views.health import router as health_router
 from backend.views.payments import router as payments_router
 from backend.views.tickets import router as tickets_router  # Nouvelle ligne
+from backend.views.validate import router as validate_router
 
 app.include_router(health_router)
 app.include_router(pages_router)
@@ -38,6 +40,7 @@ app.include_router(api_auth_router)      # /api/v1/auth (JSON + Bearer)
 app.include_router(admin_router)
 app.include_router(payments_router)
 app.include_router(tickets_router)       # Nouvelle ligne
+app.include_router(validate_router)
 
     # Log du domaine/projet Supabase au démarrage
 host = None

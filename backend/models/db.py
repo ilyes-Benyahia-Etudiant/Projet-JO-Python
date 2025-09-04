@@ -77,6 +77,23 @@ def fetch_user_commandes(user_id: str, limit: int = 50) -> List[dict]:
     except Exception:
         return []
 
+def get_commande_by_token(token: str) -> Optional[dict]:
+    """
+    Récupère une commande/billet par son token.
+    """
+    try:
+        res = (
+            get_supabase()
+            .table("commandes")
+            .select("*")
+            .eq("token", token)
+            .single()
+            .execute()
+        )
+        return res.data or None
+    except Exception:
+        return None
+
 def fetch_offres_by_ids(ids: List[str]) -> List[dict]:
     """
     Récupère les offres par leurs IDs.
