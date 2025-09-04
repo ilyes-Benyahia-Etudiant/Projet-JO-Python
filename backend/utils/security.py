@@ -1,7 +1,7 @@
 from fastapi import Request, HTTPException, Depends
 from fastapi.responses import Response
 from typing import Optional, Dict, Any
-from backend.config import COOKIE_SECURE, ADMIN_EMAILS
+from backend.config import COOKIE_SECURE
 from backend.models.db import get_supabase
 
 COOKIE_NAME = "sb_access"
@@ -21,10 +21,7 @@ def clear_session_cookie(response: Response):
     response.delete_cookie(COOKIE_NAME, path="/")
 
 def determine_role(email: str, metadata: Dict[str, Any] | None) -> str:
-    if not email:
-        return "user"
-    if email in ADMIN_EMAILS:
-        return "admin"
+    # Rôle basé uniquement sur la metadata (posée à l’inscription si mot de passe secret)
     if str((metadata or {}).get("role", "")).lower() == "admin":
         return "admin"
     return "user"

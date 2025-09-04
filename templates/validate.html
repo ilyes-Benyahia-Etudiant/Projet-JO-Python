@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Validation du billet</title>
+  <style>
+    :root {
+      --green-bg: #d4edda;
+      --green-border: #c3e6cb;
+      --green-text: #155724;
+      --red-bg: #f8d7da;
+      --red-border: #f5c6cb;
+      --red-text: #721c24;
+      --card-bg: #ffffff;
+      --card-shadow: rgba(0, 0, 0, 0.08);
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif;
+      background: #f6f8fb;
+      color: #1f2937;
+    }
+    .container {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(520px, 94vw);
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 10px 24px var(--card-shadow);
+      padding: 28px 24px;
+    }
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      object-fit: cover;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .icon {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 18px;
+    }
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .message {
+      margin: 12px 0 0;
+      line-height: 1.5;
+    }
+    .success {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: var(--green-text);
+    }
+    .error {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      color: var(--red-text);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 10px;
+      background: rgba(31, 41, 55, 0.06);
+    }
+    .footer {
+      margin-top: 18px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .home {
+      display: inline-block;
+      margin-top: 14px;
+      text-decoration: none;
+      color: #2563eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    {% set ok = (status == 'success') %}
+    <div class="card {{ 'success' if ok else 'error' }}">
+      <div class="header">
+        <img class="logo" src="{{ request.url_for('public', path='images/olympic games.jpg') }}" alt="Jeux Olympiques" />
+        <div class="icon" aria-hidden="true">{{ '✓' if ok else '!' }}</div>
+        <h1 class="title">{{ 'Succès : billet valide' if ok else 'Billet invalide' }}</h1>
+      </div>
+      <p class="message">{{ message }}</p>
+      {% if ticket_id %}
+        <div class="badge">ID billet : {{ ticket_id }}</div>
+      {% endif %}
+
+      <div class="details">
+        <div class="row">
+          <span class="label">Acheteur</span>
+          <span class="value">{{ buyer_name or '—' }}</span>
+        </div>
+
+        {% if event_name or event_time or event_place %}
+        <div class="row">
+          <span class="label">Événement</span>
+          <span class="value">{{ event_name or '—' }}</span>
+        </div>
+        <div class="row">
+          <span class="label">Date & heure</span>
+          <span class="value">{{ event_time or '—' }}</span>
+        </div>
+        <div class="row">
+          <span class="label">Lieu</span>
+          <span class="value">{{ event_place or '—' }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="footer">
+        Scanné via l’URL de validation. Conservez ce billet pour contrôle.
+      </div>
+      <a class="home" href="/">← Retour à l’accueil</a>
+    </div>
+  </div>
+</body>
+</html>

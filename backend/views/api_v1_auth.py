@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 from backend.models import sign_in, sign_up, send_reset_email, update_password
 from backend.utils.security import require_user
 from backend.config import RESET_REDIRECT_URL
+from backend.models.db import upsert_user_profile
 import re
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth API"])
@@ -16,7 +17,6 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: Optional[str] = None
-    admin_code: Optional[str] = None
     
     @validator('password')
     def password_strength(cls, v):
@@ -53,17 +53,31 @@ def api_login(req: LoginRequest):
     result = sign_in(req.email, req.password)
     if not result.success:
         raise HTTPException(status_code=401, detail=result.error or "Identifiants invalides")
+
+    # Sync DB users.role
+    try:
+        upsert_user_profile(result.user.get("id"), result.user.get("email"), result.user.get("role"))
+    except Exception:
+        pass
+
     return {"access_token": (result.session or {}).get("access_token"), "token_type": "bearer", "user": result.user}
 
 @router.post("/signup")
 def api_signup(req: SignupRequest):
-    from backend.config import ADMIN_SIGNUP_CODE  # import local pour faciliter monkeypatch en tests
-    wants_admin = bool(ADMIN_SIGNUP_CODE) and (req.admin_code == ADMIN_SIGNUP_CODE)
+    from backend.config import ADMIN_SECRET_PASSWORD  # lu au runtime
+    wants_admin = bool(ADMIN_SECRET_PASSWORD) and (req.password == ADMIN_SECRET_PASSWORD)
     result = sign_up(req.email, req.password, req.full_name, wants_admin=wants_admin)
     if not result.success:
         raise HTTPException(status_code=400, detail=result.error or "Erreur inscription")
+
     if (result.session or {}).get("access_token"):
+        # Sync DB users.role si session créée
+        try:
+            upsert_user_profile(result.user.get("id"), result.user.get("email"), result.user.get("role"))
+        except Exception:
+            pass
         return {"access_token": (result.session or {}).get("access_token"), "token_type": "bearer", "user": result.user}
+
     return {"message": result.error or "Inscription réussie, vérifiez votre email"}
 
 @router.get("/me")

@@ -40,6 +40,69 @@ def get_user_by_email(email: str) -> Optional[dict]:
     except Exception:
         return None
 
+def upsert_user_profile(user_id: str, email: str, role: Optional[str] = None) -> bool:
+    """
+    Synchronise le profil dans la table 'users' avec le rôle courant.
+    Utilise la clé service pour contourner la RLS si nécessaire.
+    """
+    if not email and not user_id:
+        return False
+    payload = {"email": email}
+    if user_id:
+        payload["id"] = user_id
+    if role:
+        payload["role"] = role
+    try:
+        (
+            get_service_supabase()
+            .table("users")
+            .upsert(payload)  # on suppose 'id' PK (ou contrainte unique) pour éviter les doublons
+            .execute()
+        )
+        return True
+    except Exception:
+        logger.exception("upsert_user_profile failed (user_id=%s, email=%s, role=%s)", user_id, email, role)
+        return False
+
+def get_user_by_id(user_id: str) -> Optional[dict]:
+    """
+    Récupère un utilisateur par son ID.
+    """
+    if not user_id:
+        return None
+    try:
+        res = (
+            get_supabase()
+            .table("users")
+            .select("*")
+            .eq("id", user_id)
+            .single()
+            .execute()
+        )
+        return res.data or None
+    except Exception:
+        return None
+
+# Ajout: récupérer une offre par son ID
+def get_offre_by_id(offre_id: str) -> Optional[dict]:
+    """
+    Récupère une offre par son ID.
+    """
+    if not offre_id:
+        return None
+    try:
+        res = (
+            get_supabase()
+            .table("offres")
+            .select("*")
+            .eq("id", offre_id)
+            .single()
+            .execute()
+        )
+        return res.data or None
+    except Exception:
+        return None
+
 def fetch_admin_commandes(limit: int = 100) -> List[dict]:
     """
     Commandes pour l'admin, avec jointures sur users et offres

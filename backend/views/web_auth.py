@@ -5,7 +5,8 @@ from typing import Optional
 from backend.utils.templates import templates
 from backend.utils.security import set_session_cookie, clear_session_cookie, require_user
 from backend.models import sign_in, sign_up, send_reset_email, update_password
-from backend.config import RESET_REDIRECT_URL, ADMIN_SIGNUP_CODE
+from backend.config import RESET_REDIRECT_URL, ADMIN_SECRET_PASSWORD
+from backend.models.db import upsert_user_profile
 
 router = APIRouter(prefix="/auth", tags=["Auth Web"])
 
@@ -18,23 +19,38 @@ def web_login(email: str = Form(...), password: str = Form(...)):
     result = sign_in(email, password)
     if not result.success:
         return RedirectResponse(url=f"/auth?error={result.error or 'Identifiants invalides'}", status_code=HTTP_303_SEE_OTHER)
+
+    # Sync DB users.role avec le rôle déterminé par la session
+    try:
+        upsert_user_profile(result.user.get("id"), result.user.get("email"), result.user.get("role"))
+    except Exception:
+        pass
+
     target = "/admin" if result.user["role"] == "admin" else "/session"
     redirect = RedirectResponse(url=target, status_code=HTTP_303_SEE_OTHER)
     set_session_cookie(redirect, result.access_token)
     return redirect
 
 @router.post("/signup")
-def web_signup(email: str = Form(...), password: str = Form(...), full_name: str = Form(""), admin_code: str = Form("")):
-    # On reproduit l'ancien comportement: admin si password == ADMIN_SIGNUP_CODE (si défini)
-    wants_admin = bool(ADMIN_SIGNUP_CODE) and (admin_code == ADMIN_SIGNUP_CODE)
+def web_signup(email: str = Form(...), password: str = Form(...), full_name: str = Form("")):
+    # Admin uniquement si le mot de passe == ADMIN_SECRET_PASSWORD
+    wants_admin = bool(ADMIN_SECRET_PASSWORD) and (password == ADMIN_SECRET_PASSWORD)
     result = sign_up(email, password, full_name or None, wants_admin=wants_admin)
     if not result.success:
         return RedirectResponse(url=f"/auth?error={result.error}", status_code=HTTP_303_SEE_OTHER)
+
     if result.access_token:
+        # Si Supabase a directement créé une session, on peut déjà synchroniser
+        try:
+            upsert_user_profile(result.user.get("id"), result.user.get("email"), result.user.get("role"))
+        except Exception:
+            pass
+
         target = "/admin" if result.user["role"] == "admin" else "/session"
         redirect = RedirectResponse(url=target, status_code=HTTP_303_SEE_OTHER)
         set_session_cookie(redirect, result.access_token)
         return redirect
+
     return RedirectResponse(url="/auth?message=Inscription%20reussie%2C%20verifiez%20votre%20email", status_code=HTTP_303_SEE_OTHER)
 
 @router.post("/forgot")
