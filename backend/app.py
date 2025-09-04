@@ -29,12 +29,15 @@ app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR)), name="static")
 
 from backend.views.health import router as health_router
 from backend.views.payments import router as payments_router
+from backend.views.tickets import router as tickets_router  # Nouvelle ligne
+
 app.include_router(health_router)
 app.include_router(pages_router)
 app.include_router(web_auth_router)      # /auth (HTML + cookies)
 app.include_router(api_auth_router)      # /api/v1/auth (JSON + Bearer)
 app.include_router(admin_router)
 app.include_router(payments_router)
+app.include_router(tickets_router)       # Nouvelle ligne
 
     # Log du domaine/projet Supabase au démarrage
 host = None
@@ -69,3 +72,11 @@ async def html_redirect_on_auth_errors(request: Request, exc: HTTPException):
             return RedirectResponse(url=f"/auth?error={msg}", status_code=HTTP_303_SEE_OTHER)
     # Par défaut, garder le JSON (utile pour l'API)
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+# Ajouter après les autres routes
+from fastapi.responses import FileResponse
+import os
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(os.path.join(str(PUBLIC_DIR), "favicon.ico"))

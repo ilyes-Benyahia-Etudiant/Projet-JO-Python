@@ -29,3 +29,12 @@ def user_session(request: Request, user = Depends(require_user)):
     resp.headers["Pragma"] = "no-cache"
     resp.headers["Expires"] = "0"
     return resp
+
+@router.get("/mes-billets", response_class=HTMLResponse)
+@router.get("/mes-billets.html", response_class=HTMLResponse)
+def mes_billets_page(request: Request, user = Depends(require_user)):
+    resp = templates.TemplateResponse("mes-billets.html", {"request": request, "user": user})
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp

@@ -50,8 +50,20 @@ def password_reset_page(request: Request, error: Optional[str] = None, message: 
 
 @router.post("/reset")
 def web_reset_password(new_password: str = Form(...), user = Depends(require_user)):
-    if len(new_password or "") < 6:
+    if len(new_password or "") < 8:  # Augmenter la longueur minimale à 8 caractères
         return RedirectResponse(url="/auth/reset?error=Mot%20de%20passe%20trop%20court", status_code=HTTP_303_SEE_OTHER)
+    
+    # Ajouter la validation des caractères spéciaux
+    import re
+    if not (re.search(r'[A-Z]', new_password) and 
+            re.search(r'[a-z]', new_password) and 
+            re.search(r'\d', new_password) and 
+            re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'"\\|,.<>\/?]', new_password)):
+        return RedirectResponse(
+            url="/auth/reset?error=Le%20mot%20de%20passe%20doit%20contenir%20au%20moins%20une%20majuscule%2C%20une%20minuscule%2C%20un%20chiffre%20et%20un%20caractère%20spécial", 
+            status_code=HTTP_303_SEE_OTHER
+        )
+    
     result = update_password(user["token"], new_password)
     if not result.success:
         return RedirectResponse(url=f"/auth/reset?error={result.error}", status_code=HTTP_303_SEE_OTHER)

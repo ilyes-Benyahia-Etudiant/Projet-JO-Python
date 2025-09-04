@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="/static/css/index.css">
   <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
 </head>
 <body>
   <header>
@@ -24,13 +25,14 @@
         </div>
       </div>
       <ul class="navbar-links" id="primary-navigation">
-        <li><a href="/">Accueil</a></li>
-        <li><a href="/billets.html">Evenements</a></li>
-        <li><a href="/billeterie.html">Billeterie</a></li>
         <li><a href="/session">Ma Session</a></li>
       </ul>
       <div class="navbar-actions">
-        <a class="btn-login" href="/auth">Connexion</a>
+        {% if user %}
+          <a class="btn-login" href="/session">Mon compte</a>
+        {% else %}
+          <a class="btn-login" href="/auth">Connexion</a>
+        {% endif %}
       </div>
     </nav>
   </header>
@@ -39,9 +41,31 @@
     <section class="session-section" style="padding:24px">
       <div class="session-card">
         <h2 class="section-title" style="margin-bottom:16px">Mes billets achetés</h2>
-        <p class="text-gray-700" style="margin-bottom:16px">Historique de vos commandes et billets. L'intégration backend/DB arrivera juste après.</p>
+        <p class="text-gray-700" style="margin-bottom:16px">Historique de vos commandes et billets.</p>
         <div id="tickets-empty" class="msg" style="display:none"></div>
-        <div id="tickets-list" class="events-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px"></div>
+        <div id="tickets-list" class="events-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px">
+          {% if tickets and tickets|length > 0 %}
+            {% for ticket in tickets %}
+              <div class="event-card">
+                <div class="event-content">
+                  <h3>{{ ticket.offre_title or 'Billet' }}</h3>
+                  <p>Prix: {{ ticket.price_paid or '0.00' }} €</p>
+                  <p>Référence: {{ ticket.token or 'N/A' }}</p>
+                  <div style="margin-top:8px;display:flex;flex-direction:column;align-items:center">
+                    {% if ticket.qr_code %}
+                      <img src="{{ ticket.qr_code }}" alt="QR Code" style="width:150px;height:150px;">
+                    {% else %}
+                      <div style="display:flex;gap:8px;align-items:center">
+                        <span class="material-symbols-outlined">qr_code_2</span>
+                        <span class="text-gray-700">QR code non disponible</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
         <div style="margin-top:16px">
           <a href="/session" class="btn btn-secondary">Retour à ma session</a>
         </div>
@@ -49,31 +73,6 @@
     </section>
   </main>
 
-  <script>
-    // Placeholder front côté client en attendant le backend: montre un exemple si localStorage contient une clé fictive
-    (function(){
-      const wrap = document.getElementById('tickets-list');
-      const empty = document.getElementById('tickets-empty');
-      const sample = JSON.parse(localStorage.getItem('jo_sample_tickets')||'[]');
-      if(!sample.length){
-        empty.textContent = "Vous n'avez pas encore de billets. Revenez après l'achat.";
-        empty.style.display = 'block';
-        return;
-      }
-      const tpl = (t)=> `
-        <div class="event-card">
-          <div class="event-content">
-            <h3>${t.title}</h3>
-            <p>Quantité: ${t.qty}</p>
-            <p>Référence: ${t.ref}</p>
-            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-              <span class="material-symbols-outlined">qr_code_2</span>
-              <span class="text-gray-700">QR code à venir</span>
-            </div>
-          </div>
-        </div>`;
-      wrap.innerHTML = sample.map(tpl).join('');
-    })();
-  </script>
+  <script src="/public/js/app/tickets.js"></script>
 </body>
 </html>

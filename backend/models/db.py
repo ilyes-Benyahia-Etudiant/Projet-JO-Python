@@ -3,7 +3,7 @@
 from typing import Optional, List, Any
 from supabase import create_client, Client
 from fastapi import HTTPException
-from backend.config import SUPABASE_URL, SUPABASE_ANON, SUPABASE_SERVICE_KEY
+from backend.config import SUPABASE_URL, SUPABASE_ANON, SUPABASE_SERVICE_KEY, SUPABASE_KEY
 import logging
 
 _supabase: Optional[Client] = None
@@ -113,13 +113,12 @@ def insert_commande(user_id: str, offre_id: str, token: str, price_paid: str) ->
         logger.exception("insert_commande failed (user_id=%s, offre_id=%s, price_paid=%s)", user_id, offre_id, price_paid)
         return None
 
-def insert_commande_with_token(user_token: str, user_id: str, offre_id: str, token: str, price_paid: str) -> Optional[dict]:
+def insert_commande_with_token(user_id: str, offre_id: str, token: str, price_paid: str, user_token: str) -> Optional[dict]:
     """
-    Variante d’insert qui exécute la requête avec le JWT utilisateur (compatibilité RLS).
-    Retourne un dict truthy en cas de succès.
+    Insert avec le token utilisateur (respecte RLS). À utiliser côté API.
     """
     try:
-        client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        client = create_client(SUPABASE_URL, SUPABASE_ANON)  # Utiliser SUPABASE_ANON au lieu de SUPABASE_SERVICE_KEY
         client.postgrest.auth(user_token)
         (
             client

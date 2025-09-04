@@ -163,7 +163,7 @@ def process_cart_purchase(
             if use_service:
                 row = insert_commande_service(user_id=user_id, offre_id=offre_id, token=token, price_paid=price_paid)
             elif user_token:
-                row = insert_commande_with_token(user_token, user_id, offre_id, token, price_paid)
+                row = insert_commande_with_token(user_id=user_id, offre_id=offre_id, token=token, price_paid=price_paid, user_token=user_token)
             else:
                 row = insert_commande(user_id=user_id, offre_id=offre_id, token=token, price_paid=price_paid)
             if row:

@@ -77,6 +77,23 @@ document.addEventListener("DOMContentLoaded", () => {
                     form.submit();
                 });
             };
+            // Ajouter cette fonction de validation de mot de passe
+            this.validatePassword = (password) => {
+                if (password.length < 8) {
+                    return { valid: false, message: "Le mot de passe doit contenir au moins 8 caractères" };
+                }
+                const hasUpperCase = /[A-Z]/.test(password);
+                const hasLowerCase = /[a-z]/.test(password);
+                const hasDigit = /\d/.test(password);
+                const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};:'"\\|,.<>\/?]/.test(password);
+                if (!hasUpperCase || !hasLowerCase || !hasDigit || !hasSpecialChar) {
+                    return {
+                        valid: false,
+                        message: "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"
+                    };
+                }
+                return { valid: true, message: "" };
+            };
             this.bindModalSignup = () => {
                 if (!this.modalRegisterForm)
                     return;
@@ -93,6 +110,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                     if (!email || !password || !full_name) {
                         this.setMsg(this.modalMsgEl, "Veuillez remplir tous les champs requis", "err");
+                        return;
+                    }
+                    // Ajouter la validation du mot de passe
+                    const passwordValidation = this.validatePassword(password);
+                    if (!passwordValidation.valid) {
+                        this.setMsg(this.modalMsgEl, passwordValidation.message, "err");
                         return;
                     }
                     try {
@@ -142,6 +165,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     const admin_code = (formData.get("admin_code") || "").toString().trim();
                     if (!email || !password || !full_name) {
                         this.setMsg(this.webMsg, "Veuillez remplir tous les champs requis", "err");
+                        return;
+                    }
+                    // Ajouter la validation du mot de passe
+                    const passwordValidation = this.validatePassword(password);
+                    if (!passwordValidation.valid) {
+                        this.setMsg(this.webMsg, passwordValidation.message, "err");
                         return;
                     }
                     try {
