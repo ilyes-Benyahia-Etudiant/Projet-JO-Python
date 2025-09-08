@@ -6,6 +6,7 @@ from backend.utils.security import require_user
 from backend.config import RESET_REDIRECT_URL
 from backend.models.db import upsert_user_profile
 import re
+import bcrypt
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth API"])
 
@@ -63,9 +64,10 @@ def api_login(req: LoginRequest):
     return {"access_token": (result.session or {}).get("access_token"), "token_type": "bearer", "user": result.user}
 
 @router.post("/signup")
+@router.post("/signup_admin")
 def api_signup(req: SignupRequest):
-    from backend.config import ADMIN_SECRET_PASSWORD  # lu au runtime
-    wants_admin = bool(ADMIN_SECRET_PASSWORD) and (req.password == ADMIN_SECRET_PASSWORD)
+    from backend.config import ADMIN_SECRET_HASH  # Import local
+    wants_admin = bool(ADMIN_SECRET_HASH) and bcrypt.checkpw(req.password.encode('utf-8'), ADMIN_SECRET_HASH.encode('utf-8'))
     result = sign_up(req.email, req.password, req.full_name, wants_admin=wants_admin)
     if not result.success:
         raise HTTPException(status_code=400, detail=result.error or "Erreur inscription")

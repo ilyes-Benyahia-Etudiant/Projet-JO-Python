@@ -30,7 +30,11 @@ if SUPABASE_URL.endswith("/"):
 COOKIE_SECURE = (os.getenv("COOKIE_SECURE", "false").lower() == "true")
 ADMIN_EMAILS = [e.strip() for e in os.getenv("ADMIN_EMAILS", "admin@example.com").split(",") if e.strip()]
 ADMIN_SIGNUP_CODE = os.getenv("ADMIN_SIGNUP_CODE", "")  # legacy
-ADMIN_SECRET_PASSWORD = os.getenv("ADMIN_SECRET_PASSWORD", "")
+# Supprime l'ancien si présent
+# ADMIN_SECRET_PASSWORD = os.getenv("ADMIN_SECRET_PASSWORD", "")  # Comment ou supprime
+
+# Ajoute ou garde
+ADMIN_SECRET_HASH = os.getenv("ADMIN_SECRET_HASH", "")
 
 # CORS (dev)
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]

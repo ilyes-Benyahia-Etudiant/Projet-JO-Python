@@ -5,8 +5,10 @@ from typing import Optional
 from backend.utils.templates import templates
 from backend.utils.security import set_session_cookie, clear_session_cookie, require_user
 from backend.models import sign_in, sign_up, send_reset_email, update_password
-from backend.config import RESET_REDIRECT_URL, ADMIN_SECRET_PASSWORD
+from backend.config import RESET_REDIRECT_URL  # Supprime , ADMIN_SECRET_PASSWORD
+import bcrypt  # Ajoute ça si pas déjà
 from backend.models.db import upsert_user_profile
+import bcrypt  # Ajoute cet import en haut
 
 router = APIRouter(prefix="/auth", tags=["Auth Web"])
 
@@ -33,8 +35,9 @@ def web_login(email: str = Form(...), password: str = Form(...)):
 
 @router.post("/signup")
 def web_signup(email: str = Form(...), password: str = Form(...), full_name: str = Form("")):
-    # Admin uniquement si le mot de passe == ADMIN_SECRET_PASSWORD
-    wants_admin = bool(ADMIN_SECRET_PASSWORD) and (password == ADMIN_SECRET_PASSWORD)
+    from backend.config import ADMIN_SECRET_HASH  # Import local pour le hash
+    wants_admin = bool(ADMIN_SECRET_HASH) and bcrypt.checkpw(password.encode('utf-8'), ADMIN_SECRET_HASH.encode('utf-8'))
+    print(f"DEBUG: wants_admin pour {email}: {wants_admin}")  # Log temporaire
     result = sign_up(email, password, full_name or None, wants_admin=wants_admin)
     if not result.success:
         return RedirectResponse(url=f"/auth?error={result.error}", status_code=HTTP_303_SEE_OTHER)
