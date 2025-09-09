@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
       msgEl.className = "msg err";
       (msgEl as HTMLElement).style.display = "block";
     } else if (type === "signup") {
-      msgEl.textContent = "Compte confirmé. Vous pouvez maintenant vous connecter.";
+      msgEl.textContent = "Votre email est confirmé. Vous pouvez maintenant vous connecter.";
       msgEl.className = "msg ok";
       (msgEl as HTMLElement).style.display = "block";
     }

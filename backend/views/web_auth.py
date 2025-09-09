@@ -38,11 +38,19 @@ def auth_fallback(request: Request, rest_of_path: str, error: Optional[str] = No
 # Déconnexion HTML: supprime le cookie et redirige vers /auth avec un message
 @router.post("/logout", include_in_schema=False)
 def auth_logout_post(response: Response):
-    clear_session_cookie(response)
-    return RedirectResponse(url="/auth?message=D%C3%A9connexion%20r%C3%A9ussie", status_code=HTTP_303_SEE_OTHER)
+    r = RedirectResponse(url="/auth?message=D%C3%A9connexion%20r%C3%A9ussie", status_code=HTTP_303_SEE_OTHER)
+    clear_session_cookie(r)
+    r.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    return r
 
 # Optionnel: support GET pour la déconnexion (liens simples)
 @router.get("/logout", include_in_schema=False)
 def auth_logout_get(response: Response):
-    clear_session_cookie(response)
-    return RedirectResponse(url="/auth?message=D%C3%A9connexion%20r%C3%A9ussie", status_code=HTTP_303_SEE_OTHER)
+    r = RedirectResponse(url="/auth?message=D%C3%A9connexion%20r%C3%A9ussie", status_code=HTTP_303_SEE_OTHER)
+    clear_session_cookie(r)
+    r.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    return r
