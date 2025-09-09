@@ -54,21 +54,9 @@ async def confirm_checkout(request: Request, session_id: str, user: dict = Depen
     - Vérifie que la session appartient à l'utilisateur courant
     """
     models.require_stripe()
-    session = models.get_session(session_id)
-
-    payment_status = session.get("payment_status") or ""
-    if payment_status != "paid":
-        raise HTTPException(status_code=400, detail=f"Paiement non confirmé (payment_status={payment_status})")
-
-    meta_user_id, cart_list = models.extract_metadata_from_session(session)
-
-    if meta_user_id and meta_user_id != user.get("id"):
-        raise HTTPException(status_code=403, detail="Session appartenant à un autre utilisateur")
-
     user_token = request.cookies.get(COOKIE_NAME)
-
-    created = models.process_cart_purchase(user.get("id"), cart_list, user_token=user_token)
-    logger.info("payments.confirm created=%s items=%s user_id=%s session_id=%s", created, len(cart_list or []), user.get("id"), session_id)
+    created = models.confirm_session_by_id(session_id, user.get("id"), user_token)
+    logger.info("payments.confirm created=%s user_id=%s session_id=%s", created, user.get("id"), session_id)
     return JSONResponse({"status": "ok", "created": created})
 
 @router.post("/confirm")

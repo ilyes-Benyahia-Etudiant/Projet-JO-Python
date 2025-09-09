@@ -30,11 +30,14 @@ from .payments import (
     extract_metadata,
     get_session,
     extract_metadata_from_session,
+    process_cart_purchase,
+    confirm_session_by_id,  # ajouter ceci
+)
+from .payments_cart import (
     aggregate_quantities,
     get_offers_map,
     to_line_items,
     make_metadata,
-    process_cart_purchase,
 )
 
 __all__ = [
@@ -75,4 +78,5 @@ __all__ = [
     "to_line_items",
     "make_metadata",
     "process_cart_purchase",
+    "confirm_session_by_id",  # et ceci
 ]
