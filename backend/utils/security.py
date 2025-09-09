@@ -47,7 +47,7 @@ def get_current_user(request: Request) -> Dict[str, Any]:
         uid = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
         return {"id": uid, "email": email, "metadata": metadata or {}, "role": role, "token": token}
     except Exception:
-        raise HTTPException(status_code=401, detail="Session invalide")
+        raise HTTPException(status_code=401, detail="Session expirée, veuillez vous connecter")
 
 def require_user(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
     return user

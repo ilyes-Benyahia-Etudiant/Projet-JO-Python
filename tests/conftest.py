@@ -1,9 +1,11 @@
 import pytest
 from typing import Generator, Dict, Any
 from fastapi.testclient import TestClient
+from unittest.mock import MagicMock, AsyncMock
 
 from backend.app import app as fastapi_app
 from backend.utils.security import require_user
+from backend.views.admin_offres import require_admin
 
 # Marquage automatique selon le dossier
 def pytest_collection_modifyitems(config, items):
@@ -24,6 +26,30 @@ def app():
 def client(app) -> Generator[TestClient, None, None]:
     with TestClient(app) as c:
         yield c
+
+@pytest.fixture
+def authenticated_user(monkeypatch):
+    """Un client API avec un utilisateur admin authentifié."""
+    admin_user = {
+        "id": "admin-user-id",
+        "email": "admin@example.com",
+        "role": "admin",
+        "user_metadata": {"full_name": "Admin User"},
+    }
+    
+    def mock_require_admin():
+        return admin_user
+
+    monkeypatch.setattr("backend.models.auth.sign_in", lambda email, password: mock_auth_response)
+    return mock_auth_response
+
+@pytest.fixture
+def authenticated_admin_client(app, client):
+    def _override_require_admin():
+        return {"id": "admin-user-id", "role": "admin", "email": "admin@example.com"}
+    app.dependency_overrides[require_admin] = _override_require_admin
+    yield client
+    app.dependency_overrides.clear()
 
 # Simuler un utilisateur authentifié pour les endpoints protégés
 @pytest.fixture(autouse=True)
@@ -46,7 +72,7 @@ def _override_require_user(app):
 def _mock_payments_and_stripe(monkeypatch):
     import backend.models as models
 
-    # Neutralise la nécessité d'une vraie clé Stripe
+    # Neutralise la nécessité d’une vraie clé Stripe
     monkeypatch.setattr(models, "require_stripe", lambda: None, raising=True)
 
     # Fake session Stripe
@@ -78,3 +104,31 @@ def _mock_payments_and_stripe(monkeypatch):
     monkeypatch.setattr(models, "get_offers_map", _fake_get_offers_map, raising=True)
     monkeypatch.setattr(models, "to_line_items", _fake_to_line_items, raising=True)
     monkeypatch.setattr(models, "process_cart_purchase", _fake_process_cart_purchase, raising=True)
+
+
+# Mock database dependency for all tests
+@pytest.fixture(scope="function", autouse=True)
+def mock_db_dependency(monkeypatch):
+    """
+    Mocks database access for all tests by patching functions in the `backend.models.db` module.
+    This prevents any real database calls from being made.
+    """
+    # Using MagicMock to prevent any real calls to Supabase.
+    # This will make DB calls do nothing and return a mock object.
+    monkeypatch.setattr("backend.models.db.get_supabase", lambda: MagicMock())
+    monkeypatch.setattr("backend.models.db.get_service_supabase", lambda: MagicMock())
+
+    # For functions that are expected to return something, we can provide a default.
+    monkeypatch.setattr("backend.models.db.fetch_offres", lambda: [])
+    monkeypatch.setattr("backend.models.db.get_user_by_email", lambda email: None)
+    monkeypatch.setattr("backend.models.db.get_user_by_id", lambda user_id: {"id": user_id, "email": "test@example.com"})
+    monkeypatch.setattr("backend.models.db.get_offre_by_id", lambda offre_id: {"id": offre_id, "title": "Test Offre", "price": 100})
+    monkeypatch.setattr("backend.models.db.fetch_admin_commandes", lambda limit=100: [])
+    monkeypatch.setattr("backend.models.db.fetch_user_commandes", lambda user_id, limit=50: [])
+    monkeypatch.setattr("backend.models.db.get_commande_by_token", lambda token: None)
+    monkeypatch.setattr("backend.models.db.fetch_offres_by_ids", lambda ids: [])
+    monkeypatch.setattr("backend.models.db.insert_commande", lambda **kwargs: {"status": "ok"})
+    monkeypatch.setattr("backend.models.db.insert_commande_with_token", lambda **kwargs: {"status": "ok"})
+    monkeypatch.setattr("backend.models.health.health_supabase_info", lambda: {"connect_ok": True})
+
+    yield

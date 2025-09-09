@@ -1,230 +1,194 @@
-document.addEventListener("DOMContentLoaded", () => {
-  interface ApiMessageResponse {
-    message?: string;
-    detail?: string;
-  }
+// --- Type Definitions ---
 
-  interface SignupPayload {
+// Réponse générique pour les messages simples (inscription, etc.)
+interface ApiMessageResponse {
+  message?: string;
+  detail?: string;
+}
+
+// Réponse spécifique pour une connexion réussie
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: {
+    id: string;
     email: string;
-    password: string;
-    full_name: string;
+    role: "user" | "admin";
+  };
+}
+
+// Éléments du formulaire passés aux fonctions de rappel
+interface FormElements {
+  form: HTMLFormElement;
+  submitBtn: HTMLButtonElement | null;
+  messageEl: HTMLElement | null;
+}
+
+// --- Constantes ---
+
+const SELECTORS = {
+  loginForm: "#web-login-form",
+  signupForm: "#web-signup-form",
+  forgotForm: "#web-forgot-form",
+};
+
+// --- Utilitaires DOM ---
+
+function setMessage(element: HTMLElement | null, msg: string, type: "ok" | "err"): void {
+  if (!element) return;
+  element.textContent = msg;
+  element.className = `message-area ${type}`; // Classe cohérente pour les messages
+}
+
+// --- Logique principale ---
+
+/**
+ * Lie un gestionnaire de soumission à un formulaire pour les appels API.
+ * Envoie les données en tant que JSON.
+ */
+async function bindFormSubmit<T>(options: {
+  formSelector: string;
+  apiEndpoint: string;
+  transformPayload?: (payload: Record<string, any>) => Record<string, any>;
+  onSuccess?: (data: T, elements: FormElements) => void;
+  redirectUrl?: string | ((data: T) => string); // URL de redirection statique ou dynamique
+}): Promise<void> {
+  const form = document.querySelector<HTMLFormElement>(options.formSelector);
+  if (!form) {
+    console.warn(`Formulaire non trouvé: ${options.formSelector}`);
+    return;
   }
 
-  interface RecoverySessionPayload {
-    access_token: string;
-  }
+  const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+  const messageEl = form.querySelector<HTMLElement>(".message-area");
 
-  class AuthUI {
-    private readonly modalRegisterForm: HTMLFormElement | null = document.getElementById("register-form") as HTMLFormElement | null;
-    private readonly modalMsgEl: HTMLElement | null = document.getElementById("modal-signup-msg");
-    private readonly modalBtn: HTMLButtonElement | null = (this.modalRegisterForm?.querySelector("#modal-btn-signup") as HTMLButtonElement) || null;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!submitBtn) return;
 
-    private readonly webSignupForm: HTMLFormElement | null = document.querySelector('form[action="/auth/signup"]') as HTMLFormElement | null;
-    private webMsg: HTMLElement | null = null;
-    private readonly webBtn: HTMLButtonElement | null = (this.webSignupForm?.querySelector('button[type="submit"]') as HTMLButtonElement) || null;
+    const formData = new FormData(form);
+    
+    // Correction : Remplacer Object.fromEntries par une boucle forEach
+    const payload: { [key: string]: any } = {};
+    formData.forEach((value, key) => {
+      payload[key] = value;
+    });
 
-    constructor() {
-      this.handleSupabaseHash().catch(() => void 0);
-      this.bindForgotLink();
-      this.bindModalSignup();
-      this.bindWebSignup();
+    if (options.transformPayload) {
+      // Note: la transformation se fait maintenant sur l'objet 'payload'
+      Object.assign(payload, options.transformPayload(payload));
     }
 
-    private setMsg = (el: HTMLElement | null, text: string, kind: "ok" | "err" = "err") => {
-      if (!el) return;
-      el.textContent = text || "";
-      el.classList.remove("ok", "err");
-      el.classList.add(kind === "ok" ? "ok" : "err");
-      el.style.display = text ? "" : "none";
-      el.setAttribute("role", "alert");
-    };
+    try {
+      submitBtn.disabled = true;
+      setMessage(messageEl, "Envoi en cours...", "ok");
 
-    private handleSupabaseHash = async () => {
-      try {
-        const hash = window.location.hash || "";
-        if (!hash.startsWith("#")) return;
-
-        const params = new URLSearchParams(hash.slice(1));
-        const type = params.get("type");
-        const accessToken = params.get("access_token");
-
-        if (type === "signup") {
-          history.replaceState({}, "", window.location.pathname + window.location.search);
-          window.location.href = "/auth?message=Votre%20compte%20a%20%C3%A9t%C3%A9%20confirm%C3%A9%2C%20vous%20pouvez%20vous%20connecter";
-          return;
-        }
-
-        if (type === "recovery" && accessToken) {
-          const res = await Http.request("/auth/recover/session", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ access_token: accessToken }),
-          }).catch(() => null);
-
-          history.replaceState({}, "", window.location.pathname + window.location.search);
-          if (res && res.redirected) {
-            window.location.href = res.url;
-          } else if (res && res.ok) {
-            window.location.href = "/auth/reset";
-          }
-        }
-      } catch (e) {
-        console.warn("Erreur parsing hash Supabase:", e);
-      }
-    };
-
-    private bindForgotLink = () => {
-      const forgotLink = document.getElementById("forgot-link");
-      if (!forgotLink) return;
-
-      forgotLink.addEventListener("click", (e) => {
-        e.preventDefault();
-        const emailInputA = document.querySelector('form[action="/auth/login"] input[name="email"]') as HTMLInputElement | null;
-        const emailInputB = document.getElementById("login-email") as HTMLInputElement | null;
-        const emailEl = emailInputA || emailInputB;
-        const email = (emailEl?.value || "").trim();
-        if (!email) {
-          emailEl?.focus();
-          alert("Veuillez saisir votre email dans le formulaire de connexion.");
-          return;
-        }
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = "/auth/forgot";
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = "email";
-        input.value = email;
-        form.appendChild(input);
-        document.body.appendChild(form);
-        form.submit();
+      const response = await (window as any).Http.request(options.apiEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
-    };
 
-    // Ajouter cette fonction de validation de mot de passe
-    private validatePassword = (password: string): { valid: boolean; message: string } => {
-      if (password.length < 8) {
-        return { valid: false, message: "Le mot de passe doit contenir au moins 8 caractères" };
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = responseData.detail || `Erreur HTTP ${response.status}`;
+        throw new Error(errorMessage);
       }
-      
-      const hasUpperCase = /[A-Z]/.test(password);
-      const hasLowerCase = /[a-z]/.test(password);
-      const hasDigit = /\d/.test(password);
-      const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};:'"\\|,.<>\/?]/.test(password);
-      
-      if (!hasUpperCase || !hasLowerCase || !hasDigit || !hasSpecialChar) {
-        return { 
-          valid: false, 
-          message: "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial" 
-        };
+
+      const data = responseData as T;
+      setMessage(
+        messageEl,
+        (typeof data === 'object' && data && 'message' in data
+          ? (data as { message?: string }).message || "Opération réussie !"
+          : "Opération réussie !"),
+        "ok"
+      );
+
+      if (options.onSuccess) {
+        options.onSuccess(data, { form, submitBtn, messageEl });
       }
-      
-      return { valid: true, message: "" };
-    };
 
-    private bindModalSignup = () => {
-      if (!this.modalRegisterForm) return;
-
-      this.modalRegisterForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const full_name = (document.getElementById("modal-signup-name") as HTMLInputElement | null)?.value.trim() || "";
-        const email = (document.getElementById("modal-signup-email") as HTMLInputElement | null)?.value.trim() || "";
-        const password = (document.getElementById("modal-signup-password") as HTMLInputElement | null)?.value.trim() || "";
-        const password2 = (document.getElementById("modal-signup-password2") as HTMLInputElement | null)?.value.trim() || "";
-
-        if (password !== password2) {
-          this.setMsg(this.modalMsgEl, "Les mots de passe ne correspondent pas", "err");
-          return;
-        }
-        if (!email || !password || !full_name) {
-          this.setMsg(this.modalMsgEl, "Veuillez remplir tous les champs requis", "err");
-          return;
-        }
-        
-        // Ajouter la validation du mot de passe
-        const passwordValidation = this.validatePassword(password);
-        if (!passwordValidation.valid) {
-          this.setMsg(this.modalMsgEl, passwordValidation.message, "err");
-          return;
-        }
-
-        try {
-          if (this.modalBtn) this.modalBtn.disabled = true;
-          this.setMsg(this.modalMsgEl, "Inscription en cours...", "ok");
-
-          const data = await Http.postJson<Partial<ApiMessageResponse>>("/api/v1/auth/signup", {
-            email, password, full_name,
-          });
-
-          const message = data?.message || "Inscription réussie, vérifiez votre email";
-          this.setMsg(this.modalMsgEl, message, "ok");
-        } catch (err: any) {
-          const msg = err?.message || "Erreur d'inscription";
-          this.setMsg(this.modalMsgEl, msg, "err");
-        } finally {
-          if (this.modalBtn) this.modalBtn.disabled = false;
-        }
-      });
-    };
-
-    private ensureWebMsg = () => {
-      if (!this.webSignupForm) return;
-      let webMsg = this.webSignupForm.querySelector(".msg.auth-signup") as HTMLElement | null;
-      if (!webMsg) {
-        webMsg = document.createElement("div");
-        webMsg.className = "msg auth-signup";
-        webMsg.style.display = "none";
-        this.webSignupForm.insertBefore(webMsg, this.webSignupForm.firstChild);
+      if (options.redirectUrl) {
+        const url = typeof options.redirectUrl === 'function' ? options.redirectUrl(data) : options.redirectUrl;
+        window.location.assign(url);
       }
-      this.webMsg = webMsg;
-    };
+    } catch (error: any) {
+      let errorMsg = error.message || "Une erreur est survenue.";
+      if (errorMsg.includes("Utilisateur existe déjà")) {
+        errorMsg = "Cet email est déjà utilisé. Essayez de vous connecter ou réinitialisez votre mot de passe.";
+      }
+      setMessage(messageEl, errorMsg, "err");
+      console.error(`Erreur lors de la soumission à ${options.apiEndpoint}:`, error);
+    } finally {
+      // Ne réactive le bouton qu'en cas d'erreur sans redirection
+      if (!options.redirectUrl) {
+          submitBtn.disabled = false;
+      }
+    }
+  });
+}
 
-    private bindWebSignup = () => {
-      if (!this.webSignupForm) return;
-      this.ensureWebMsg();
+/**
+ * Initialise tous les formulaires d'authentification. Exportée pour les tests.
+ */
+function initializeAuthForms(): void {
+  // --- Formulaire de Connexion ---
+  bindFormSubmit<LoginResponse>({
+    formSelector: SELECTORS.loginForm,
+    apiEndpoint: "/api/v1/auth/login",
+    // L'API attend 'email', le formulaire utilise 'email', donc pas de transformation nécessaire.
+    redirectUrl: (data) => (data.user.role === "admin" ? "/admin" : "/session"),
+  });
 
-      this.webSignupForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        if (!this.webSignupForm) return;
+  // --- Formulaire d'Inscription ---
+  bindFormSubmit<ApiMessageResponse | LoginResponse>({
+    formSelector: SELECTORS.signupForm,
+    apiEndpoint: "/api/v1/auth/signup",
+    onSuccess: (data, { form, messageEl }) => {
+      const asAny = data as any;
+      let msg = (asAny && asAny.message) || "Inscription réussie ! Vérifiez votre email pour confirmer et activez votre compte.";
+      setMessage(messageEl, msg, "ok");
 
-        const formData = new FormData(this.webSignupForm);
-        const email = (formData.get("email") || "").toString().trim();
-        const password = (formData.get("password") || "").toString().trim();
-        const full_name = (formData.get("full_name") || "").toString().trim();
-        const admin_code = (formData.get("admin_code") || "").toString().trim();
+      if (asAny && asAny.access_token && asAny.user) {
+        // Délai pour que le message soit visible avant redirection
+        setTimeout(() => {
+          window.location.assign("/");
+        }, 2000);
+        return;
+      }
+      form.reset();
+    },
+  });
 
-        if (!email || !password || !full_name) {
-          this.setMsg(this.webMsg, "Veuillez remplir tous les champs requis", "err");
-          return;
-        }
-        
-        // Ajouter la validation du mot de passe
-        const passwordValidation = this.validatePassword(password);
-        if (!passwordValidation.valid) {
-          this.setMsg(this.webMsg, passwordValidation.message, "err");
-          return;
-        }
+  bindFormSubmit<ApiMessageResponse>({
+    formSelector: SELECTORS.forgotForm,
+    apiEndpoint: "/api/v1/auth/request-password-reset",
+    onSuccess: (data, { form, messageEl }) => {
+      setMessage(messageEl, data.message || "Un email de réinitialisation a été envoyé si le compte existe.", "ok");
+      form.reset();
+    },
+  });
 
-        try {
-          if (this.webBtn) this.webBtn.disabled = true;
-          this.setMsg(this.webMsg, "Inscription en cours...", "ok");
-
-          const data = await Http.postJson<Partial<ApiMessageResponse>>("/api/v1/auth/signup", {
-            email, password, full_name, admin_code: admin_code || undefined,
-          });
-
-          const message = data?.message || "Inscription réussie, vérifiez votre email";
-          this.setMsg(this.webMsg, message, "ok");
-        } catch (err: any) {
-          const msg = err?.message || "Erreur d'inscription";
-          this.setMsg(this.webMsg, msg, "err");
-        } finally {
-          if (this.webBtn) this.webBtn.disabled = false;
-        }
-      });
-    };
+  const forgotLink = document.querySelector<HTMLAnchorElement>("#forgot-link");
+  const forgotContainer = document.querySelector<HTMLElement>("#forgot-container");
+  if (forgotLink && forgotContainer) {
+    forgotLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      forgotContainer.style.display = "block";
+      console.log("Formulaire mot de passe oublié affiché");
+      try { forgotContainer.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch {}
+    });
+  } else {
+    console.warn("Élément forgot-link ou forgot-container non trouvé");
   }
+}
 
-  new AuthUI();
-});
+// --- Initialisation automatique au chargement de la page ---
+window.initializeAuthForms = initializeAuthForms;
+document.addEventListener("DOMContentLoaded", initializeAuthForms);
+
+

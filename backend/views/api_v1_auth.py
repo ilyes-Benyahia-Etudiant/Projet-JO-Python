@@ -1,12 +1,14 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, Dict, Any
 from backend.models import sign_in, sign_up, send_reset_email, update_password
-from backend.utils.security import require_user
+from backend.utils.security import require_user, set_session_cookie, clear_session_cookie
 from backend.config import RESET_REDIRECT_URL
 from backend.models.db import upsert_user_profile
 import re
 import bcrypt
+from backend.models.usecases_auth import update_password as update_password_usecase
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth API"])
 
@@ -18,16 +20,16 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: Optional[str] = None
-    
-    @validator('password')
-    def password_strength(cls, v):
+
+    @field_validator("password")
+    def password_strength(cls, v: str) -> str:
         if not re.search(r'[A-Z]', v):
             raise ValueError('Le mot de passe doit contenir au moins une majuscule')
         if not re.search(r'[a-z]', v):
             raise ValueError('Le mot de passe doit contenir au moins une minuscule')
         if not re.search(r'\d', v):
             raise ValueError('Le mot de passe doit contenir au moins un chiffre')
-        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'"\\|,.<>\/?]', v):
+        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'\"\\|,.<>\/?]', v):
             raise ValueError('Le mot de passe doit contenir au moins un caractère spécial')
         return v
 
@@ -45,12 +47,12 @@ class UpdatePasswordRequest(BaseModel):
             raise ValueError('Le mot de passe doit contenir au moins une minuscule')
         if not re.search(r'\d', v):
             raise ValueError('Le mot de passe doit contenir au moins un chiffre')
-        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'"\\|,.<>\/?]', v):
+        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'\"\\|,.<>\/?]', v):
             raise ValueError('Le mot de passe doit contenir au moins un caractère spécial')
         return v
 
 @router.post("/login")
-def api_login(req: LoginRequest):
+def api_login(req: LoginRequest, response: Response):
     result = sign_in(req.email, req.password)
     if not result.success:
         raise HTTPException(status_code=401, detail=result.error or "Identifiants invalides")
@@ -60,25 +62,29 @@ def api_login(req: LoginRequest):
         upsert_user_profile(result.user.get("id"), result.user.get("email"), result.user.get("role"))
     except Exception:
         pass
+    
+    if result.access_token:
+        set_session_cookie(response, result.access_token)
 
-    return {"access_token": (result.session or {}).get("access_token"), "token_type": "bearer", "user": result.user}
+    return {"access_token": result.access_token, "token_type": "bearer", "user": result.user}
 
 @router.post("/signup")
 @router.post("/signup_admin")
-def api_signup(req: SignupRequest):
+def api_signup(req: SignupRequest, response: Response):
     from backend.config import ADMIN_SECRET_HASH  # Import local
     wants_admin = bool(ADMIN_SECRET_HASH) and bcrypt.checkpw(req.password.encode('utf-8'), ADMIN_SECRET_HASH.encode('utf-8'))
     result = sign_up(req.email, req.password, req.full_name, wants_admin=wants_admin)
     if not result.success:
         raise HTTPException(status_code=400, detail=result.error or "Erreur inscription")
 
-    if (result.session or {}).get("access_token"):
+    if result.access_token:
         # Sync DB users.role si session créée
         try:
             upsert_user_profile(result.user.get("id"), result.user.get("email"), result.user.get("role"))
         except Exception:
             pass
-        return {"access_token": (result.session or {}).get("access_token"), "token_type": "bearer", "user": result.user}
+        set_session_cookie(response, result.access_token)
+        return {"access_token": result.access_token, "token_type": "bearer", "user": result.user}
 
     return {"message": result.error or "Inscription réussie, vérifiez votre email"}
 
@@ -93,9 +99,20 @@ def api_request_reset(req: ResetEmailRequest):
         raise HTTPException(status_code=400, detail=result.error or "Erreur envoi email")
     return {"message": "Email de réinitialisation envoyé"}
 
+class UpdatePasswordBody(UpdatePasswordRequest):
+    token: str
+
 @router.post("/update-password")
-def api_update_password(req: UpdatePasswordRequest, user: Dict[str, Any] = Depends(require_user)):
-    result = update_password(user["token"], req.new_password)
+async def update_password(body: UpdatePasswordBody):
+    token = (body.token or "").strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="Token manquant")
+    result = update_password_usecase(token, body.new_password)
     if not result.success:
-        raise HTTPException(status_code=400, detail=result.error or "Erreur mise à jour")
+        raise HTTPException(status_code=400, detail=result.error or "Erreur mise à jour du mot de passe")
     return {"message": "Mot de passe mis à jour"}
+
+@router.post("/logout")
+def api_logout(response: Response):
+    clear_session_cookie(response)
+    return {"message": "Déconnexion réussie"}

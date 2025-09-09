@@ -13,26 +13,45 @@
     <h1>Authentification</h1>
     {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
     {% if message %}<div class="msg ok">{{ message }}</div>{% endif %}
+    <!-- Nouveau: message client auto (caché par défaut) -->
+    <div id="client-msg" class="msg ok" style="display:none"></div>
 
     <div style="display:flex; gap:24px; align-items:flex-start">
-      <form method="post" action="/auth/login" style="flex:1">
+      <div class="auth-card">
         <h2>Connexion</h2>
-        <div class="group">
-          <label>Email</label>
-          <input class="input" name="email" id="login-email" type="email" required/>
-        </div>
-        <div class="group">
-          <label>Mot de passe</label>
-          <input class="input" name="password" type="password" required/>
-        </div>
-        <div class="group">
-          <a href="#" id="forgot-link" class="auth-link">Mot de passe oublié ?</a>
-        </div>
-        <button class="btn" type="submit">Se connecter</button>
-      </form>
+        <form id="web-login-form" action="javascript:void(0);">
+          <div class="message-area"></div>
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input class="input" name="email" id="login-email" type="email" required/>
+          </div>
+          <div class="group">
+            <label>Mot de passe</label>
+            <input class="input" name="password" type="password" required/>
+          </div>
+          <div class="group">
+            <a href="#" id="forgot-link" class="auth-link">Mot de passe oublié ?</a>
+          </div>
+          <button class="btn" type="submit">Se connecter</button>
+        </form>
 
-      <form method="post" action="/auth/signup" style="flex:1">
+        <!-- Formulaire "Mot de passe oublié" (caché par défaut) -->
+        <div id="forgot-container" style="display:none; margin-top:12px;">
+          <form id="web-forgot-form" action="javascript:void(0);">
+            <div class="message-area"></div>
+            <div class="group">
+              <label for="forgot-email">Email</label>
+              <input class="input" id="forgot-email" name="email" type="email" required/>
+            </div>
+            <button class="btn" type="submit">Envoyer le lien de réinitialisation</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Inscription: id correct + pas d'action pour que le JS intercepte -->
+      <form id="web-signup-form" method="post" style="flex:1" action="javascript:void(0);">
         <h2>Inscription</h2>
+        <div class="message-area"></div>
         <div class="group">
           <label>Nom et prénom</label>
           <input class="input" name="full_name" type="text" autocomplete="name" required/>
@@ -49,7 +68,10 @@
       </form>
     </div>
   </div>
-  <script src="/public/js/app/http.js"></script>
-  <script src="/public/js/app/auth.js"></script>
+  <script src="/public/js/http.js"></script>
+  <script src="/public/js/auth.js"></script>
+  
+  
 </body>
 </html>
+<!-- ... bas du fichier ... -->

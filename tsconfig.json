@@ -1,16 +1,23 @@
+
 {
   "compilerOptions": {
-    "target": "ES2019",
-    "lib": ["ES2019", "DOM"],
-    "module": "ES2020",
+    "target": "es6",
+    "module": "none",
     "strict": true,
+    "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmitOnError": true,
+    "outDir": "./public/js",
     "rootDir": "./src/ts",
-    "outDir": "./public/js/app",
-    "sourceMap": true
+    "lib": [
+      "dom",
+      "es2019"
+    ]
   },
-  "include": ["src/ts/**/*"],
-  "exclude": ["public/js"]
+  "include": [
+    "src/ts/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

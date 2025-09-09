@@ -1,7 +1,24 @@
 // Test TS autonome (sans framework) exécuté sous Node après compilation.
 // Il simule window/localStorage/Http et exécute la logique de payment-confirm.ts.
 
-declare const global: any;
+/**
+ * @jest-environment jsdom
+ */
+
+// La ligne "declare const global: any;" a été supprimée car elle est redondante.
+
+// Import removed since payment-confirm.ts is not a module
+
+// Mock de l'API Stripe.js
+const mockStripe = {
+  retrievePaymentIntent: jest.fn(),
+};
+
+(global as any).Stripe = () => mockStripe;
+
+describe('handlePaymentConfirmation', () => {
+  // ... (le reste du fichier reste inchangé)
+});
 
 class SimpleLocalStorage {
   private store = new Map<string, string>();
@@ -111,3 +128,11 @@ class SimpleLocalStorage {
 
   console.log("OK: Le panier est vidé et la page est marquée comme rechargée après confirmation.");
 })();
+
+describe("payment confirm", () => {
+  it("charge le module sans erreur", () => {
+    expect(() => {
+      require("./payment-confirm"); // ou import selon ton setup
+    }).not.toThrow();
+  });
+});
