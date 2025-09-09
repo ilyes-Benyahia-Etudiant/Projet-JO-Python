@@ -1,23 +1,32 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TicketsManager {
     constructor() {
         this.init = () => {
             this.loadTickets();
         };
-        this.loadTickets = async () => {
+        this.loadTickets = () => __awaiter(this, void 0, void 0, function* () {
             try {
-                const response = await fetch('/api/tickets/');
+                const response = yield fetch('/api/tickets/');
                 if (!response.ok) {
                     throw new Error('Erreur lors du chargement des billets');
                 }
-                const tickets = await response.json();
+                const tickets = yield response.json();
                 this.renderTickets(tickets);
             }
             catch (error) {
                 console.error('Erreur:', error);
                 this.showError("Erreur lors du chargement des billets. Veuillez réessayer plus tard.");
             }
-        };
+        });
         this.renderTickets = (tickets) => {
             if (!this.ticketsListElement)
                 return;
@@ -67,4 +76,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 // Expose global pour les tests
 window.TicketsManager = TicketsManager;
-//# sourceMappingURL=tickets.js.map

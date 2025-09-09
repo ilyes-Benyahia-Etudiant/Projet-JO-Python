@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var _a;
 class Http {
     static normalizeExpected(expected) {
@@ -52,19 +61,19 @@ class Http {
 _a = Http;
 Http.mergeInit = (init = {}) => {
     const headers = new Headers(init.headers || {});
-    return { ...init, headers };
+    return Object.assign(Object.assign({}, init), { headers });
 };
 Http.request = (url, init = {}) => {
     const finalInit = _a.mergeInit(init);
     return fetch(url, finalInit);
 };
-Http.json = async (url, init = {}) => {
-    const res = await _a.request(url, init);
+Http.json = (url_1, ...args_1) => __awaiter(void 0, [url_1, ...args_1], void 0, function* (url, init = {}) {
+    const res = yield _a.request(url, init);
     let data = undefined;
     try {
-        data = await res.json();
+        data = yield res.json();
     }
-    catch {
+    catch (_b) {
         // ignore JSON parse errors; data stays undefined
     }
     if (!res.ok) {
@@ -74,31 +83,25 @@ Http.json = async (url, init = {}) => {
         }
         if (!msg) {
             try {
-                msg = await res.text();
+                msg = yield res.text();
             }
-            catch {
+            catch (_c) {
                 // ignore
             }
         }
         throw new Error(msg || `HTTP ${res.status}`);
     }
     return data;
-};
+});
 Http.getJson = (url, init = {}) => {
-    return _a.json(url, { ...init, method: "GET" });
+    return _a.json(url, Object.assign(Object.assign({}, init), { method: "GET" }));
 };
 Http.postJson = (url, body, init = {}) => {
     const headers = new Headers(init.headers || {});
     if (!headers.has("Content-Type"))
         headers.set("Content-Type", "application/json");
-    return _a.json(url, {
-        ...init,
-        method: "POST",
-        headers,
-        body: body !== undefined ? JSON.stringify(body) : init.body,
-    });
+    return _a.json(url, Object.assign(Object.assign({}, init), { method: "POST", headers, body: body !== undefined ? JSON.stringify(body) : init.body }));
 };
 // Expose global
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 window.Http = Http;
-//# sourceMappingURL=http.js.map

@@ -1,12 +1,10 @@
-// --- Type Definitions ---
+// --- Types ---
 
-// Réponse générique pour les messages simples (inscription, etc.)
 interface ApiMessageResponse {
   message?: string;
   detail?: string;
 }
 
-// Réponse spécifique pour une connexion réussie
 interface LoginResponse {
   access_token: string;
   token_type: string;
@@ -17,14 +15,13 @@ interface LoginResponse {
   };
 }
 
-// Éléments du formulaire passés aux fonctions de rappel
 interface FormElements {
   form: HTMLFormElement;
   submitBtn: HTMLButtonElement | null;
   messageEl: HTMLElement | null;
 }
 
-// --- Constantes ---
+// --- Sélecteurs ---
 
 const SELECTORS = {
   loginForm: "#web-login-form",
@@ -32,26 +29,52 @@ const SELECTORS = {
   forgotForm: "#web-forgot-form",
 };
 
-// --- Utilitaires DOM ---
+// --- Utilitaires UI ---
 
 function setMessage(element: HTMLElement | null, msg: string, type: "ok" | "err"): void {
   if (!element) return;
   element.textContent = msg;
-  element.className = `message-area ${type}`; // Classe cohérente pour les messages
+  element.className = `message-area ${type}`;
 }
 
-// --- Logique principale ---
+function showGlobalMessage(type: "ok" | "error", text: string): void {
+  const css = type === "error" ? "err" : "ok";
+  const clientMsg = document.getElementById("client-msg") as HTMLElement | null;
+  if (clientMsg) {
+    clientMsg.textContent = text;
+    clientMsg.className = "msg " + css;
+    clientMsg.style.display = "block";
+    return;
+  }
+  const card = document.querySelector<HTMLElement>(".card");
+  let el = document.querySelector<HTMLElement>(".msg." + css);
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "msg " + css;
+    if (card) card.prepend(el);
+    else document.body.prepend(el);
+  }
+  el.textContent = text;
+}
 
-/**
- * Lie un gestionnaire de soumission à un formulaire pour les appels API.
- * Envoie les données en tant que JSON.
- */
+// --- HTTP helper (tolérant) ---
+
+async function httpRequest(url: string, init?: RequestInit): Promise<Response> {
+  const w: any = window as any;
+  if (w?.Http?.request) {
+    return w.Http.request(url, init);
+  }
+  return fetch(url, init as RequestInit);
+}
+
+// --- Binding générique de formulaire ---
+
 async function bindFormSubmit<T>(options: {
   formSelector: string;
   apiEndpoint: string;
   transformPayload?: (payload: Record<string, any>) => Record<string, any>;
   onSuccess?: (data: T, elements: FormElements) => void;
-  redirectUrl?: string | ((data: T) => string); // URL de redirection statique ou dynamique
+  redirectUrl?: string | ((data: T) => string);
 }): Promise<void> {
   const form = document.querySelector<HTMLFormElement>(options.formSelector);
   if (!form) {
@@ -66,16 +89,18 @@ async function bindFormSubmit<T>(options: {
     e.preventDefault();
     if (!submitBtn) return;
 
+    // Laisser le navigateur afficher ses messages natifs si invalid
+    if (typeof form.reportValidity === "function" && !form.reportValidity()) {
+      return;
+    }
+
     const formData = new FormData(form);
-    
-    // Correction : Remplacer Object.fromEntries par une boucle forEach
-    const payload: { [key: string]: any } = {};
+    const payload: Record<string, any> = {};
     formData.forEach((value, key) => {
       payload[key] = value;
     });
 
     if (options.transformPayload) {
-      // Note: la transformation se fait maintenant sur l'objet 'payload'
       Object.assign(payload, options.transformPayload(payload));
     }
 
@@ -83,26 +108,44 @@ async function bindFormSubmit<T>(options: {
       submitBtn.disabled = true;
       setMessage(messageEl, "Envoi en cours...", "ok");
 
-      const response = await (window as any).Http.request(options.apiEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      let response: Response;
+      try {
+        response = await httpRequest(options.apiEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } catch (err: any) {
+        // Si le wrapper Http a rejeté (4xx/5xx), tenter de lire err.response
+        let errorMsg = "Une erreur est survenue.";
+        try {
+          const resp: Response | undefined = err?.response;
+          if (resp) {
+            let body: any = undefined;
+            try { body = await resp.json(); } catch {}
+            errorMsg = body?.detail || body?.message || `Erreur HTTP ${resp.status}`;
+          } else if (err?.message) {
+            errorMsg = err.message;
+          }
+        } catch {}
+        if (errorMsg.includes("Utilisateur existe déjà")) {
+          errorMsg = "Cet email est déjà utilisé. Essayez de vous connecter ou réinitialisez votre mot de passe.";
+        }
+        setMessage(messageEl, errorMsg, "err");
+        submitBtn.disabled = false;
+        return;
+      }
 
-      const responseData = await response.json();
-
+      const responseData = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const errorMessage = responseData.detail || `Erreur HTTP ${response.status}`;
+        const errorMessage = responseData.detail || responseData.message || `Erreur HTTP ${response.status}`;
         throw new Error(errorMessage);
       }
 
       const data = responseData as T;
       setMessage(
         messageEl,
-        (typeof data === 'object' && data && 'message' in data
+        (typeof data === "object" && data && "message" in data
           ? (data as { message?: string }).message || "Opération réussie !"
           : "Opération réussie !"),
         "ok"
@@ -113,48 +156,87 @@ async function bindFormSubmit<T>(options: {
       }
 
       if (options.redirectUrl) {
-        const url = typeof options.redirectUrl === 'function' ? options.redirectUrl(data) : options.redirectUrl;
+        const url = typeof options.redirectUrl === "function" ? options.redirectUrl(data) : options.redirectUrl;
         window.location.assign(url);
       }
     } catch (error: any) {
-      let errorMsg = error.message || "Une erreur est survenue.";
+      let errorMsg = error?.message || "Une erreur est survenue.";
       if (errorMsg.includes("Utilisateur existe déjà")) {
         errorMsg = "Cet email est déjà utilisé. Essayez de vous connecter ou réinitialisez votre mot de passe.";
       }
       setMessage(messageEl, errorMsg, "err");
       console.error(`Erreur lors de la soumission à ${options.apiEndpoint}:`, error);
     } finally {
-      // Ne réactive le bouton qu'en cas d'erreur sans redirection
       if (!options.redirectUrl) {
-          submitBtn.disabled = false;
+        submitBtn.disabled = false;
       }
     }
   });
 }
 
-/**
- * Initialise tous les formulaires d'authentification. Exportée pour les tests.
- */
+// --- Confirmation (lecture du hash) ---
+
+function handleAuthConfirmationFromHash(): void {
+  try {
+    const raw = window.location.hash || "";
+    if (!raw) return;
+
+    const params = new URLSearchParams(raw.startsWith("#") ? raw.slice(1) : raw);
+    const type = params.get("type");
+    const error = params.get("error") || params.get("error_description") || params.get("message");
+    const hasAnyToken = params.get("access_token") || params.get("token") || params.get("code");
+
+    if (error) {
+      showGlobalMessage("error", error);
+    } else if (type === "signup" || hasAnyToken) {
+      showGlobalMessage("ok", "Votre email est confirmé. Vous pouvez maintenant vous connecter.");
+    } else {
+      return;
+    }
+
+    try {
+      const url = new URL(window.location.href);
+      url.hash = "";
+      window.history.replaceState({}, "", url.toString());
+    } catch {
+      window.location.hash = "";
+    }
+  } catch (e) {
+    console.error("Erreur de lecture du hash:", e);
+  }
+}
+
+// --- Initialisation principale ---
+
 function initializeAuthForms(): void {
-  // --- Formulaire de Connexion ---
+  // Bandeau de confirmation depuis le hash
+  handleAuthConfirmationFromHash();
+
+  // Connexion
   bindFormSubmit<LoginResponse>({
     formSelector: SELECTORS.loginForm,
     apiEndpoint: "/api/v1/auth/login",
-    // L'API attend 'email', le formulaire utilise 'email', donc pas de transformation nécessaire.
     redirectUrl: (data) => (data.user.role === "admin" ? "/admin" : "/session"),
   });
 
-  // --- Formulaire d'Inscription ---
+  // Inscription
   bindFormSubmit<ApiMessageResponse | LoginResponse>({
     formSelector: SELECTORS.signupForm,
     apiEndpoint: "/api/v1/auth/signup",
+    transformPayload: (p) => {
+      const out = { ...p };
+      if (typeof out.email === "string") out.email = out.email.trim().toLowerCase();
+      if (typeof out.full_name === "string") out.full_name = out.full_name.trim();
+      return out;
+    },
     onSuccess: (data, { form, messageEl }) => {
       const asAny = data as any;
-      let msg = (asAny && asAny.message) || "Inscription réussie ! Vérifiez votre email pour confirmer et activez votre compte.";
+      const msg =
+        (asAny && asAny.message) ||
+        "Inscription réussie ! Vérifiez votre email pour confirmer et activer votre compte.";
       setMessage(messageEl, msg, "ok");
 
       if (asAny && asAny.access_token && asAny.user) {
-        // Délai pour que le message soit visible avant redirection
         setTimeout(() => {
           window.location.assign("/");
         }, 2000);
@@ -164,31 +246,44 @@ function initializeAuthForms(): void {
     },
   });
 
+  // Mot de passe oublié
   bindFormSubmit<ApiMessageResponse>({
     formSelector: SELECTORS.forgotForm,
     apiEndpoint: "/api/v1/auth/request-password-reset",
+    transformPayload: (p) => {
+      const out = { ...p };
+      if (typeof out.email === "string") out.email = out.email.trim().toLowerCase();
+      return out;
+    },
     onSuccess: (data, { form, messageEl }) => {
-      setMessage(messageEl, data.message || "Un email de réinitialisation a été envoyé si le compte existe.", "ok");
+      setMessage(
+        messageEl,
+        data.message || "Un email de réinitialisation a été envoyé si le compte existe.",
+        "ok"
+      );
       form.reset();
     },
   });
 
+  // UI: afficher le bloc "mot de passe oublié"
   const forgotLink = document.querySelector<HTMLAnchorElement>("#forgot-link");
   const forgotContainer = document.querySelector<HTMLElement>("#forgot-container");
   if (forgotLink && forgotContainer) {
     forgotLink.addEventListener("click", (e) => {
       e.preventDefault();
       forgotContainer.style.display = "block";
-      console.log("Formulaire mot de passe oublié affiché");
-      try { forgotContainer.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch {}
+      try {
+        forgotContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch {}
     });
   } else {
     console.warn("Élément forgot-link ou forgot-container non trouvé");
   }
 }
 
-// --- Initialisation automatique au chargement de la page ---
-window.initializeAuthForms = initializeAuthForms;
+// --- Bootstrap ---
+
+(window as any).initializeAuthForms = initializeAuthForms;
 document.addEventListener("DOMContentLoaded", initializeAuthForms);
 
 

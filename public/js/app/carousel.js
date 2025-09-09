@@ -53,4 +53,3 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     new Carousel(".carousel-img", 5000);
 });
-//# sourceMappingURL=carousel.js.map

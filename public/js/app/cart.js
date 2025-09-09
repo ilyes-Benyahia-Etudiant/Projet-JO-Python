@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 document.addEventListener("DOMContentLoaded", () => {
     class Cart {
         constructor(opts) {
@@ -12,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const parsed = JSON.parse(raw);
                     return Array.isArray(parsed) ? parsed : [];
                 }
-                catch {
+                catch (_a) {
                     return [];
                 }
             };
@@ -146,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
             this.bindCheckout = () => {
                 if (!this.payButton)
                     return;
-                this.payButton.addEventListener("click", async () => {
+                this.payButton.addEventListener("click", () => __awaiter(this, void 0, void 0, function* () {
                     const latest = this.loadCart();
                     if (!Array.isArray(latest) || latest.length === 0) {
                         alert("Votre panier est vide.");
@@ -154,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                     const items = latest.map((it) => ({ id: it.id, quantity: it.quantity }));
                     try {
-                        const data = await Http.postJson("/payments/checkout", { items });
+                        const data = yield Http.postJson("/payments/checkout", { items });
                         if (data.url)
                             window.location.href = data.url;
                         else
@@ -163,7 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     catch (e) {
                         alert("Erreur de paiement: " + ((e === null || e === void 0 ? void 0 : e.message) || e));
                     }
-                });
+                }));
             };
             this.cartItemsContainer = opts.itemsContainer;
             this.cartEmptyMessage = opts.emptyMessage;
@@ -183,4 +192,3 @@ document.addEventListener("DOMContentLoaded", () => {
         payButton: document.getElementById("cart-pay"),
     });
 });
-//# sourceMappingURL=cart.js.map

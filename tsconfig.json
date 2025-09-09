@@ -7,7 +7,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./public/js",
+    "outDir": "./public/js/app",
     "rootDir": "./src/ts",
     "lib": [
       "dom",

@@ -26,4 +26,3 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     new Navbar();
 });
-//# sourceMappingURL=navbar.js.map

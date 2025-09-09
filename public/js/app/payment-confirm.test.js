@@ -1,6 +1,28 @@
 "use strict";
 // Test TS autonome (sans framework) exécuté sous Node après compilation.
 // Il simule window/localStorage/Http et exécute la logique de payment-confirm.ts.
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+/**
+ * @jest-environment jsdom
+ */
+// La ligne "declare const global: any;" a été supprimée car elle est redondante.
+// Import removed since payment-confirm.ts is not a module
+// Mock de l'API Stripe.js
+const mockStripe = {
+    retrievePaymentIntent: jest.fn(),
+};
+global.Stripe = () => mockStripe;
+describe('handlePaymentConfirmation', () => {
+    // ... (le reste du fichier reste inchangé)
+});
 class SimpleLocalStorage {
     constructor() {
         this.store = new Map();
@@ -18,7 +40,7 @@ class SimpleLocalStorage {
         this.store.clear();
     }
 }
-(async () => {
+(() => __awaiter(void 0, void 0, void 0, function* () {
     // 1) Mocks globaux
     const localStorage = new SimpleLocalStorage();
     const locationMock = {
@@ -43,9 +65,9 @@ class SimpleLocalStorage {
     };
     // Http.request simulé: renvoie une "réponse" ok
     const Http = {
-        request: async (_url, _init) => {
+        request: (_url, _init) => __awaiter(void 0, void 0, void 0, function* () {
             return { ok: true };
-        },
+        }),
     };
     // Exposer les mocks dans le global
     global.window = windowMock;
@@ -63,16 +85,16 @@ class SimpleLocalStorage {
                 Http.request("/payments/confirm?session_id=" + encodeURIComponent(sessionId), {
                     method: "GET",
                 })
-                    .then(async (_res) => {
+                    .then((_res) => __awaiter(this, void 0, void 0, function* () {
                     // Vider le panier côté client après confirmation OK
                     try {
                         localStorage.removeItem("cart.v1");
                     }
-                    catch { }
+                    catch (_a) { }
                     url.searchParams.set("confirmed", "1");
                     window.history.replaceState({}, "", url.toString());
                     window.location.reload();
-                })
+                }))
                     .catch((err) => {
                     console.error("Erreur confirmation paiement:", err);
                 });
@@ -83,7 +105,7 @@ class SimpleLocalStorage {
         }
     })();
     // 4) Attendre la fin de la micro-tâche promise
-    await new Promise((r) => setTimeout(r, 0));
+    yield new Promise((r) => setTimeout(r, 0));
     // 5) Assertions minimales
     const remaining = localStorage.getItem("cart.v1");
     if (remaining !== null) {
@@ -99,5 +121,11 @@ class SimpleLocalStorage {
         throw new Error("Le paramètre confirmed=1 n'a pas été ajouté à l'URL");
     }
     console.log("OK: Le panier est vidé et la page est marquée comme rechargée après confirmation.");
-})();
-//# sourceMappingURL=payment-confirm.test.js.map
+}))();
+describe("payment confirm", () => {
+    it("charge le module sans erreur", () => {
+        expect(() => {
+            require("./payment-confirm"); // ou import selon ton setup
+        }).not.toThrow();
+    });
+});
