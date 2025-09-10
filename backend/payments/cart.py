@@ -1,13 +1,12 @@
-from typing import List, Dict, Any, Iterable
+"""
+Logique panier pure (pas de Stripe, pas de DB).
+"""
+from typing import List, Dict, Any
 from fastapi import HTTPException
 
-from .db import fetch_offres_by_ids
-
 def aggregate_quantities(items: List[Dict[str, Any]]) -> Dict[str, int]:
-    if not items:
-        raise HTTPException(status_code=400, detail="Panier vide")
     quantities: Dict[str, int] = {}
-    for it in items:
+    for it in items or []:
         offre_id = str(it.get("id") or "").strip()
         qty = int(it.get("quantity") or 0)
         if not offre_id or qty <= 0:
@@ -17,22 +16,33 @@ def aggregate_quantities(items: List[Dict[str, Any]]) -> Dict[str, int]:
         raise HTTPException(status_code=400, detail="Panier invalide")
     return quantities
 
-def get_offers_map(ids: Iterable[str]) -> Dict[str, Dict[str, Any]]:
-    offers = fetch_offres_by_ids(list(ids))
-    return {str(o.get("id")): o for o in offers}
-
 def _price_from_offer(offer: Dict[str, Any]) -> float:
     try:
         return float(offer.get("price") or 0)
     except Exception:
         return 0.0
 
+def price_from_offer(offer: Dict[str, Any]) -> float:
+    # Alias public pour éviter d'appeler une fonction "privée" depuis le service
+    return _price_from_offer(offer)
+
 def to_line_items(offers_by_id: Dict[str, Dict[str, Any]], quantities: Dict[str, int]) -> List[Dict[str, Any]]:
+    """
+    Construit les line_items Stripe à partir des offres et quantités.
+    - Si 'price_id' est présent dans l'offre, on l'utilise directement ("price": "<price_id>").
+    - Sinon, on retombe sur price_data avec unit_amount calculé depuis 'price'.
+    """
     line_items: List[Dict[str, Any]] = []
     for offre_id, qty in quantities.items():
-        offer = offers_by_id.get(offre_id)
-        if not offer:
+        offer = offers_by_id.get(ofre_id := offre_id)
+        if not offer or qty <= 0:
             continue
+
+        price_id = offer.get("price_id")
+        if price_id:
+            line_items.append({"price": price_id, "quantity": qty})
+            continue
+
         unit_price = _price_from_offer(offer)
         if unit_price <= 0:
             continue

@@ -3,20 +3,16 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from typing import Dict, Any
 import logging
-
 from backend.utils.security import require_user, COOKIE_NAME
-from backend import models  # centralisation via la façade Models
+from backend import models
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
-# (suppression du bloc try/except stripe et de la fonction require_stripe locale)
 def _base_url(request: Request) -> str:
-    scheme = request.url.scheme
-    host = request.headers.get("host") or request.url.netloc
-    return f"{scheme}://{host}"
+    # Construit la base d'URL (ex: http://testserver) sans slash final
+    return str(request.base_url).rstrip("/")
 
-# Endpoint Checkout
 @router.post("/checkout")
 async def create_checkout_session(request: Request, user: dict = Depends(require_user)):
     """
@@ -28,18 +24,17 @@ async def create_checkout_session(request: Request, user: dict = Depends(require
     quantities = models.aggregate_quantities(body.get("items") or [])
     offers_by_id = models.get_offers_map(quantities.keys())
     line_items = models.to_line_items(offers_by_id, quantities)
-    metadata = models.make_metadata(user_id=user.get("id", ""), quantities=quantities)
-    session = models.create_session(_base_url(request), line_items, metadata)
+    meta = models.make_metadata(user_id=user.get("id", ""), quantities=quantities)
+    session = models.create_session(_base_url(request), line_items, meta)
     return JSONResponse({"url": session.url})
 
-# Endpoint Webhook
 @router.post("/webhook")
 async def stripe_webhook(request: Request):
     models.require_stripe()
     event: Dict[str, Any] = await models.parse_event(request)
     if event.get("type") == "checkout.session.completed":
         user_id, cart_list = models.extract_metadata(event)
-        created = models.process_cart_purchase(user_id, cart_list, use_service=True)
+        created = models.process_cart_purchase(user_id, cart_list)
         logger.info("payments.webhook created=%s items=%s user_id=%s", created, len(cart_list or []), user_id)
         return JSONResponse({"status": "ok", "created": created})
     return JSONResponse({"status": "ignored"})
@@ -59,6 +54,7 @@ async def confirm_checkout(request: Request, session_id: str, user: dict = Depen
     logger.info("payments.confirm created=%s user_id=%s session_id=%s", created, user.get("id"), session_id)
     return JSONResponse({"status": "ok", "created": created})
 
+# Assure-toi que ce décorateur n’est PAS indenté (colonne 0)
 @router.post("/confirm")
 async def confirm_checkout_post(request: Request, user: dict = Depends(require_user)):
     """

@@ -206,9 +206,42 @@ function handleAuthConfirmationFromHash(): void {
   }
 }
 
+// Nouveau: lecture du message de déconnexion depuis la query (?message=... ou ?error=...)
+function handleAuthMessageFromQuery(): void {
+  try {
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+
+    const msg = params.get("message");
+    const err = params.get("error");
+
+    if (!msg && !err) return;
+
+    // Si le serveur a déjà rendu un message (.msg ok/err sans l'id client-msg), ne pas en rajouter
+    const serverMsgEl = document.querySelector(".msg.ok:not(#client-msg), .msg.err:not(#client-msg)") as HTMLElement | null;
+
+    if (!serverMsgEl) {
+      if (err) {
+        showGlobalMessage("error", err);
+      } else if (msg) {
+        showGlobalMessage("ok", msg);
+      }
+    }
+
+    // Nettoyer l'URL pour éviter la répétition au rechargement
+    const cleanUrl = url.origin + url.pathname;
+    window.history.replaceState({}, "", cleanUrl);
+  } catch (e) {
+    console.error("Erreur nettoyage URL (logout):", e);
+  }
+}
+
 // --- Initialisation principale ---
 
 function initializeAuthForms(): void {
+  // Afficher message de déconnexion si présent dans l’URL puis nettoyer l’URL
+  handleAuthMessageFromQuery();
+
   // Bandeau de confirmation depuis le hash
   handleAuthConfirmationFromHash();
 

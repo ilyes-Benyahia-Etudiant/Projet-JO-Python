@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Response
-from pydantic import BaseModel, EmailStr, Field, validator
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from backend.utils.validators import validate_password_strength
 from typing import Optional, Dict, Any
-from backend.models import sign_in, sign_up, send_reset_email, update_password
+from backend.models import sign_in, sign_up, send_reset_email
 from backend.utils.security import require_user, set_session_cookie, clear_session_cookie
 from backend.config import RESET_REDIRECT_URL
 from backend.models.db import upsert_user_profile
@@ -20,18 +20,9 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: Optional[str] = None
-
     @field_validator("password")
     def password_strength(cls, v: str) -> str:
-        if not re.search(r'[A-Z]', v):
-            raise ValueError('Le mot de passe doit contenir au moins une majuscule')
-        if not re.search(r'[a-z]', v):
-            raise ValueError('Le mot de passe doit contenir au moins une minuscule')
-        if not re.search(r'\d', v):
-            raise ValueError('Le mot de passe doit contenir au moins un chiffre')
-        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'\"\\|,.<>\/?]', v):
-            raise ValueError('Le mot de passe doit contenir au moins un caractère spécial')
-        return v
+        return validate_password_strength(v)
 
 class ResetEmailRequest(BaseModel):
     email: EmailStr
@@ -39,17 +30,12 @@ class ResetEmailRequest(BaseModel):
 class UpdatePasswordRequest(BaseModel):
     new_password: str = Field(min_length=8)
     
-    @validator('new_password')
-    def password_strength(cls, v):
-        if not re.search(r'[A-Z]', v):
-            raise ValueError('Le mot de passe doit contenir au moins une majuscule')
-        if not re.search(r'[a-z]', v):
-            raise ValueError('Le mot de passe doit contenir au moins une minuscule')
-        if not re.search(r'\d', v):
-            raise ValueError('Le mot de passe doit contenir au moins un chiffre')
-        if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'\"\\|,.<>\/?]', v):
-            raise ValueError('Le mot de passe doit contenir au moins un caractère spécial')
-        return v
+    @field_validator("new_password")
+    def password_strength(cls, v: str) -> str:
+        return validate_password_strength(v)
+
+class UpdatePasswordBody(UpdatePasswordRequest):
+    token: str
 
 @router.post("/login")
 def api_login(req: LoginRequest, response: Response):
@@ -98,9 +84,6 @@ def api_request_reset(req: ResetEmailRequest):
     if not result.success:
         raise HTTPException(status_code=400, detail=result.error or "Erreur envoi email")
     return {"message": "Email de réinitialisation envoyé"}
-
-class UpdatePasswordBody(UpdatePasswordRequest):
-    token: str
 
 @router.post("/update-password")
 async def update_password(body: UpdatePasswordBody):

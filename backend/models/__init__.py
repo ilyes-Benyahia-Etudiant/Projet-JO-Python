@@ -26,19 +26,18 @@ from .health import health_supabase_info
 from .payments import (
     require_stripe,
     create_session,
+    get_session,
     parse_event,
     extract_metadata,
-    get_session,
     extract_metadata_from_session,
-    process_cart_purchase,
-    confirm_session_by_id,  # ajouter ceci
-)
-from .payments_cart import (
-    aggregate_quantities,
     get_offers_map,
-    to_line_items,
+    process_cart_purchase,
+    confirm_session_by_id,
+    aggregate_quantities,
     make_metadata,
+    to_line_items,
 )
+
 
 __all__ = [
     # Modèles/Helpers
