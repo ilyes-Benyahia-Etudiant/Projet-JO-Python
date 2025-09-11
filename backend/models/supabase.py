@@ -19,7 +19,8 @@ def sign_up_account(
 ):
     options: Dict[str, Any] = {}
     if email_redirect_to:
-        options["email_redirect_to"] = email_redirect_to
+        # Clé attendue par Supabase pour la redirection post-confirmation
+        options["emailRedirectTo"] = email_redirect_to
     # Micro-changement: n’ajouter "data" que si non vide
     if options_data:
         options["data"] = options_data
