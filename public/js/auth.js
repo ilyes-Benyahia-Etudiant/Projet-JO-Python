@@ -109,15 +109,15 @@ function bindFormSubmit(options) {
                 }
             }
             catch (error) {
+                // Réactiver le bouton en cas d'échec
+                submitBtn.disabled = false;
                 let errorMsg = error.message || "Une erreur est survenue.";
                 if (errorMsg.includes("Utilisateur existe déjà")) {
                     errorMsg = "Cet email est déjà utilisé. Essayez de vous connecter ou réinitialisez votre mot de passe.";
                 }
                 setMessage(messageEl, errorMsg, "err");
                 console.error(`Erreur lors de la soumission à ${options.apiEndpoint}:`, error);
-            }
-            finally {
-                // Ne réactive le bouton qu'en cas d'erreur sans redirection
+            } finally {
                 if (!options.redirectUrl) {
                     submitBtn.disabled = false;
                 }

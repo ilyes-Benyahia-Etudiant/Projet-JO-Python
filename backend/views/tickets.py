@@ -4,10 +4,11 @@ from backend.utils.security import require_user
 from backend.models import fetch_user_commandes
 from backend.utils.qrcode_utils import generate_qr_code
 from backend.config import BASE_URL
+from backend.utils.rate_limit import optional_rate_limit
 
 router = APIRouter(prefix="/api/tickets", tags=["Tickets"])
 
-@router.get("/")
+@router.get("/", dependencies=[Depends(optional_rate_limit(times=30, seconds=60))])
 def get_user_tickets(user: Dict[str, Any] = Depends(require_user)):
     """
     Récupère tous les billets de l'utilisateur avec leurs QR codes.
@@ -22,7 +23,7 @@ def get_user_tickets(user: Dict[str, Any] = Depends(require_user)):
     
     return commandes
 
-@router.get("/{ticket_token}/qrcode")
+@router.get("/{ticket_token}/qrcode", dependencies=[Depends(optional_rate_limit(times=30, seconds=60))])
 def get_ticket_qrcode(ticket_token: str, user: Dict[str, Any] = Depends(require_user)):
     """
     Génère un QR code pour un billet spécifique.

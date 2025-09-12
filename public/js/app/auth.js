@@ -56,98 +56,98 @@ function httpRequest(url, init) {
 }
 // --- Binding générique de formulaire ---
 function bindFormSubmit(options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const form = document.querySelector(options.formSelector);
-        if (!form) {
-            console.warn(`Formulaire non trouvé: ${options.formSelector}`);
+    const form = document.querySelector(options.formSelector);
+    if (!form) {
+        console.warn(`Formulaire non trouvé: ${options.formSelector}`);
+        return;
+    }
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const messageEl = form.querySelector(".message-area");
+    form.addEventListener("submit", (e) => __awaiter(this, void 0, void 0, function* () {
+        e.preventDefault();
+        if (!submitBtn)
+            return;
+        // Laisser le navigateur afficher ses messages natifs si invalid
+        if (typeof form.reportValidity === "function" && !form.reportValidity()) {
             return;
         }
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const messageEl = form.querySelector(".message-area");
-        form.addEventListener("submit", (e) => __awaiter(this, void 0, void 0, function* () {
-            e.preventDefault();
-            if (!submitBtn)
-                return;
-            // Laisser le navigateur afficher ses messages natifs si invalid
-            if (typeof form.reportValidity === "function" && !form.reportValidity()) {
-                return;
-            }
-            const formData = new FormData(form);
-            const payload = {};
-            formData.forEach((value, key) => {
-                payload[key] = value;
-            });
-            if (options.transformPayload) {
-                Object.assign(payload, options.transformPayload(payload));
-            }
+        const formData = new FormData(form);
+        const payload = {};
+        formData.forEach((value, key) => {
+            payload[key] = value;
+        });
+        if (options.transformPayload) {
+            Object.assign(payload, options.transformPayload(payload));
+        }
+        try {
+            submitBtn.disabled = true;
+            setMessage(messageEl, "Envoi en cours...", "ok");
+            let response;
             try {
-                submitBtn.disabled = true;
-                setMessage(messageEl, "Envoi en cours...", "ok");
-                let response;
-                try {
-                    response = yield httpRequest(options.apiEndpoint, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-                        body: JSON.stringify(payload),
-                    });
-                }
-                catch (err) {
-                    // Si le wrapper Http a rejeté (4xx/5xx), tenter de lire err.response
-                    let errorMsg = "Une erreur est survenue.";
-                    try {
-                        const resp = err === null || err === void 0 ? void 0 : err.response;
-                        if (resp) {
-                            let body = undefined;
-                            try {
-                                body = yield resp.json();
-                            }
-                            catch (_a) { }
-                            errorMsg = (body === null || body === void 0 ? void 0 : body.detail) || (body === null || body === void 0 ? void 0 : body.message) || `Erreur HTTP ${resp.status}`;
-                        }
-                        else if (err === null || err === void 0 ? void 0 : err.message) {
-                            errorMsg = err.message;
-                        }
-                    }
-                    catch (_b) { }
-                    if (errorMsg.includes("Utilisateur existe déjà")) {
-                        errorMsg = "Cet email est déjà utilisé. Essayez de vous connecter ou réinitialisez votre mot de passe.";
-                    }
-                    setMessage(messageEl, errorMsg, "err");
-                    submitBtn.disabled = false;
-                    return;
-                }
-                const responseData = yield response.json().catch(() => ({}));
-                if (!response.ok) {
-                    const errorMessage = responseData.detail || responseData.message || `Erreur HTTP ${response.status}`;
-                    throw new Error(errorMessage);
-                }
-                const data = responseData;
-                setMessage(messageEl, (typeof data === "object" && data && "message" in data
-                    ? data.message || "Opération réussie !"
-                    : "Opération réussie !"), "ok");
-                if (options.onSuccess) {
-                    options.onSuccess(data, { form, submitBtn, messageEl });
-                }
-                if (options.redirectUrl) {
-                    const url = typeof options.redirectUrl === "function" ? options.redirectUrl(data) : options.redirectUrl;
-                    window.location.assign(url);
-                }
+                response = yield httpRequest(options.apiEndpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify(payload),
+                });
             }
-            catch (error) {
-                let errorMsg = (error === null || error === void 0 ? void 0 : error.message) || "Une erreur est survenue.";
+            catch (err) {
+                // Si le wrapper Http a rejeté (4xx/5xx), tenter de lire err.response
+                let errorMsg = "Une erreur est survenue.";
+                try {
+                    const resp = err === null || err === void 0 ? void 0 : err.response;
+                    if (resp) {
+                        let body = undefined;
+                        try {
+                            body = yield resp.json();
+                        }
+                        catch (_a) { }
+                        errorMsg = (body === null || body === void 0 ? void 0 : body.detail) || (body === null || body === void 0 ? void 0 : body.message) || `Erreur HTTP ${resp.status}`;
+                    }
+                    else if (err === null || err === void 0 ? void 0 : err.message) {
+                        errorMsg = err.message;
+                    }
+                }
+                catch (_b) { }
                 if (errorMsg.includes("Utilisateur existe déjà")) {
                     errorMsg = "Cet email est déjà utilisé. Essayez de vous connecter ou réinitialisez votre mot de passe.";
                 }
                 setMessage(messageEl, errorMsg, "err");
-                console.error(`Erreur lors de la soumission à ${options.apiEndpoint}:`, error);
+                submitBtn.disabled = false;
+                return;
             }
-            finally {
-                if (!options.redirectUrl) {
-                    submitBtn.disabled = false;
-                }
+            const responseData = yield response.json().catch(() => ({}));
+            if (!response.ok) {
+                const errorMessage = responseData.detail || responseData.message || `Erreur HTTP ${response.status}`;
+                throw new Error(errorMessage);
             }
-        }));
-    });
+            const data = responseData;
+            setMessage(messageEl, (typeof data === "object" && data && "message" in data
+                ? data.message || "Opération réussie !"
+                : "Opération réussie !"), "ok");
+            if (options.onSuccess) {
+                options.onSuccess(data, { form, submitBtn, messageEl });
+            }
+            if (options.redirectUrl) {
+                const url = typeof options.redirectUrl === "function" ? options.redirectUrl(data) : options.redirectUrl;
+                window.location.assign(url);
+            }
+        }
+        catch (error) {
+            // Réactiver le bouton en cas d'échec (ex: 401 identifiants invalides)
+            submitBtn.disabled = false;
+            let errorMsg = (error === null || error === void 0 ? void 0 : error.message) || "Une erreur est survenue.";
+            if (typeof errorMsg === "string" && errorMsg.includes("Utilisateur existe déjà")) {
+                errorMsg = "Cet email est déjà utilisé. Essayez de vous connecter ou réinitialisez votre mot de passe.";
+            }
+            setMessage(messageEl, errorMsg, "err");
+            console.error(`Erreur lors de la soumission à ${options.apiEndpoint}:`, error);
+        }
+        finally {
+            if (!options.redirectUrl) {
+                submitBtn.disabled = false;
+            }
+        }
+    }));
 }
 // --- Confirmation (lecture du hash) ---
 function handleAuthConfirmationFromHash() {

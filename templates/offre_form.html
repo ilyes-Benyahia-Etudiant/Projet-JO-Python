@@ -16,7 +16,8 @@
       </div>
     </div>
     <div class="form">
-      <form method="post" action="{{ action_url }}">
+      <form method="post" action="{{ action_url }}" enctype="application/x-www-form-urlencoded">
+        <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
         <div class="group">
           <label class="label" for="f_title">title</label>
           <input id="f_title" name="title" type="text" required value="{{ values.get('title','') }}">
@@ -57,7 +58,7 @@
           <button class="btn" type="submit">{% if mode == 'edit' %}Enregistrer{% else %}Créer{% endif %}</button>
         </div>
       </form>
-    </div>
+  </div>
   </div>
 </body>
 </html>

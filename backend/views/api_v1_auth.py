@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends, Response, Request
+import bcrypt
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from backend.utils.validators import validate_password_strength
 from typing import Optional, Dict, Any
@@ -9,8 +10,14 @@ from backend.models.db import upsert_user_profile
 import re
 import bcrypt
 from backend.models.usecases_auth import update_password as update_password_usecase
+from fastapi import Request
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Auth API"])
+
+# Module-level shim: remplace l’implémentation locale par un appel au module utils
+def optional_rate_limit(times: int, seconds: int):
+    from backend.utils.rate_limit import optional_rate_limit as _rl
+    return _rl(times, seconds)
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -37,7 +44,7 @@ class UpdatePasswordRequest(BaseModel):
 class UpdatePasswordBody(UpdatePasswordRequest):
     token: str
 
-@router.post("/login")
+@router.post("/login", dependencies=[Depends(optional_rate_limit(times=3, seconds=60))])
 def api_login(req: LoginRequest, response: Response):
     result = sign_in(req.email, req.password)
     if not result.success:
@@ -54,8 +61,8 @@ def api_login(req: LoginRequest, response: Response):
 
     return {"access_token": result.access_token, "token_type": "bearer", "user": result.user}
 
-@router.post("/signup")
-@router.post("/signup_admin")
+@router.post("/signup", dependencies=[Depends(optional_rate_limit(times=3, seconds=60))])
+@router.post("/signup_admin", dependencies=[Depends(optional_rate_limit(times=3, seconds=60))])
 def api_signup(req: SignupRequest, response: Response):
     from backend.config import ADMIN_SECRET_HASH  # Import local
     wants_admin = bool(ADMIN_SECRET_HASH) and bcrypt.checkpw(req.password.encode('utf-8'), ADMIN_SECRET_HASH.encode('utf-8'))
@@ -78,14 +85,14 @@ def api_signup(req: SignupRequest, response: Response):
 def api_me(user: Dict[str, Any] = Depends(require_user)):
     return {"id": user["id"], "email": user["email"], "role": user["role"], "metadata": user["metadata"]}
 
-@router.post("/request-password-reset")
+@router.post("/request-password-reset", dependencies=[Depends(optional_rate_limit(times=3, seconds=60))])
 def api_request_reset(req: ResetEmailRequest):
     result = send_reset_email(req.email, RESET_REDIRECT_URL)
     if not result.success:
         raise HTTPException(status_code=400, detail=result.error or "Erreur envoi email")
     return {"message": "Email de réinitialisation envoyé"}
 
-@router.post("/update-password")
+@router.post("/update-password", dependencies=[Depends(optional_rate_limit(times=3, seconds=60))])
 async def update_password(body: UpdatePasswordBody):
     token = (body.token or "").strip()
     if not token:
@@ -99,3 +106,8 @@ async def update_password(body: UpdatePasswordBody):
 def api_logout(response: Response):
     clear_session_cookie(response)
     return {"message": "Déconnexion réussie"}
+
+@router.get("/rate-limit-health", summary="Rate limit health", tags=["Auth API"])
+async def rate_limit_health(request: Request):
+    from backend.utils.rate_limit import rate_limit_health_info
+    return rate_limit_health_info(request)

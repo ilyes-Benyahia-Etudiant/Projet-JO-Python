@@ -5,6 +5,7 @@ from typing import Dict, Any
 import logging
 from backend.utils.security import require_user, COOKIE_NAME
 from backend import models
+from backend.utils.rate_limit import optional_rate_limit
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/payments", tags=["Payments"])
@@ -13,7 +14,7 @@ def _base_url(request: Request) -> str:
     # Construit la base d'URL (ex: http://testserver) sans slash final
     return str(request.base_url).rstrip("/")
 
-@router.post("/checkout")
+@router.post("/checkout", dependencies=[Depends(optional_rate_limit(times=5, seconds=60))])
 async def create_checkout_session(request: Request, user: dict = Depends(require_user)):
     """
     Body:

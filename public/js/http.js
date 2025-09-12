@@ -65,6 +65,35 @@ Http.mergeInit = (init = {}) => {
 };
 Http.request = (url, init = {}) => {
     const finalInit = _a.mergeInit(init);
+    // CSRF: ajoute X-CSRF-Token pour les méthodes non sûres lorsque les cookies seront envoyés
+    try {
+        const method = String(finalInit.method || "GET").toUpperCase();
+        if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+            const credentials = finalInit.credentials != null ? finalInit.credentials : "same-origin";
+            const reqUrl = new URL(url, window.location.href);
+            const sameOrigin = reqUrl.origin === window.location.origin;
+            const willSendCookies = credentials === "include" || (credentials === "same-origin" && sameOrigin);
+            if (willSendCookies) {
+                const headers = finalInit.headers instanceof Headers ? finalInit.headers : new Headers(finalInit.headers || {});
+                if (!headers.has("X-CSRF-Token")) {
+                    // Essaie plusieurs noms de cookies: csrf_token, XSRF-TOKEN, CSRF-TOKEN
+                    const token = (() => {
+                        const raw = document.cookie || "";
+                        const escapeRe = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+                        const find = (name) => {
+                            const m = raw.match(new RegExp("(?:^|;\\s*)" + escapeRe(name) + "=([^;]+)"));
+                            return m ? decodeURIComponent(m[1]) : "";
+                        };
+                        return find("csrf_token") || find("XSRF-TOKEN") || find("CSRF-TOKEN");
+                    })();
+                    if (token) headers.set("X-CSRF-Token", token);
+                }
+                finalInit.headers = headers;
+            }
+        }
+    } catch (_e) {
+        // silence
+    }
     return fetch(url, finalInit);
 };
 Http.json = (url_1, ...args_1) => __awaiter(void 0, [url_1, ...args_1], void 0, function* (url, init = {}) {
