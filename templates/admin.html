@@ -29,6 +29,7 @@
       <div class="btn-group">
         <a href="/admin" class="btn">Rafraîchir</a>
         <a href="/admin/offres/new" class="btn">Ajouter une offre</a>
+        <a href="/admin/scan" class="btn">Scanner un billet</a>
         <!-- formulaire de logout -->
         <form action="/auth/logout" method="post" style="display:inline;">
           <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">

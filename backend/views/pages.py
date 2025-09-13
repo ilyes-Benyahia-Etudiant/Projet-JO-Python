@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from starlette.status import HTTP_303_SEE_OTHER
 from backend.utils.templates import templates
@@ -38,3 +38,11 @@ def mes_billets_page(request: Request, user = Depends(require_user)):
     resp.headers["Pragma"] = "no-cache"
     resp.headers["Expires"] = "0"
     return resp
+
+@router.get("/admin/scan", response_class=HTMLResponse)
+@router.get("/admin/scan.html", response_class=HTMLResponse)
+def admin_scan_page(request: Request, user = Depends(require_user)):
+    # Sécurité basique (l’API vérifiera aussi)
+    if not (user.get("is_admin") or user.get("role") == "admin"):
+        raise HTTPException(status_code=403, detail="Accès admin requis")
+    return templates.TemplateResponse("admin-scan.html", {"request": request, "user": user})

@@ -2,13 +2,14 @@ import logging
 import os
 import secrets
 import urllib.parse  # <-- Assurez-vous que cet import est présent
+import redis
 from fastapi import FastAPI, Request, Depends, HTTPException
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_204_NO_CONTENT
+from contextlib import asynccontextmanager
 
 from backend.config import PUBLIC_DIR, CORS_ORIGINS, ALLOWED_HOSTS, SUPABASE_URL, COOKIE_SECURE
 from backend.views.pages import router as pages_router
@@ -16,17 +17,60 @@ from backend.views.web_auth import router as web_auth_router
 from backend.views.api_v1_auth import router as api_auth_router
 from backend.views.admin_offres import router as admin_router
 from backend.views.health import router as health_router
-from backend.views.payments import router as payments_router
-from backend.views.tickets import router as tickets_router
 from backend.views.validate import router as validate_router
+from backend.commandes import views as commandes_views
+from backend.tickets import views as tickets_views
+from backend.validation import views as validation_views
 from fastapi_limiter import FastAPILimiter
+# Ajout: import du routeur payments
+from backend.payments import views as payments_views
+# Ajout: import du routeur validation
+from backend.validation import views as validation_views
 
 try:
     from fakeredis.aioredis import FakeRedis  # fallback tests-only
 except Exception:
     FakeRedis = None
 
-app = FastAPI(title="Projet JO Python")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Migration de l'init du rate limiter ici (anciennement on_event('startup'))
+    logger = logging.getLogger("uvicorn.error")
+    try:
+        if os.getenv("DISABLE_FASTAPI_LIMITER_INIT_FOR_TESTS") == "1":
+            app.state.rate_limit_enabled = False
+            logger.info("Rate limiting disabled by DISABLE_FASTAPI_LIMITER_INIT_FOR_TESTS")
+            yield
+            return
+
+        use_fake = os.getenv("USE_FAKE_REDIS_FOR_TESTS") == "1"
+        if use_fake:
+            if not FakeRedis:
+                raise RuntimeError(
+                    "USE_FAKE_REDIS_FOR_TESTS=1 mais fakeredis n'est pas installé."
+                )
+            r = FakeRedis(decode_responses=True)
+        else:
+            redis_url = os.getenv("RATE_LIMIT_REDIS_URL", "redis://127.0.0.1:6379/0")
+            r = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
+
+        await FastAPILimiter.init(r)
+        app.state.rate_limit_enabled = True
+        logger.info("Rate limiting enabled")
+    except Exception as e:
+        if os.getenv("LOCAL_RATE_LIMIT_FALLBACK") == "1":
+            app.state.rate_limit_enabled = True
+            logger.warning(
+                f"Rate limiting falling back to local in-memory due to init error: {e}"
+            )
+        else:
+            app.state.rate_limit_enabled = False
+            logger.warning(f"Rate limiting disabled due to init error: {e}")
+
+    # Phase shutdown: rien à faire pour le moment
+    yield
+
+app = FastAPI(title="Projet JO Python", lifespan=lifespan)
 
 # Middlewares CORS et TrustedHost
 app.add_middleware(
@@ -48,7 +92,10 @@ app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR)), name="static")
 # --- Sécurité : CSRF + en-têtes ---
 CSRF_COOKIE_NAME = "csrf_token"
 CSRF_HEADER_NAME = "X-CSRF-Token"
-CSRF_EXEMPT_PATHS = {"/payments/webhook"}  # ne pas protéger les webhooks
+CSRF_EXEMPT_PATHS = {
+    "/api/v1/commandes/webhook/stripe",
+    "/api/v1/payments/webhook",
+}
 
 
 @app.middleware("http")
@@ -115,15 +162,25 @@ async def security_headers_and_csrf(request: Request, call_next):
     csp_connect = ["'self'"]
     if SUPABASE_URL:
         csp_connect.append(SUPABASE_URL.rstrip("/"))
+
+    # Autoriser les CDNs utilisés par Swagger UI
+    swagger_cdns = ["https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdn.tailwindcss.com"]
+    # Important: autoriser aussi ces hôtes dans connect-src (source maps, etc.)
+    csp_connect.extend(swagger_cdns)
+
+    # (Optionnel mais recommandé) autoriser le favicon de FastAPI
+    extra_img_sources = ["https://fastapi.tiangolo.com"]
+
     csp = (
         "default-src 'self'; "
         "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
-        "img-src 'self' data: blob:; "
-        "style-src 'self' 'unsafe-inline'; "
-        "script-src 'self' 'unsafe-inline'; "
+        f"img-src 'self' data: blob: {' '.join(extra_img_sources)}; "
+        f"style-src 'self' 'unsafe-inline' {' '.join(swagger_cdns)}; "
+        f"script-src 'self' 'unsafe-inline' {' '.join(swagger_cdns)}; "
         f"connect-src {' '.join(csp_connect)}"
     )
-    response.headers.setdefault("Content-Security-Policy", csp)
+    # Forcer l'écriture de l'en-tête CSP (au lieu de setdefault)
+    response.headers["Content-Security-Policy"] = csp
 
     # 3) Poser/renouveler cookie CSRF si manquant
     if set_csrf_cookie_value:
@@ -141,50 +198,31 @@ async def security_headers_and_csrf(request: Request, call_next):
 
 
 # --- Routers ---
-app.include_router(health_router)
+# Pages web (HTML)
 app.include_router(pages_router)
 app.include_router(web_auth_router)
-app.include_router(api_auth_router)
-app.include_router(admin_router)
-app.include_router(payments_router)
-app.include_router(tickets_router)
 app.include_router(validate_router)
+
+# API v1
+app.include_router(api_auth_router)
+app.include_router(commandes_views.router)
+app.include_router(tickets_views.router)
+app.include_router(validation_views.router)
+app.include_router(payments_views.router)
+
+# Admin
+app.include_router(admin_router)
+
+# Health & monitoring
+app.include_router(health_router)
 
 # --- Divers ---
 
 
-@app.on_event("startup")
+# Ancienne version on_event('startup') -> remplacée par lifespan
 async def init_rate_limiter():
-    logger = logging.getLogger("uvicorn.error")
-    try:
-        if os.getenv("DISABLE_FASTAPI_LIMITER_INIT_FOR_TESTS") == "1":
-            app.state.rate_limit_enabled = False
-            logger.info("Rate limiting disabled by DISABLE_FASTAPI_LIMITER_INIT_FOR_TESTS")
-            return
-
-        use_fake = os.getenv("USE_FAKE_REDIS_FOR_TESTS") == "1"
-        if use_fake:
-            if not FakeRedis:
-                raise RuntimeError(
-                    "USE_FAKE_REDIS_FOR_TESTS=1 mais fakeredis n'est pas installé."
-                )
-            r = FakeRedis(decode_responses=True)
-        else:
-            redis_url = os.getenv("RATE_LIMIT_REDIS_URL", "redis://127.0.0.1:6379/0")
-            r = redis.from_url(redis_url, encoding="utf-8", decode_responses=True)
-
-        await FastAPILimiter.init(r)
-        app.state.rate_limit_enabled = True
-        logger.info("Rate limiting enabled")
-    except Exception as e:
-        if os.getenv("LOCAL_RATE_LIMIT_FALLBACK") == "1":
-            app.state.rate_limit_enabled = True
-            logger.warning(
-                f"Rate limiting falling back to local in-memory due to init error: {e}"
-            )
-        else:
-            app.state.rate_limit_enabled = False
-            logger.warning(f"Rate limiting disabled due to init error: {e}")
+    # migré dans lifespan (stub conservé pour référence)
+    return
 
 
 @app.get("/", include_in_schema=False)
@@ -217,7 +255,7 @@ async def html_redirect_on_auth_errors(request: Request, exc: HTTPException):
             detail = str(getattr(exc, "detail", "")) or (
                 "Veuillez vous connecter" if exc.status_code == 401 else "Accès interdit"
             )
-            msg = quote_plus(detail)
+            msg = urllib.parse.quote_plus(detail)
             return RedirectResponse(
                 url=f"/auth?error={msg}", status_code=HTTP_303_SEE_OTHER
             )

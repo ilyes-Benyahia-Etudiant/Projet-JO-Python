@@ -46,9 +46,42 @@ class Http {
         return base;
     }
 
+    private static getCookie(name: string): string | null {
+        if (typeof document === "undefined") return null;
+        const cookies = document.cookie ? document.cookie.split("; ") : [];
+        for (const c of cookies) {
+            if (!c) continue;
+            const [k, ...rest] = c.split("=");
+            if (k === name) {
+                try {
+                    return decodeURIComponent(rest.join("="));
+                } catch {
+                    return rest.join("=");
+                }
+            }
+        }
+        return null;
+    }
+
+    private static getCsrfToken(): string | null {
+        return this.getCookie("csrf_token");
+    }
+
   private static mergeInit = (init: RequestInit = {}): RequestInit => {
     const headers = new Headers(init.headers || {});
-    return { ...init, headers };
+    const method = ((init.method as string) || "GET").toUpperCase();
+
+    // Injecte automatiquement le token CSRF pour les requêtes non-sûres
+    if (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE") {
+      if (!headers.has("X-CSRF-Token")) {
+        const token = Http.getCsrfToken();
+        if (token) {
+          headers.set("X-CSRF-Token", token);
+        }
+      }
+    }
+
+    return { ...init, headers, credentials: init.credentials ?? "same-origin" };
   };
 
   static request = (url: string, init: RequestInit = {}): Promise<Response> => {

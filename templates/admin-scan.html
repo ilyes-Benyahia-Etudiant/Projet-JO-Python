@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin - Scan Billet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/css/index.css">
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
+</head>
+<body class="bg-gray-50">
+  <header>
+    <nav class="navbar">
+      <div class="navbar-left">
+        <div class="olympic-rings">
+          <span class="ring blue"></span>
+          <span class="ring yellow"></span>
+          <span class="ring black"></span>
+          <span class="ring green"></span>
+          <span class="ring red"></span>
+          <span class="navbar-title">Admin Scan</span>
+        </div>
+      </div>
+      <ul class="navbar-links" id="primary-navigation">
+        <li><a href="/session">Ma Session</a></li>
+        <li><a href="/admin/offres">Admin Offres</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container mx-auto p-6">
+    <div class="max-w-xl mx-auto bg-white shadow rounded p-6">
+      <h2 class="text-2xl font-semibold mb-4">Scanner / Valider un billet</h2>
+      <p class="text-gray-600 mb-4">
+        Scannez un QR code qui contient une URL de type <code>/admin/scan?token=...</code> ou collez un token manuellement.
+      </p>
+      <div class="flex gap-2 mb-4">
+        <input id="token-input" class="flex-1 border rounded px-3 py-2" placeholder="Collez le token ici" />
+        <button id="validate-btn" class="btn btn-primary">Valider</button>
+      </div>
+      <div id="result" class="mt-4"></div>
+    </div>
+  </main>
+
+  <script src="/public/js/app/http.js"></script>
+  <script src="/public/js/app/admin-scan.js"></script>
+</body>
+</html>

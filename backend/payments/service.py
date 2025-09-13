@@ -59,7 +59,7 @@ def process_cart_purchase(
     cart_list: [{ "id": "<offre_id>", "quantity": <int> }, ...]
     """
     ids = [str(x.get("id") or "") for x in cart_list if x.get("id")]
-    offers_by_id = repository.get_offers_map(ids)
+    offers_by_id = get_offers_map(ids)
 
     created = 0
     for entry in cart_list:

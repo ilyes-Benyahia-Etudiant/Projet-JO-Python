@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                     const items = latest.map((it) => ({ id: it.id, quantity: it.quantity }));
                     try {
-                        const data = yield Http.postJson("/payments/checkout", { items });
+                        const data = yield Http.postJson("/api/v1/payments/checkout", { items });
                         if (data.url)
                             window.location.href = data.url;
                         else

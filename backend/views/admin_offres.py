@@ -188,3 +188,24 @@ def supprimer_offre(request: Request, offre_id: str, user: dict = Depends(requir
     if not ok:
         return RedirectResponse(url="/admin?error=Echec%20de%20la%20suppression%20de%20l%27offre", status_code=HTTP_303_SEE_OTHER)
     return RedirectResponse(url="/admin?message=Offre%20supprim%C3%A9e", status_code=HTTP_303_SEE_OTHER)
+
+@router.get("/scan", response_class=HTMLResponse)
+@router.get("/scan/", response_class=HTMLResponse)
+def admin_scan_page(request: Request, user: dict = Depends(require_admin)):
+    csrf = request.cookies.get("csrf_token") or secrets.token_urlsafe(32)
+    resp = templates.TemplateResponse("admin-scan.html", {
+        "request": request,
+        "user": user,
+        "csrf_token": csrf,
+    })
+    if not request.cookies.get("csrf_token"):
+        resp.set_cookie(
+            key="csrf_token",
+            value=csrf,
+            httponly=False,
+            secure=COOKIE_SECURE,
+            samesite="Lax",
+            max_age=60 * 60,
+            path="/",
+        )
+    return resp

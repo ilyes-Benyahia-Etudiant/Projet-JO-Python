@@ -35,7 +35,7 @@ def test_create_checkout_session_unauthenticated(client: TestClient, monkeypatch
     # Override de la dépendance au niveau de l'application de ce client
     client.app.dependency_overrides[require_user] = lambda: (_ for _ in ()).throw(HTTPException(status_code=401))
     try:
-        response = client.post("/payments/checkout", json={"items": [{"id": "offre-1", "quantity": 1}]})
+        response = client.post("/api/v1/payments/checkout", json={"items": [{"id": "offre-1", "quantity": 1}]})
         assert response.status_code == 401
     finally:
         client.app.dependency_overrides.pop(require_user, None)
@@ -46,8 +46,10 @@ def test_create_checkout_session_authenticated(app, client: TestClient, authenti
         return authenticated_user.user
     app.dependency_overrides[require_user] = _override_require_user
 
-    with patch('backend.models.get_offers_map', return_value={"offre-1": {"id": "offre-1", "price_id": "price_123"}}):
-        response = client.post("/payments/checkout", json={"items": [{"id": "offre-1", "quantity": 1}]})
+    # Patch côté microservice payments (plus backend.models)
+    from unittest.mock import patch
+    with patch('backend.payments.repository.get_offers_map', return_value={"offre-1": {"id": "offre-1", "price_id": "price_123"}}):
+        response = client.post("/api/v1/payments/checkout", json={"items": [{"id": "offre-1", "quantity": 1}]})
 
     assert response.status_code == 200
     assert "url" in response.json()

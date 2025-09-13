@@ -20,7 +20,7 @@ def require_stripe() -> stripe:
         if STRIPE_SECRET_KEY:
             stripe.api_key = STRIPE_SECRET_KEY
     except Exception:
-        # Pas de clé => les appels Stripe échoueront (ex: No API key provided)
+        # Pas de clé => certaines opérations échoueront, mais on ne plante pas ici
         pass
     return stripe
 

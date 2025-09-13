@@ -57,44 +57,47 @@ class Http {
             base.keepalive = init.keepalive;
         return base;
     }
+    static getCookie(name) {
+        if (typeof document === "undefined")
+            return null;
+        const cookies = document.cookie ? document.cookie.split("; ") : [];
+        for (const c of cookies) {
+            if (!c)
+                continue;
+            const [k, ...rest] = c.split("=");
+            if (k === name) {
+                try {
+                    return decodeURIComponent(rest.join("="));
+                }
+                catch (_b) {
+                    return rest.join("=");
+                }
+            }
+        }
+        return null;
+    }
+    static getCsrfToken() {
+        return this.getCookie("csrf_token");
+    }
 }
 _a = Http;
 Http.mergeInit = (init = {}) => {
+    var _b;
     const headers = new Headers(init.headers || {});
-    return Object.assign(Object.assign({}, init), { headers });
-};
-// Injection CSRF ici (méthode Http.request)
-Http.request = (url, init = {}) => {
-    const finalInit = _a.mergeInit(init);
-    // CSRF: ajoute X-CSRF-Token pour les méthodes non sûres lorsque les cookies seront envoyés
-    try {
-        const method = String(finalInit.method || "GET").toUpperCase();
-        if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
-            const credentials = finalInit.credentials != null ? finalInit.credentials : "same-origin";
-            const reqUrl = new URL(url, window.location.href);
-            const sameOrigin = reqUrl.origin === window.location.origin;
-            const willSendCookies = credentials === "include" || (credentials === "same-origin" && sameOrigin);
-            if (willSendCookies) {
-                const headers = finalInit.headers instanceof Headers ? finalInit.headers : new Headers(finalInit.headers || {});
-                if (!headers.has("X-CSRF-Token")) {
-                    // Essaie plusieurs noms de cookies: csrf_token, XSRF-TOKEN, CSRF-TOKEN
-                    const token = (() => {
-                        const raw = document.cookie || "";
-                        const escapeRe = (s) => s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
-                        const find = (name) => {
-                            const m = raw.match(new RegExp("(?:^|;\\s*)" + escapeRe(name) + "=([^;]+)"));
-                            return m ? decodeURIComponent(m[1]) : "";
-                        };
-                        return find("csrf_token") || find("XSRF-TOKEN") || find("CSRF-TOKEN");
-                    })();
-                    if (token) headers.set("X-CSRF-Token", token);
-                }
-                finalInit.headers = headers;
+    const method = (init.method || "GET").toUpperCase();
+    // Injecte automatiquement le token CSRF pour les requêtes non-sûres
+    if (method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE") {
+        if (!headers.has("X-CSRF-Token")) {
+            const token = _a.getCsrfToken();
+            if (token) {
+                headers.set("X-CSRF-Token", token);
             }
         }
-    } catch (_e) {
-        // silence
     }
+    return Object.assign(Object.assign({}, init), { headers, credentials: (_b = init.credentials) !== null && _b !== void 0 ? _b : "same-origin" });
+};
+Http.request = (url, init = {}) => {
+    const finalInit = _a.mergeInit(init);
     return fetch(url, finalInit);
 };
 Http.json = (url_1, ...args_1) => __awaiter(void 0, [url_1, ...args_1], void 0, function* (url, init = {}) {

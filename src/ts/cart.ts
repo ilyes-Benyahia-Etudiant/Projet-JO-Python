@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const items = latest.map((it) => ({ id: it.id, quantity: it.quantity }));
         try {
-          const data = await Http.postJson<{ url?: string }>("/payments/checkout", { items });
+          const data = await Http.postJson<{ url?: string }>("/api/v1/payments/checkout", { items });
           if (data.url) window.location.href = data.url;
           else alert("URL de paiement introuvable.");
         } catch (e: any) {

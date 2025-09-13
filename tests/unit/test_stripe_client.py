@@ -1,5 +1,5 @@
 import json
-from backend.models import payments as stripe_utils
+import backend.payments as stripe_utils
 
 def test_extract_metadata_ok():
     event = {

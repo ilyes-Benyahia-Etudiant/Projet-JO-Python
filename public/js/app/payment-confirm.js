@@ -14,7 +14,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         const sessionId = url.searchParams.get("session_id");
         const confirmed = url.searchParams.get("confirmed");
         if (sessionId && !confirmed) {
-            Http.request("/payments/confirm?session_id=" + encodeURIComponent(sessionId), {
+            Http.request("/api/v1/payments/confirm?session_id=" + encodeURIComponent(sessionId), {
                 method: "GET"
             })
                 .then((res) => __awaiter(this, void 0, void 0, function* () {
