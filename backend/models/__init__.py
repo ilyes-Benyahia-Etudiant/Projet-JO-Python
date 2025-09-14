@@ -13,14 +13,11 @@ from .supabase import (
     send_reset_password,
     update_user_password,
 )
-from .offres import (
+
+# Expose uniquement les fonctions “public/user” via db
+from .db import (
     fetch_offres,
-    fetch_admin_commandes,
     fetch_user_commandes,
-    get_offre,
-    create_offre,
-    update_offre,
-    delete_offre,
 )
 from .health import health_supabase_info
 
@@ -76,14 +73,9 @@ __all__ = [
     "sign_up_account",
     "send_reset_password",
     "update_user_password",
-    # Offres/Commandes
+    # Public/catalog
     "fetch_offres",
-    "fetch_admin_commandes",
     "fetch_user_commandes",
-    "get_offre",
-    "create_offre",
-    "update_offre",
-    "delete_offre",
     # Health
     "health_supabase_info",
     # Payments (compat tests)

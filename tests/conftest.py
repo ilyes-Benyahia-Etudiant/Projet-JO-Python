@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, AsyncMock
 
 from backend.app import app as fastapi_app
 from backend.utils.security import require_user
-from backend.views.admin_offres import require_admin
+from backend.utils.security import require_admin
 
 # Marquage automatique selon le dossier
 def pytest_collection_modifyitems(config, items):

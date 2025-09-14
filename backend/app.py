@@ -12,10 +12,13 @@ from starlette.status import HTTP_303_SEE_OTHER, HTTP_204_NO_CONTENT
 from contextlib import asynccontextmanager
 
 from backend.config import PUBLIC_DIR, CORS_ORIGINS, ALLOWED_HOSTS, SUPABASE_URL, COOKIE_SECURE
+# imports (extrait)
 from backend.views.pages import router as pages_router
 from backend.views.web_auth import router as web_auth_router
 from backend.views.api_v1_auth import router as api_auth_router
-from backend.views.admin_offres import router as admin_router
+# Ancien import cassé
+# from backend.views.admin_offres import router as admin_router
+from backend.admin.views import router as admin_router
 from backend.views.health import router as health_router
 from backend.views.validate import router as validate_router
 from backend.commandes import views as commandes_views
