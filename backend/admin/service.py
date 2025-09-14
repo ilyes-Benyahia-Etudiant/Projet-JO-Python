@@ -21,3 +21,18 @@ def delete_offre(offre_id: str) -> bool:
 
 def get_admin_commandes(limit: int = 100) -> List[dict]:
     return admin_repository.fetch_admin_commandes(limit=limit)
+
+def list_users(limit: int = 100) -> List[dict]:
+    return admin_repository.fetch_admin_users(limit=limit)
+
+def update_user(user_id: str, data: Dict[str, Any]) -> Optional[dict]:
+    return admin_repository.update_user(user_id, data)
+
+def delete_user(user_id: str) -> bool:
+    return admin_repository.delete_user(user_id)
+
+def update_commande(commande_id: str, data: Dict[str, Any]) -> Optional[dict]:
+    return admin_repository.update_commande(commande_id, data)
+
+def delete_commande(commande_id: str) -> bool:
+    return admin_repository.delete_commande(commande_id)

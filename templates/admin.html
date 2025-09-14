@@ -18,6 +18,7 @@
         </div>
       </div>
     </div>
+
     <div class="form">
       <div class="group">
         <div class="label">Informations</div>
@@ -26,6 +27,7 @@
           <div><strong>Rôle:</strong> {{ role or '' }}</div>
         </div>
       </div>
+
       <div class="btn-group">
         <a href="/admin" class="btn">Rafraîchir</a>
         <a href="/admin/offres/new" class="btn">Ajouter une offre</a>
@@ -36,121 +38,299 @@
           <button type="submit" class="btn btn-warning">Déconnexion</button>
         </form>
       </div>
+
       {% if msg %}
         <div class="msg ok" style="display:block">{{ msg }}</div>
       {% endif %}
-      <div class="group">
-        <div class="label">Liste des offres</div>
-        {% if offres %}
-        <div class="table-wrap" style="overflow:auto;">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>id</th>
-                <th>title</th>
-                <th>price</th>
-                <th>category</th>
-                <th>stock</th>
-                <th>active</th>
-                <th>created_at</th>
-                <th>updated_at</th>
-                <th>description</th>
-                <th>image</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in offres %}
-                <tr>
-                  <td>{{ row['id'] }}</td>
-                  <td>{{ row['title'] }}</td>
-                  <td>{{ row['price'] }}</td>
-                  <td>{{ row['category'] | default('') }}</td>
-                  <td>{{ row['stock'] }}</td>
-                  <td>{{ row['active'] }}</td>
-                  <td>{{ row['created_at'] }}</td>
-                  <td>{{ row['updated_at'] }}</td>
-                  <td>{{ row['description'] | default('') }}</td>
-                  <td>{{ row['image'] | default('') }}</td>
-                  <td>
-                    <a class="btn btn-secondary" href="/admin/offres/{{ row['id'] }}/edit">Modifier</a>
-                    <!-- pour chaque offre -->
-                    <form action="/admin/offres/{{ row['id'] }}/delete" method="post" style="display:inline;">
-                      <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
-                      <button class="btn btn-danger" type="submit">Supprimer</button>
-                    </form>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+
+      <!-- Dashboard: 3 carrés -->
+      <div id="admin-dashboard" class="group">
+        <div class="label">Tableau de bord</div>
+        <div id="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+          <div id="card-commandes" class="card-item" style="border:1px solid #ddd; padding:12px; cursor:pointer;">
+            <div style="font-weight:bold;">Commandes réalisées</div>
+            <div id="count-commandes" style="font-size:24px;">—</div>
+            <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+          </div>
+          <div id="card-users" class="card-item" style="border:1px solid #ddd; padding:12px; cursor:pointer;">
+            <div style="font-weight:bold;">Utilisateurs inscrits</div>
+            <div id="count-users" style="font-size:24px;">—</div>
+            <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+          </div>
+          <div id="card-offres" class="card-item" style="border:1px solid #ddd; padding:12px; cursor:pointer;">
+            <div style="font-weight:bold;">Manage offres</div>
+            <div id="count-offres" style="font-size:24px;">—</div>
+            <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+          </div>
         </div>
-        {% else %}
-          <div class="user-placeholder">Aucune offre disponible</div>
-        {% endif %}
       </div>
-      <!-- Nouvelle section: Commandes -->
-      <div class="group">
-        <div class="label">Commandes</div>
-        {% if commandes %}
-        <div class="table-wrap" style="overflow:auto;">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>id</th>
-                <th>utilisateur</th>
-                <th>offre</th>
-                <th>prix payé</th>
-                <th>token</th>
-                <th>créée le</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for c in commandes %}
-              <tr>
-                <td>{{ c['id'] }}</td>
-                <td>
-                  {% if c.get('users') %}
-                    {{ c['users']['email'] }}
-                  {% else %}
-                    {{ c['user_id'] }}
-                  {% endif %}
-                </td>
-                <td>
-                  {% if c.get('offres') %}
-                    {{ c['offres']['title'] }}
-                  {% else %}
-                    {{ c['offre_id'] }}
-                  {% endif %}
-                </td>
-                <td>{{ c['price_paid'] }}</td>
-                <td>{{ c['token'] }}</td>
-                <td>{{ c['created_at'] }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-          <div class="user-placeholder">Aucune commande</div>
-        {% endif %}
+
+      <!-- Zone d’affichage dynamique -->
+      <div id="data-view" class="group">
+        <div class="label">Données</div>
+        <div id="data-content" class="table-wrap" style="overflow:auto;"></div>
       </div>
     </div>
   </div>
+
   <script>
-    // Même protection BFCache côté admin
-    window.addEventListener('pageshow', function (e) {
-      if (e.persisted) {
-        window.location.reload();
-      } else {
-        try {
-          var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-          if (nav && nav.type === 'back_forward') {
-            window.location.reload();
-          }
-        } catch (_) {}
+    // Expose CSRF token côté client
+    window.CSRF_TOKEN = "{{ csrf_token or request.cookies.get('csrf_token', '') }}";
+
+    // Échappement HTML
+    function esc(v) {
+      if (v === null || v === undefined) return "";
+      return String(v).replace(/[&<>"']/g, function(m) { return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[m]); });
+    }
+
+    // Fetch JSON helper
+    async function fetchJSON(url) {
+      const res = await fetch(url, { credentials: "same-origin" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    }
+
+    // Rendu table générique
+    function renderTable(headers, rows) {
+      const thead = "<thead><tr>" + headers.map(function(h){ return "<th>" + esc(h) + "</th>"; }).join("") + "</tr></thead>";
+      const tbody = "<tbody>" + rows.map(function(r){ return "<tr>" + r.map(function(c){ return "<td>" + c + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody>";
+      return "<table class='table'>" + thead + tbody + "</table>";
+    }
+
+    // Offres: actions via lien d'édition + formulaire POST suppression (CSRF)
+    function renderOffres(items) {
+      const headers = ["id", "title", "price", "category", "stock", "active", "created_at", "updated_at", "description", "image", "Actions"];
+      const rows = items.map(function(row) {
+        const id = row.id || "";
+        const editLink = '<a href="/admin/offres/' + esc(id) + '/edit" title="Modifier" aria-label="Modifier" style="text-decoration:none;">✏️</a>';
+        const deleteForm =
+          '<form action="/admin/offres/' + esc(id) + '/delete" method="post" style="display:inline;margin-left:8px;">' +
+          '<input type="hidden" name="X-CSRF-Token" value="' + (window.CSRF_TOKEN || "") + '">' +
+          '<button type="submit" title="Supprimer" aria-label="Supprimer" style="background:none;border:none;cursor:pointer;font-size:16px;color:#c00;">❌</button>' +
+          '</form>';
+        const actions = editLink + deleteForm;
+        return [
+          esc(row.id || ""),
+          esc(row.title || ""),
+          (row.price != null ? esc(row.price) : ""),
+          esc(row.category || ""),
+          (row.stock != null ? esc(row.stock) : ""),
+          esc(String(row.active)),
+          esc(row.created_at || ""),
+          esc(row.updated_at || ""),
+          esc(row.description || ""),
+          esc(row.image || ""),
+          actions
+        ];
+      });
+      return renderTable(headers, rows);
+    }
+
+    // Commandes: actions via data-attributes + délégation (pas d'onclick inline)
+    function renderCommandes(items) {
+      const headers = ["id", "utilisateur", "offre", "prix payé", "status", "token", "créée le", "Actions"];
+      const rows = items.map(function(c) {
+        const userEmail = (c.users && c.users.email) ? c.users.email : (c.user_id || "");
+        const offreTitle = (c.offres && c.offres.title) ? c.offres.title : (c.offre_id || "");
+        const id = c.id || "";
+
+        const edit =
+          '<a href="#" class="act cmd-edit" title="Modifier" aria-label="Modifier"' +
+          ' data-action="commande-edit" data-id="' + esc(id) + '"' +
+          ' data-status="' + esc(c.status || "") + '"' +
+          ' data-price="' + (c.price_paid != null ? esc(String(c.price_paid)) : "") + '"' +
+          ' style="text-decoration:none;">✏️</a>';
+
+        const del =
+          '<button type="button" class="act cmd-del" title="Supprimer" aria-label="Supprimer"' +
+          ' data-action="commande-del" data-id="' + esc(id) + '"' +
+          ' style="background:none;border:none;cursor:pointer;font-size:16px;color:#c00;margin-left:8px;">❌</button>';
+
+        const actions = edit + del;
+
+        return [
+          esc(id),
+          esc(userEmail),
+          esc(offreTitle),
+          (c.price_paid != null ? esc(c.price_paid) : ""),
+          esc(c.status || ""),
+          esc(c.token || ""),
+          esc(c.created_at || ""),
+          actions
+        ];
+      });
+      return renderTable(headers, rows);
+    }
+
+    // Utilisateurs: actions via data-attributes + délégation
+    function renderUsers(items) {
+      const headers = ["id", "email", "nom complet", "created_at", "Actions"];
+      const rows = items.map(function(u) {
+        const id = u.id || "";
+        const email = u.email || "";
+        const fullname = u.full_name || "";
+
+        const edit =
+          '<a href="#" class="act user-edit" title="Modifier" aria-label="Modifier"' +
+          ' data-action="user-edit" data-id="' + esc(id) + '" data-email="' + esc(email) + '"' +
+          ' style="text-decoration:none;">✏️</a>';
+
+        const del =
+          '<button type="button" class="act user-del" title="Supprimer" aria-label="Supprimer"' +
+          ' data-action="user-del" data-id="' + esc(id) + '"' +
+          ' style="background:none;border:none;cursor:pointer;font-size:16px;color:#c00;margin-left:8px;">❌</button>';
+
+        const actions = edit + del;
+        return [esc(id), esc(email), esc(fullname), esc(u.created_at || ""), actions];
+      });
+      return renderTable(headers, rows);
+    }
+
+    // API d'actions
+    window.Admin = {
+      editUser: async function(id, currentEmail) {
+        const email = prompt("Nouvel email pour l'utilisateur:", currentEmail || "");
+        if (!email) return;
+        const res = await fetch("/admin/api/users/" + encodeURIComponent(id) + "/update", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": window.CSRF_TOKEN || ""
+          },
+          body: JSON.stringify({ email: email })
+        });
+        if (!res.ok) { alert("Echec de la mise à jour de l'utilisateur"); return; }
+        await showUsers();
+        await loadStats();
+      },
+
+      deleteUser: async function(id) {
+        if (!confirm("Confirmer la suppression de cet utilisateur ?")) return;
+        const res = await fetch("/admin/api/users/" + encodeURIComponent(id) + "/delete", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "X-CSRF-Token": window.CSRF_TOKEN || "" }
+        });
+        if (!res.ok) { alert("Echec de la suppression de l'utilisateur"); return; }
+        await showUsers();
+        await loadStats();
+      },
+
+      editCommande: async function(id, currentStatus, currentPrice) {
+        const status = prompt("Nouveau status (ex: pending/completed) :", currentStatus || "");
+        if (status === null) return;
+        const priceStr = prompt("Nouveau prix payé (laisser vide pour ne pas changer) :", (currentPrice || "").toString());
+        const body = {};
+        if ((status || "").trim() !== "") body.status = status.trim();
+        if (priceStr && priceStr.trim() !== "") {
+          const p = Number(priceStr);
+          if (Number.isNaN(p)) { alert("Prix invalide"); return; }
+          body.price_paid = p;
+        }
+        if (Object.keys(body).length === 0) return;
+        const res = await fetch("/admin/api/commandes/" + encodeURIComponent(id) + "/update", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": window.CSRF_TOKEN || ""
+          },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) { alert("Echec de la mise à jour de la commande"); return; }
+        await showCommandes();
+        await loadStats();
+      },
+
+      deleteCommande: async function(id) {
+        if (!confirm("Confirmer la suppression de cette commande ?")) return;
+        const res = await fetch("/admin/api/commandes/" + encodeURIComponent(id) + "/delete", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "X-CSRF-Token": window.CSRF_TOKEN || "" }
+        });
+        if (!res.ok) { alert("Echec de la suppression de la commande"); return; }
+        await showCommandes();
+        await loadStats();
       }
-    });
+    };
+
+    // Stats
+    async function loadStats() {
+      try {
+        const data = await fetchJSON("/admin/api/stats");
+        document.getElementById("count-commandes").textContent = (data.commandes_count != null ? data.commandes_count : "0");
+        document.getElementById("count-users").textContent = (data.users_count != null ? data.users_count : "0");
+        document.getElementById("count-offres").textContent = (data.offres_count != null ? data.offres_count : "0");
+      } catch (e) {
+        document.getElementById("count-commandes").textContent = "—";
+        document.getElementById("count-users").textContent = "—";
+        document.getElementById("count-offres").textContent = "—";
+      }
+    }
+
+    // Affichages
+    async function showOffres() {
+      const box = document.getElementById("data-content");
+      box.innerHTML = "Chargement...";
+      try {
+        const data = await fetchJSON("/admin/api/offres");
+        box.innerHTML = renderOffres(data.items || []);
+      } catch (e) {
+        box.innerHTML = "<div class='user-placeholder'>Erreur de chargement des offres.</div>";
+      }
+    }
+
+    async function showCommandes() {
+      const box = document.getElementById("data-content");
+      box.innerHTML = "Chargement...";
+      try {
+        const data = await fetchJSON("/admin/api/commandes");
+        box.innerHTML = renderCommandes(data.items || []);
+      } catch (e) {
+        box.innerHTML = "<div class='user-placeholder'>Erreur de chargement des commandes.</div>";
+      }
+    }
+
+    async function showUsers() {
+      const box = document.getElementById("data-content");
+      box.innerHTML = "Chargement...";
+      try {
+        const data = await fetchJSON("/admin/api/users");
+        box.innerHTML = renderUsers(data.items || []);
+      } catch (e) {
+        box.innerHTML = "<div class='user-placeholder'>Erreur de chargement des utilisateurs.</div>";
+      }
+    }
+
+    // Délégation d'événements pour les actions dynamiques
+    (function setupActionsDelegation(){
+      const box = document.getElementById("data-content");
+      box.addEventListener("click", function(e) {
+        const el = e.target.closest("[data-action]");
+        if (!el) return;
+        e.preventDefault();
+        const action = el.getAttribute("data-action");
+        if (action === "commande-edit") {
+          Admin.editCommande(el.getAttribute("data-id"), el.getAttribute("data-status") || "", el.getAttribute("data-price") || "");
+        } else if (action === "commande-del") {
+          Admin.deleteCommande(el.getAttribute("data-id"));
+        } else if (action === "user-edit") {
+          Admin.editUser(el.getAttribute("data-id"), el.getAttribute("data-email") || "");
+        } else if (action === "user-del") {
+          Admin.deleteUser(el.getAttribute("data-id"));
+        }
+      });
+    })();
+
+    // Listeners des cartes
+    document.getElementById("card-commandes").addEventListener("click", showCommandes);
+    document.getElementById("card-users").addEventListener("click", showUsers);
+    document.getElementById("card-offres").addEventListener("click", showOffres);
+
+    // Init
+    loadStats();
   </script>
 </body>
 </html>

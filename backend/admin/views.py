@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from starlette.status import HTTP_303_SEE_OTHER
 from backend.utils.templates import templates
 from backend.utils.security import require_admin
@@ -9,6 +9,8 @@ from backend.utils.rate_limit import optional_rate_limit
 from backend.config import COOKIE_SECURE
 import secrets
 from backend.utils.csrf import get_or_create_csrf_token, attach_csrf_cookie_if_missing, validate_csrf_token
+from backend.admin import repository as admin_repository
+from backend.offres import repository as offres_repository
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -29,6 +31,75 @@ def admin_page(request: Request, message: Optional[str] = None, user: dict = Dep
     })
     attach_csrf_cookie_if_missing(resp, request, csrf)
     return resp
+
+# API JSON: stats dashboard (comptes simples)
+@router.get("/api/stats")
+def admin_stats(user: dict = Depends(require_admin)):
+    users_count = admin_repository.count_table_rows("users")
+    commandes_count = admin_repository.count_table_rows("commandes")
+    offres_count = admin_repository.count_table_rows("offres")
+    return JSONResponse({"users_count": users_count, "commandes_count": commandes_count, "offres_count": offres_count})
+
+# API JSON: listes
+@router.get("/api/offres")
+def admin_list_offres(user: dict = Depends(require_admin)):
+    data = offres_repository.list_offres()
+    return JSONResponse({"items": data or []})
+
+@router.get("/api/commandes")
+def admin_list_commandes(limit: int = 100, user: dict = Depends(require_admin)):
+    data = admin_service.get_admin_commandes(limit=limit)
+    return JSONResponse({"items": data or []})
+
+@router.get("/api/users")
+def admin_list_users(limit: int = 100, user: dict = Depends(require_admin)):
+    data = admin_repository.fetch_admin_users(limit=limit)
+    return JSONResponse({"items": data or []})
+
+# Actions JSON pour Utilisateurs inscrits
+@router.post("/api/users/{user_id}/delete")
+async def api_delete_user(user_id: str, user: dict = Depends(require_admin)):
+    ok = admin_service.delete_user(user_id)
+    if not ok:
+        return JSONResponse({"ok": False}, status_code=400)
+    return JSONResponse({"ok": True})
+
+@router.post("/api/users/{user_id}/update")
+async def api_update_user(user_id: str, request: Request, user: dict = Depends(require_admin)):
+    body = await request.json()
+    email = (body.get("email") or "").strip()
+    if not email:
+        return JSONResponse({"ok": False, "error": "email required"}, status_code=400)
+    updated = admin_service.update_user(user_id, {"email": email})
+    if not updated:
+        return JSONResponse({"ok": False}, status_code=400)
+    return JSONResponse({"ok": True, "item": updated})
+
+# Actions JSON pour Commandes réalisées
+@router.post("/api/commandes/{commande_id}/delete")
+async def api_delete_commande(commande_id: str, user: dict = Depends(require_admin)):
+    ok = admin_service.delete_commande(commande_id)
+    if not ok:
+        return JSONResponse({"ok": False}, status_code=400)
+    return JSONResponse({"ok": True})
+
+@router.post("/api/commandes/{commande_id}/update")
+async def api_update_commande(commande_id: str, request: Request, user: dict = Depends(require_admin)):
+    body = await request.json()
+    data = {}
+    if "status" in body:
+        data["status"] = (body.get("status") or "").strip()
+    if "price_paid" in body and body.get("price_paid") is not None:
+        try:
+            data["price_paid"] = float(body.get("price_paid"))
+        except Exception:
+            return JSONResponse({"ok": False, "error": "price_paid invalide"}, status_code=400)
+    if not data:
+        return JSONResponse({"ok": False, "error": "aucune donnée à mettre à jour"}, status_code=400)
+    updated = admin_service.update_commande(commande_id, data)
+    if not updated:
+        return JSONResponse({"ok": False}, status_code=400)
+    return JSONResponse({"ok": True, "item": updated})
 
 @router.get("/offres/new", response_class=HTMLResponse)
 @router.get("/offres/new/", response_class=HTMLResponse)

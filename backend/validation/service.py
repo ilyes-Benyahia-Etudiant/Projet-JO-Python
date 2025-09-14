@@ -16,16 +16,16 @@ def validate_ticket_token(token: str, admin_id: str, admin_token: Optional[str] 
     if not ticket:
         return ("not_found", {"message": "Billet introuvable"})
 
-    last = get_last_validation(token)
-    if last and last.get("status") == "validated":
-        return ("already_validated", {
-            "ticket": ticket,
-            "validation": last,
-            "message": "Billet déjà validé",
-        })
-
     created = insert_validation(token=token, commande_id=ticket["id"], admin_id=admin_id, status="validated", user_token=admin_token)
     if not created:
+        # En cas d'échec (ex: contrainte d'unicité due à une course), re-lire la dernière validation
+        last = get_last_validation(token)
+        if last and last.get("status") == "validated":
+            return ("already_validated", {
+                "ticket": ticket,
+                "validation": last,
+                "message": "Billet déjà validé",
+            })
         return ("error", {"message": "Impossible d'enregistrer la validation"})
 
     return ("validated", {

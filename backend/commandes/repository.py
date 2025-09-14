@@ -10,9 +10,9 @@ def fetch_admin_commandes(limit: int = 100) -> List[dict]:
     """
     try:
         res = (
-            get_supabase()
+            get_service_supabase()
             .table("commandes")
-            .select("id, token, price_paid, created_at, users(email), offres(title, price)")
+            .select("id, token, price_paid, status, created_at, users(email), offres(title, price)")
             .order("created_at", desc=True)
             .limit(limit)
             .execute()
