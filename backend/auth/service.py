@@ -1,18 +1,26 @@
 from typing import Optional, Dict, Any
-import logging
-from backend.models.auth import AuthResponse, make_auth_response, handle_exception
+from backend.auth.models import AuthResponse, make_auth_response, handle_exception
 from backend.models.supabase import (
     sign_in_password,
     sign_up_account,
     send_reset_password,
-    update_user_password as _update_user_password,
+    update_user_password,
 )
-from backend.models.db import get_user_by_email
+from backend.users.repository import get_user_by_email
 from backend.config import SIGNUP_REDIRECT_URL
+from .repository import (
+    get_user_from_access_token as _repo_get_user_from_token,
+    upsert_user_profile as _repo_upsert_user_profile,
+)
 
-logger = logging.getLogger(__name__)
+def determine_role(metadata: Dict[str, Any] | None) -> str:
+    if str((metadata or {}).get("role", "")).lower() == "admin":
+        return "admin"
+    return "user"
 
-def sign_in(email: str, password: str) -> AuthResponse:
+# --- Cas d’usage Auth exposés ---
+
+def login(email: str, password: str) -> AuthResponse:
     try:
         email = (email or "").strip()
         res = sign_in_password(email, password)
@@ -20,7 +28,7 @@ def sign_in(email: str, password: str) -> AuthResponse:
     except Exception as e:
         return handle_exception("sign_in", e)
 
-def sign_up(email: str, password: str, full_name: Optional[str] = None, wants_admin: bool = False) -> AuthResponse:
+def signup(email: str, password: str, full_name: Optional[str] = None, wants_admin: bool = False) -> AuthResponse:
     try:
         email = (email or "").strip()
 
@@ -48,6 +56,7 @@ def sign_up(email: str, password: str, full_name: Optional[str] = None, wants_ad
         sess = getattr(res, "session", None)
         if sess and getattr(sess, "access_token", None):
             return make_auth_response(res)
+        # Succès sans session (vérification email)
         return AuthResponse(True, error="Inscription réussie, vérifiez votre email")
     except Exception as e:
         msg = str(e).lower()
@@ -55,7 +64,7 @@ def sign_up(email: str, password: str, full_name: Optional[str] = None, wants_ad
             return AuthResponse(False, error="Utilisateur existe déjà")
         return handle_exception("sign_up", e)
 
-def send_reset_email(email: str, redirect_to: str) -> AuthResponse:
+def request_password_reset(email: str, redirect_to: str) -> AuthResponse:
     try:
         email = (email or "").strip()
         send_reset_password(email, redirect_to)
@@ -80,5 +89,20 @@ def update_password(user_token: str, new_password: str) -> AuthResponse:
 
         return AuthResponse(False, error=f"Erreur mise à jour: {msg or f'status {resp.status_code}'}")
     except Exception as e:
-        logger.exception("Erreur update_password")
-        return AuthResponse(False, error=f"Erreur mise à jour: {str(e)}")
+        return handle_exception("update_password", e)
+
+# --- Intégration sécurité / profil ---
+
+def get_user_from_token(access_token: str) -> Dict[str, Any]:
+    """
+    Normalise l'utilisateur issu de supabase.auth.get_user(access_token) et calcule le rôle.
+    """
+    raw = _repo_get_user_from_token(access_token)
+    email = raw.get("email")
+    metadata = raw.get("user_metadata") or {}
+    uid = raw.get("id")
+    role = determine_role(metadata)
+    return {"id": uid, "email": email, "metadata": metadata, "role": role, "token": access_token}
+
+def sync_user_profile(user_id: str, email: str, role: Optional[str] = None) -> bool:
+    return _repo_upsert_user_profile(user_id, email, role)

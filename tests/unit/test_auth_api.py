@@ -23,8 +23,8 @@ def apply_patches():
         yield
 
 # Importer le module à tester APRES avoir mocké les dépendances
-from backend.views.api_v1_auth import api_login, api_signup, api_logout
-from backend.models.auth import AuthResponse
+from backend.auth.views import api_login, api_signup, api_logout
+from backend.auth.models import AuthResponse
 
 
 @pytest.fixture
@@ -40,10 +40,10 @@ async def test_api_login_success(mock_response, monkeypatch):
 
     user_data = {"id": 1, "email": "test@example.com", "role": "user"}
     mock_signin = MagicMock(return_value=AuthResponse(success=True, user=user_data, session={"access_token": "fake-token"}))
-    monkeypatch.setattr("backend.views.api_v1_auth.sign_in", mock_signin)
+    monkeypatch.setattr("backend.auth.views.svc_login", mock_signin)
 
     mock_set_cookie = MagicMock()
-    monkeypatch.setattr("backend.views.api_v1_auth.set_session_cookie", mock_set_cookie)
+    monkeypatch.setattr("backend.auth.views.set_session_cookie", mock_set_cookie)
 
     result = api_login(form_data, mock_response)
 
@@ -60,7 +60,7 @@ async def test_api_login_failure_invalid_credentials(mock_response, monkeypatch)
     form_data.password = "wrongpassword"
 
     mock_signin = MagicMock(return_value=AuthResponse(success=False, error="Identifiants invalides"))
-    monkeypatch.setattr("backend.views.api_v1_auth.sign_in", mock_signin)
+    monkeypatch.setattr("backend.auth.views.svc_login", mock_signin)
 
     with pytest.raises(HTTPException) as exc_info:
         api_login(form_data, mock_response)
@@ -88,10 +88,10 @@ async def test_api_signup_success(mock_response, monkeypatch):
             token_type = "bearer"
         return Result()
 
-    monkeypatch.setattr("backend.views.api_v1_auth.sign_up", mock_sign_up)
+    monkeypatch.setattr("backend.auth.views.svc_signup", mock_sign_up)
 
     mock_set_cookie = MagicMock()
-    monkeypatch.setattr("backend.views.api_v1_auth.set_session_cookie", mock_set_cookie)
+    monkeypatch.setattr("backend.auth.views.set_session_cookie", mock_set_cookie)
     monkeypatch.setattr("backend.config.ADMIN_SECRET_HASH", None)
 
     # api_signup n'est pas async, donc on ne l'attend pas
@@ -129,7 +129,7 @@ async def test_api_signup_failure_email_exists(mock_response, monkeypatch):
 async def test_api_logout(mock_response, monkeypatch):
     """Teste la déconnexion."""
     mock_clear_cookie = MagicMock()
-    monkeypatch.setattr("backend.views.api_v1_auth.clear_session_cookie", mock_clear_cookie)
+    monkeypatch.setattr("backend.auth.views.clear_session_cookie", mock_clear_cookie)
 
     result = api_logout(mock_response)
 

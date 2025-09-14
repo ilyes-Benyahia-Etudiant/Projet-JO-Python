@@ -1,12 +1,5 @@
 # Façade "M" (Models) en MVT.
 # On expose les types/Helpers (métier) et les cas d’usage. La couche Models est autonome.
-from .auth import AuthResponse, build_user_dict, build_session_dict, make_auth_response
-from .usecases_auth import (
-    sign_in,
-    sign_up,
-    send_reset_email,
-    update_password,
-)
 from .supabase import (
     sign_in_password,
     sign_up_account,
@@ -19,7 +12,7 @@ from .db import (
     fetch_offres,
     fetch_user_commandes,
 )
-from .health import health_supabase_info
+from backend.health.service import health_supabase_info
 
 # Shim de compatibilité pour les tests existants (conftest.py)
 from backend.payments.stripe_client import require_stripe
@@ -58,16 +51,6 @@ def create_session(base_url: str, line_items, metadata):
     )
 
 __all__ = [
-    # Modèles/Helpers
-    "AuthResponse",
-    "build_user_dict",
-    "build_session_dict",
-    "make_auth_response",
-    # Cas d’usage
-    "sign_in",
-    "sign_up",
-    "send_reset_email",
-    "update_password",
     # Accès bas niveau
     "sign_in_password",
     "sign_up_account",

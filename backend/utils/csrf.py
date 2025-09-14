@@ -1,10 +1,16 @@
 from typing import Any, Iterable
-from fastapi import Request
-from fastapi.responses import Response
+from fastapi import FastAPI, Request
+from fastapi.responses import Response, JSONResponse
 import secrets
+import urllib.parse
 from backend.config import COOKIE_SECURE
 
 CSRF_COOKIE_NAME = "csrf_token"
+CSRF_HEADER_NAME = "X-CSRF-Token"
+CSRF_EXEMPT_PATHS = {
+    "/api/v1/commandes/webhook/stripe",
+    "/api/v1/payments/webhook",
+}
 
 def get_or_create_csrf_token(request: Request) -> str:
     """
@@ -46,3 +52,53 @@ def validate_csrf_token(request: Request, form_data: Any, field_names: Iterable[
             if token_form:
                 break
     return bool(token_form and token_cookie == token_form)
+
+
+def register_csrf_middleware(app: FastAPI) -> None:
+    @app.middleware("http")
+    async def csrf_protection(request: Request, call_next):
+        method = request.method.upper()
+        path = request.url.path
+        has_session = bool(request.cookies.get("sb_access"))
+        is_state_changing = method in ("POST", "PUT", "PATCH", "DELETE")
+        # Normalisation du chemin pour gérer les / finaux
+        normalized_path = path.rstrip("/") or "/"
+        exempt_normalized = {p.rstrip("/") or "/" for p in CSRF_EXEMPT_PATHS}
+        is_exempt = (
+            normalized_path in exempt_normalized
+            or normalized_path.startswith("/public")
+            or normalized_path.startswith("/static")
+        )
+
+        # Génère ou récupère le token
+        token = get_or_create_csrf_token(request)
+
+        if is_state_changing and has_session and not is_exempt:
+            header_token = request.headers.get(CSRF_HEADER_NAME, "")
+            cookie_token = request.cookies.get(CSRF_COOKIE_NAME, "")
+            form_token = ""
+
+            if not header_token:
+                ctype = request.headers.get("content-type", "")
+                if ctype.startswith("application/x-www-form-urlencoded"):
+                    body = await request.body()
+
+                    async def receive():
+                        return {"type": "http.request", "body": body, "more_body": False}
+                    request._receive = receive
+
+                    try:
+                        parsed_body = urllib.parse.parse_qs(body.decode())
+                        csrf_values = parsed_body.get("X-CSRF-Token", []) + parsed_body.get("csrf_token", [])
+                        if csrf_values:
+                            form_token = csrf_values[0]
+                    except Exception:
+                        form_token = ""
+
+            provided = header_token or form_token
+            if not cookie_token or not provided or not secrets.compare_digest(provided, cookie_token):
+                return JSONResponse(status_code=403, content={"detail": "CSRF verification failed"})
+
+        response = await call_next(request)
+        attach_csrf_cookie_if_missing(response, request, token)
+        return response

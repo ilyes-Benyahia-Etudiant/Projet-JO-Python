@@ -2,9 +2,22 @@ from fastapi import Request, HTTPException, Depends
 from fastapi.responses import Response
 from typing import Optional, Dict, Any
 from backend.config import COOKIE_SECURE
-from backend.models.db import get_supabase
 
 COOKIE_NAME = "sb_access"
+
+def determine_role(email: Optional[str], metadata: Dict[str, Any] | None) -> str:
+    """
+    Délègue la détermination du rôle au service d'authentification.
+    Le paramètre email est conservé pour compatibilité mais n'est pas utilisé.
+    """
+    try:
+        from backend.auth.service import determine_role as _determine_role
+        return _determine_role(metadata)
+    except Exception:
+        # Fallback conservateur si le service n'est pas importable au démarrage
+        if str((metadata or {}).get("role", "")).lower() == "admin":
+            return "admin"
+        return "user"
 
 def set_session_cookie(response: Response, access_token: str):
     response.set_cookie(
@@ -20,12 +33,6 @@ def set_session_cookie(response: Response, access_token: str):
 def clear_session_cookie(response: Response):
     response.delete_cookie(COOKIE_NAME, path="/")
 
-def determine_role(email: str, metadata: Dict[str, Any] | None) -> str:
-    # Rôle basé uniquement sur la metadata (posée à l’inscription si mot de passe secret)
-    if str((metadata or {}).get("role", "")).lower() == "admin":
-        return "admin"
-    return "user"
-
 def get_current_user(request: Request) -> Dict[str, Any]:
     # Hybride: priorité au Bearer, fallback cookie
     token = None
@@ -39,13 +46,14 @@ def get_current_user(request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=401, detail="Non authentifié")
 
     try:
-        res = get_supabase().auth.get_user(token)
-        user = getattr(res, "user", None) or {}
-        email = getattr(user, "email", None) or (user.get("email") if isinstance(user, dict) else None)
-        metadata = getattr(user, "user_metadata", None) or (user.get("user_metadata") if isinstance(user, dict) else None)
-        role = determine_role(email, metadata)
-        uid = getattr(user, "id", None) or (user.get("id") if isinstance(user, dict) else None)
-        return {"id": uid, "email": email, "metadata": metadata or {}, "role": role, "token": token}
+        # Délégué au service Auth
+        from backend.auth.service import get_user_from_token as _svc_get_user_from_token
+        user = _svc_get_user_from_token(token)
+        if not user.get("id"):
+            raise HTTPException(status_code=401, detail="Session expirée, veuillez vous connecter")
+        return user
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=401, detail="Session expirée, veuillez vous connecter")
 

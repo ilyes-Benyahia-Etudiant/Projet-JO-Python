@@ -1,5 +1,3 @@
-# Module: backend/models/auth.py
-# Définition du modèle AuthResponse et des helpers "métier"
 from typing import Optional, Dict, Any
 import logging
 from backend.utils.security import determine_role
@@ -33,6 +31,7 @@ def build_user_dict(user) -> Dict[str, Any]:
         "email": getattr(user, "email", None),
         "metadata": getattr(user, "user_metadata", None) or {},
     }
+    # Conserve l'appel au wrapper pour éviter toute dépendance circulaire
     user_dict["role"] = determine_role(user_dict["email"], user_dict["metadata"])
     return user_dict
 

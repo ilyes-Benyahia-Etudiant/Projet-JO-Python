@@ -1,0 +1,27 @@
+from fastapi import FastAPI
+from backend.users.views import web_router as users_web_router, api_router as users_api_router
+from backend.auth.views import web_router as auth_web_router, api_router as auth_api_router
+from backend.validation.views import web_router as validate_web_router
+from backend.commandes import views as commandes_views
+from backend.tickets import views as tickets_views
+from backend.validation import views as validation_views
+from backend.payments import views as payments_views
+from backend.admin.views import router as admin_router
+from backend.health.router import router as health_router
+
+def register_routers(app: FastAPI) -> None:
+    # Pages web (HTML)
+    app.include_router(users_web_router)
+    app.include_router(auth_web_router)
+    app.include_router(validate_web_router)
+    # API v1
+    app.include_router(auth_api_router)
+    app.include_router(commandes_views.router)
+    app.include_router(tickets_views.router)
+    app.include_router(validation_views.router)
+    app.include_router(payments_views.router)
+    app.include_router(users_api_router)
+    # Admin
+    app.include_router(admin_router)
+    # Health & monitoring
+    app.include_router(health_router)

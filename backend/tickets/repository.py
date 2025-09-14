@@ -1,5 +1,5 @@
 from typing import List, Dict
-from backend.models.db import get_supabase
+from backend.infra.supabase_client import get_supabase
 
 def list_user_tickets(user_id: str) -> List[Dict]:
     """

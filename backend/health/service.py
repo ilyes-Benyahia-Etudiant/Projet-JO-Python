@@ -1,7 +1,7 @@
 from urllib.parse import urlparse
 import socket
 from backend.config import SUPABASE_URL
-from backend.models.db import get_supabase
+from backend.infra.supabase_client import get_supabase
 
 def _check_table(client, name: str):
     try:

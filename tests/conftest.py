@@ -40,8 +40,8 @@ def authenticated_user(monkeypatch):
     def mock_require_admin():
         return admin_user
 
-    monkeypatch.setattr("backend.models.auth.sign_in", lambda email, password: mock_auth_response)
-    return mock_auth_response
+    # [SUPPRIMÉ] monkeypatch legacy backend.models.auth.sign_in
+    return admin_user
 
 @pytest.fixture
 def authenticated_admin_client(app, client):
@@ -110,25 +110,32 @@ def _mock_payments_and_stripe(monkeypatch):
 @pytest.fixture(scope="function", autouse=True)
 def mock_db_dependency(monkeypatch):
     """
-    Mocks database access for all tests by patching functions in the `backend.models.db` module.
-    This prevents any real database calls from being made.
+    Mocks database access for all tests by patching functions in les nouveaux modules.
     """
-    # Using MagicMock to prevent any real calls to Supabase.
-    # This will make DB calls do nothing and return a mock object.
-    monkeypatch.setattr("backend.models.db.get_supabase", lambda: MagicMock())
-    monkeypatch.setattr("backend.models.db.get_service_supabase", lambda: MagicMock())
+    # Patch les accès à Supabase
+    monkeypatch.setattr("backend.infra.supabase_client.get_supabase", lambda: MagicMock())
+    monkeypatch.setattr("backend.infra.supabase_client.get_service_supabase", lambda: MagicMock())
 
-    # For functions that are expected to return something, we can provide a default.
-    monkeypatch.setattr("backend.models.db.fetch_offres", lambda: [])
-    monkeypatch.setattr("backend.models.db.get_user_by_email", lambda email: None)
-    monkeypatch.setattr("backend.models.db.get_user_by_id", lambda user_id: {"id": user_id, "email": "test@example.com"})
-    monkeypatch.setattr("backend.models.db.get_offre_by_id", lambda offre_id: {"id": offre_id, "title": "Test Offre", "price": 100})
-    monkeypatch.setattr("backend.models.db.fetch_admin_commandes", lambda limit=100: [])
-    monkeypatch.setattr("backend.models.db.fetch_user_commandes", lambda user_id, limit=50: [])
-    monkeypatch.setattr("backend.models.db.get_commande_by_token", lambda token: None)
-    monkeypatch.setattr("backend.models.db.fetch_offres_by_ids", lambda ids: [])
-    monkeypatch.setattr("backend.models.db.insert_commande", lambda **kwargs: {"status": "ok"})
-    monkeypatch.setattr("backend.models.db.insert_commande_with_token", lambda **kwargs: {"status": "ok"})
-    monkeypatch.setattr("backend.models.health.health_supabase_info", lambda: {"connect_ok": True})
+    # Patch les fonctions de users/repository
+    monkeypatch.setattr("backend.users.repository.get_user_by_email", lambda email: None)
+    monkeypatch.setattr("backend.users.repository.get_user_by_id", lambda user_id: {"id": user_id, "email": "test@example.com"})
+    monkeypatch.setattr("backend.users.repository.upsert_user_profile", lambda user_id, email, role=None: True)
+    monkeypatch.setattr("backend.users.repository.get_offers", lambda: [])
+    monkeypatch.setattr("backend.users.repository.get_user_orders", lambda user_id: [])
 
-    yield
+    # Patch les fonctions de admin/service
+    monkeypatch.setattr("backend.admin.service.get_offre_by_id", lambda offre_id: {"id": offre_id, "title": "Test Offre", "price": 100})
+
+    # Patch les fonctions de commandes/repository
+    monkeypatch.setattr("backend.commandes.repository.fetch_admin_commandes", lambda limit=100: [])
+    monkeypatch.setattr("backend.commandes.repository.fetch_user_commandes", lambda user_id, limit=50: [])
+    monkeypatch.setattr("backend.commandes.repository.get_commande_by_token", lambda token: None)
+
+    # Patch les fonctions de payments/repository
+    monkeypatch.setattr("backend.payments.repository.insert_commande", lambda **kwargs: {"status": "ok"})
+    monkeypatch.setattr("backend.payments.repository.insert_commande_with_token", lambda **kwargs: {"status": "ok"})
+    monkeypatch.setattr("backend.payments.repository.insert_commande_service", lambda **kwargs: {"status": "ok"})
+    monkeypatch.setattr("backend.payments.repository.fetch_offres_by_ids", lambda ids: [])
+
+    # Patch la health info
+    monkeypatch.setattr("backend.health.service.health_supabase_info", lambda: {"connect_ok": True})

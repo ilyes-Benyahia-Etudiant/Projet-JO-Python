@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from backend.app import app  # Importer l'application FastAPI
 from backend.utils.security import require_user
-from backend.models.auth import AuthResponse
+from backend.auth.models import AuthResponse
 
 @pytest.fixture(scope="module")
 def client():

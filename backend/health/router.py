@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from backend.models import health_supabase_info
+from backend.health.service import health_supabase_info
 
 router = APIRouter(prefix="/health", tags=["Health"])
 

@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from backend.models.db import get_supabase, get_service_supabase
+from backend.infra.supabase_client import get_supabase, get_service_supabase
 import logging
 
 logger = logging.getLogger(__name__)
