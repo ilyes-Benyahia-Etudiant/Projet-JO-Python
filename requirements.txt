@@ -1,8 +1,7 @@
 supabase==2.18.1
-python-dotenv==1.0.1
-fastapi==0.115.4
-pydantic[email]
-uvicorn==0.30.6
+fastapi>=0.110.0
+starlette>=0.36.3
+uvicorn>=0.30.0
 pyjwt==2.10.1
 python-multipart==0.0.12
 pytest>=7.0.0

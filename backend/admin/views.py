@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from starlette.status import HTTP_303_SEE_OTHER
 from backend.utils.templates import templates
@@ -11,6 +11,8 @@ import secrets
 from backend.utils.csrf import get_or_create_csrf_token, attach_csrf_cookie_if_missing, validate_csrf_token
 from backend.admin import repository as admin_repository
 from backend.offres import repository as offres_repository
+from backend.validation.repository import get_ticket_by_token, get_last_validation
+from backend.validation.service import validate_ticket_token
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -239,12 +241,54 @@ async def supprimer_offre(request: Request, offre_id: str, user: dict = Depends(
 
 @router.get("/scan", response_class=HTMLResponse)
 @router.get("/scan/", response_class=HTMLResponse)
-def admin_scan_page(request: Request, user: dict = Depends(require_admin)):
+def admin_scan_page(request: Request, token: Optional[str] = Query(None), user: dict = Depends(require_admin)):
     csrf = get_or_create_csrf_token(request)
-    resp = templates.TemplateResponse("admin-scan.html", {
+
+    # Contexte par défaut
+    context = {
         "request": request,
         "user": user,
         "csrf_token": csrf,
-    })
+        "token": (token or "").strip(),
+        "status": None,
+        "message": None,
+        "ticket": None,
+        "validation": None,
+    }
+
+    # Si un token est fourni en query => on calcule l'état côté serveur
+    if context["token"]:
+        ticket = get_ticket_by_token(context["token"])
+        if not ticket:
+            context["status"] = "Invalid"
+            context["message"] = "Billet introuvable"
+        else:
+            last = get_last_validation(context["token"])
+            context["ticket"] = ticket
+            context["validation"] = last or None
+            # S'il existe une validation, on considère le billet comme validé
+            context["status"] = "Validated" if last else "Scanned"
+
+    resp = templates.TemplateResponse("admin-scan.html", context)
     attach_csrf_cookie_if_missing(resp, request, csrf)
     return resp
+
+@router.post("/scan/validate")
+@router.post("/scan/validate/", )
+async def admin_scan_validate(request: Request, user: dict = Depends(require_admin)):
+    # CSRF + récupération formulaire
+    form = await request.form()
+    if not validate_csrf_token(request, form):
+        return RedirectResponse(url="/admin/scan?error=CSRF%20invalide", status_code=HTTP_303_SEE_OTHER)
+    token = (form.get("token") or "").strip()
+    if not token:
+        return RedirectResponse(url="/admin/scan?error=Token%20manquant", status_code=HTTP_303_SEE_OTHER)
+
+    # Validation serveur
+    try:
+        status, data = validate_ticket_token(token, admin_id=user.get("id", ""), admin_token=user.get("token"))
+        # Peu importe le statut renvoyé, on revient sur la page GET pour afficher l'état à jour
+        return RedirectResponse(url=f"/admin/scan?token={token}", status_code=HTTP_303_SEE_OTHER)
+    except Exception:
+        # En cas d'erreur, on revient sur la page avec le token
+        return RedirectResponse(url=f"/admin/scan?token={token}", status_code=HTTP_303_SEE_OTHER)

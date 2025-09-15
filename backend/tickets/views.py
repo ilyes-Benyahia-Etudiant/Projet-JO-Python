@@ -26,7 +26,7 @@ def get_user_tickets(
     return tickets
 
 @router.get("/{ticket_token}/qrcode")
-def get_ticket_qrcode(ticket_token: str, user: dict = Depends(require_user)):
+def get_ticket_qrcode(ticket_token: str, request: Request, user: dict = Depends(require_user)):
     """
     Génère un QR code pour un billet spécifique de l'utilisateur courant.
     """
@@ -36,6 +36,6 @@ def get_ticket_qrcode(ticket_token: str, user: dict = Depends(require_user)):
     if not ticket:
         raise HTTPException(status_code=404, detail="Billet non trouvé")
 
-    # L’URL encodée dans le QR redirige vers la page admin scan (protégée)
-    validate_url = f"{BASE_URL}/admin/scan?token={ticket_token}"
+    base = (BASE_URL.strip().rstrip("/") if BASE_URL else str(request.base_url).rstrip("/"))
+    validate_url = f"{base}/admin/scan?token={ticket_token}"
     return {"qr_code": generate_qr_code(validate_url)}

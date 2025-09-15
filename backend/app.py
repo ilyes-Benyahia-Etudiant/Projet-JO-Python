@@ -10,6 +10,10 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_204_NO_CONTENT
 from contextlib import asynccontextmanager
+try:
+    from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+except Exception:
+    ProxyHeadersMiddleware = None
 
 from backend.config import PUBLIC_DIR, CORS_ORIGINS, ALLOWED_HOSTS, SUPABASE_URL, COOKIE_SECURE
 from backend.auth.views import web_router as auth_web_router, api_router as auth_api_router
@@ -83,10 +87,14 @@ def register_basic_middlewares(app: FastAPI) -> None:
         TrustedHostMiddleware,
         allowed_hosts=ALLOWED_HOSTS + ["*"] if "*" in CORS_ORIGINS else ALLOWED_HOSTS,
     )
+    # Fait confiance aux en-têtes X-Forwarded-* (Render, Nginx, etc.)
+    if ProxyHeadersMiddleware:
+        app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 def mount_static_files(app: FastAPI) -> None:
     app.mount("/public", StaticFiles(directory=str(PUBLIC_DIR)), name="public")
     app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR)), name="static")
+    app.mount("/js", StaticFiles(directory=str(PUBLIC_DIR / "js")), name="js")
 
 def register_security_middleware(app: FastAPI) -> None:
     @app.middleware("http")
