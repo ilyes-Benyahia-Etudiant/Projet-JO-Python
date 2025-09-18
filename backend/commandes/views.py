@@ -6,7 +6,7 @@ import logging
 from backend.utils.security import require_user
 from backend.utils.rate_limit import optional_rate_limit
 # Module-level (imports)
-from backend.commandes.stripe_client import parse_event
+from backend.payments.stripe_client import parse_event
 from backend.commandes import service as commandes_service
 # from backend.models import offres as offres_model
 from backend.offres import repository as offres_model

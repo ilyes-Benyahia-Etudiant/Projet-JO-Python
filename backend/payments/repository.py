@@ -5,11 +5,11 @@ from typing import Iterable, Dict, Any
 from backend.infra.supabase_client import (
     get_supabase,
     get_service_supabase,
+    get_user_supabase,
 )
 from typing import List, Optional
 import logging
-from supabase import create_client
-from backend.config import SUPABASE_URL, SUPABASE_ANON
+
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +60,7 @@ def _insert_commande_with_token(*, user_id: str, offre_id: str, token: str, pric
     Insert avec le token utilisateur explicite (respecte RLS) — utile côté API.
     """
     try:
-        client = create_client(SUPABASE_URL, SUPABASE_ANON)
-        client.postgrest.auth(user_token)
+        client = get_user_supabase(user_token)
         (
             client
             .table("commandes")

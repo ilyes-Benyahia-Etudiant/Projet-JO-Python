@@ -1,7 +1,7 @@
 from typing import Dict, Any
 import logging
 from backend.commandes import repository
-from backend.commandes.stripe_client import create_session, get_session
+from backend.payments.stripe_client import create_session, get_session
 
 logger = logging.getLogger(__name__)
 

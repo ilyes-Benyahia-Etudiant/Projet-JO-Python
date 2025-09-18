@@ -5,73 +5,187 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Authentification</title>
   <link rel="stylesheet" href="/static/css/index.css">
+  <link rel="stylesheet" href="/public/css/auth.css">
   <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="/public/favicon.ico" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome pour les icônes sociales -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  </style>
 </head>
+ 
 <body>
-  <div class="card" style="max-width:920px;margin:32px auto">
-    <h1>Authentification</h1>
-    {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
-    {% if message %}<div class="msg ok">{{ message }}</div>{% endif %}
-    <!-- Nouveau: message client auto (caché par défaut) -->
-    <div id="client-msg" class="msg ok" style="display:none"></div>
 
-    <div style="display:flex; gap:24px; align-items:flex-start">
-      <div class="auth-card">
-        <h2>Connexion</h2>
-        <form id="web-login-form" action="javascript:void(0);">
+  <header>
+    <nav class="navbar">
+      <div class="navbar-left">
+        <div class="olympic-rings">
+          <span class="ring blue"></span>
+          <span class="ring yellow"></span>
+          <span class="ring black"></span>
+          <span class="ring green"></span>
+          <span class="ring red"></span>
+          <span class="navbar-title">Olympic Games</span>
+        </div>
+      </div>
+      <ul class="navbar-links" id="primary-navigation">
+        <li><a href="/">Accueil</a></li>
+        <li><a href="/billeterie.html" aria-current="page">Billeterie</a></li>
+      </ul>
+      <div class="navbar-actions">
+        <a class="btn-login" href="/auth">Connexion</a>
+        <div class="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="card" style="max-width:920px;margin:32px auto">
+      <h1>Authentification</h1>
+      {% if error %}<div class="msg err">{{ error }}</div>{% endif %}
+      {% if message %}<div class="msg ok">{{ message }}</div>{% endif %}
+      <!-- Nouveau: message client auto (caché par défaut) -->
+      <div id="client-msg" class="msg ok" style="display:none"></div>
+
+      <div style="display:flex; gap:24px; align-items:flex-start">
+        
+        <div class="auth-card">
+          <h2>Connexion</h2>
+          <form id="web-login-form" action="javascript:void(0);">
+            <div class="message-area"></div>
+            <div class="form-group">
+              <label for="login-email">Email</label>
+              <input class="input" name="email" id="login-email" type="email" required/>
+            </div>
+            <div class="group">
+              <label>Mot de passe</label>
+              <input class="input" name="password" type="password" required/>
+            </div>
+            <div class="group">
+              <a href="#" id="forgot-link" class="auth-link">Mot de passe oublié ?</a>
+            </div>
+            <button class="btn" type="submit">Se connecter</button>
+          </form>
+
+          <!-- Formulaire "Mot de passe oublié" (caché par défaut) -->
+          <div id="forgot-container" style="display:none; margin-top:12px;">
+            <form id="web-forgot-form" action="javascript:void(0);">
+              <div class="message-area"></div>
+              <div class="group">
+                <label for="forgot-email">Email</label>
+                <input class="input" id="forgot-email" name="email" type="email" required/>
+              </div>
+              <button class="btn" type="submit">Envoyer le lien de réinitialisation</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Inscription: id correct + pas d'action pour que le JS intercepte -->
+        <form id="web-signup-form" method="post" style="flex:1" action="javascript:void(0);">
+          <h2>Inscription</h2>
           <div class="message-area"></div>
-          <div class="form-group">
-            <label for="login-email">Email</label>
-            <input class="input" name="email" id="login-email" type="email" required/>
+          <!-- Ajout d'un lien de retour dans le formulaire signup (ajoute ça dans <form id="web-signup-form">, par exemple après <h2>Inscription</h2>) -->
+          <div class="group">
+            <a href="#" class="auth-link switch-to-login">Déjà un compte ? Se connecter</a>
+          </div>
+          <div class="group">
+            <label>Nom et prénom</label>
+            <input class="input" name="full_name" type="text" autocomplete="name" required/>
+          </div>
+          <div class="group">
+            <label>Email</label>
+            <input class="input" name="email" type="email" required/>
           </div>
           <div class="group">
             <label>Mot de passe</label>
             <input class="input" name="password" type="password" required/>
           </div>
-          <div class="group">
-            <a href="#" id="forgot-link" class="auth-link">Mot de passe oublié ?</a>
-          </div>
-          <button class="btn" type="submit">Se connecter</button>
+          <button class="btn" type="submit">Créer un compte</button>
         </form>
-
-        <!-- Formulaire "Mot de passe oublié" (caché par défaut) -->
-        <div id="forgot-container" style="display:none; margin-top:12px;">
-          <form id="web-forgot-form" action="javascript:void(0);">
-            <div class="message-area"></div>
-            <div class="group">
-              <label for="forgot-email">Email</label>
-              <input class="input" id="forgot-email" name="email" type="email" required/>
-            </div>
-            <button class="btn" type="submit">Envoyer le lien de réinitialisation</button>
-          </form>
-        </div>
       </div>
-
-      <!-- Inscription: id correct + pas d'action pour que le JS intercepte -->
-      <form id="web-signup-form" method="post" style="flex:1" action="javascript:void(0);">
-        <h2>Inscription</h2>
-        <div class="message-area"></div>
-        <div class="group">
-          <label>Nom et prénom</label>
-          <input class="input" name="full_name" type="text" autocomplete="name" required/>
-        </div>
-        <div class="group">
-          <label>Email</label>
-          <input class="input" name="email" type="email" required/>
-        </div>
-        <div class="group">
-          <label>Mot de passe</label>
-          <input class="input" name="password" type="password" required/>
-        </div>
-        <button class="btn" type="submit">Créer un compte</button>
-      </form>
     </div>
-  </div>
+  </main>
+  
+    <!--Footer-->
+    <footer class="main-footer">
+        <div class="footer-grid">
+          <div class="footer-column">
+            <h3>À propos</h3>
+            <ul class="footer-links">
+              <li><a href="#">Qui sommes-nous</a></li>
+              <li><a href="#">Partenaires officiels</a></li>
+              <li><a href="#">Carrières</a></li>
+              <li><a href="#">Presse</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Support</h3>
+            <ul class="footer-links">
+              <li><a href="#">Centre d'aide</a></li>
+              <li><a href="#">Contacter le support</a></li>
+              <li><a href="#">FAQ</a></li>
+              <li><a href="#">Conditions de vente</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Informations légales</h3>
+            <ul class="footer-links">
+              <li><a href="#">Conditions d'utilisation</a></li>
+              <li><a href="#">Politique de confidentialité</a></li>
+              <li><a href="#">Mentions légales</a></li>
+              <li><a href="#">Cookies</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Suivez-nous</h3>
+            <div class="footer-social">
+              <a href="#" class="social-icon"><i class="fa-brands fa-facebook"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-twitter"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-youtube"></i></a>
+            </div>
+            <p>Téléchargez notre application</p>
+            <div class="footer-apps">
+              <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store"></a>
+              <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play"></a>
+            </div>
+          </div>
+          </div>
+          <div class="footer-bottom">
+            <p>© 2025 OlympicTickets. Tous droits réservés.</p>
+            <div class="payment-icons">
+              <img src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_1280.png" alt="Visa">
+              <img src="https://images.unsplash.com/photo-1628625194933-ac2b3c0109e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxtYXN0ZXJjYXJkfGVufDB8fHx8MTc0NjI1NDcwN3ww&ixlib=rb-4.0.3&q=80&w=1080" alt="Mastercard">
+              <img src="https://images.unsplash.com/photo-1587906697341-bfbde76785c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxwYXlwYWx8ZW58MHx8fHwxNzQ2Mzc2MTM4fDA&ixlib=rb-4.0.3&q=80&w=1080" alt="Paypal">
+            </div>
+          </div>
+    </footer>
   <script src="/public/js/app/http.js"></script>
   <script src="/public/js/app/auth.js"></script>
   <script src="/public/js/app/reset_password.js"></script>
-
-  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+  const signupLink = document.querySelector('.switch-to-signup');
+  if (signupLink) {
+    signupLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      const signupForm = document.getElementById('web-signup-form');
+      if (signupForm) {
+        // Petit délai pour laisser le temps au CSS de réagir
+        setTimeout(() => {
+          signupForm.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }, 100);
+      }
+    });
+  }
+});
+  </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 from typing import List, Dict
-from backend.tickets.repository import list_user_tickets
+from .repository import list_user_tickets
 
-def get_user_tickets(user_id: str) -> List[Dict]:
+def get_user_tickets(user_id: str) -> list[dict]:
     """
     Logique applicative pour retourner les billets d'un utilisateur.
     Point d'extension: enrichissement, QR inline, mapping, etc.
@@ -20,3 +20,7 @@ def get_user_tickets(user_id: str) -> List[Dict]:
             "created_at": row.get("created_at"),
         })
     return tickets
+
+def get_user_tickets_count(user_id: str) -> int:
+    tickets = list_user_tickets(user_id)
+    return len(tickets)

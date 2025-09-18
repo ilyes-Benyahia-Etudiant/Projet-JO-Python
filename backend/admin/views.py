@@ -13,23 +13,47 @@ from backend.admin import repository as admin_repository
 from backend.offres import repository as offres_repository
 from backend.validation.repository import get_ticket_by_token, get_last_validation
 from backend.validation.service import validate_ticket_token
+# module backend.admin.views
+from backend.utils.csrf import csrf_protect
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
-def admin_page(request: Request, message: Optional[str] = None, user: dict = Depends(require_admin)):
-    offres = admin_service.list_offres()
-    commandes = admin_service.get_admin_commandes()
+def admin_page(
+    request: Request,
+    message: Optional[str] = None,
+    view: Optional[str] = Query(default=None),
+    user: dict = Depends(require_admin),
+    error: Optional[str] = None,
+):
+    allowed_views = {"commandes", "users", "offres"}
+    active_view = view if view in allowed_views else None
+
+    # Compteurs pour le dashboard
+    users_count = admin_repository.count_table_rows("users")
+    commandes_count = admin_repository.count_table_rows("commandes")
+    offres_count = admin_repository.count_table_rows("offres")
+
+    # Charger uniquement la liste demandée
+    commandes = admin_service.get_admin_commandes() if active_view == "commandes" else []
+    users_list = admin_repository.fetch_admin_users() if active_view == "users" else []
+    offres = admin_service.list_offres() if active_view == "offres" else []
 
     csrf = get_or_create_csrf_token(request)
     resp = templates.TemplateResponse("admin.html", {
         "request": request,
-        "offres": offres,
-        "commandes": commandes,
         "message": message,
+        "error": error,
         "user": user,
         "csrf_token": csrf,
+        "active_view": active_view,
+        "commandes": commandes,
+        "users": users_list,
+        "offres": offres,
+        "commandes_count": commandes_count,
+        "users_count": users_count,
+        "offres_count": offres_count,
     })
     attach_csrf_cookie_if_missing(resp, request, csrf)
     return resp
@@ -85,12 +109,14 @@ async def api_delete_commande(commande_id: str, user: dict = Depends(require_adm
         return JSONResponse({"ok": False}, status_code=400)
     return JSONResponse({"ok": True})
 
+# Dans la route JSON d’update commande (autour des lignes ~110-130)
 @router.post("/api/commandes/{commande_id}/update")
 async def api_update_commande(commande_id: str, request: Request, user: dict = Depends(require_admin)):
     body = await request.json()
     data = {}
-    if "status" in body:
-        data["status"] = (body.get("status") or "").strip()
+    # SUPPRIMER la prise en charge de 'status' car la colonne n'existe pas
+    # if "status" in body:
+    #     data["status"] = (body.get("status") or "").strip()
     if "price_paid" in body and body.get("price_paid") is not None:
         try:
             data["price_paid"] = float(body.get("price_paid"))
@@ -106,7 +132,7 @@ async def api_update_commande(commande_id: str, request: Request, user: dict = D
 @router.get("/offres/new", response_class=HTMLResponse)
 @router.get("/offres/new/", response_class=HTMLResponse)
 def afficher_formulaire_creation_offre(request: Request, user: dict = Depends(require_admin)):
-    values = {"title": "", "price": "", "category": "", "stock": "", "active": "on", "description": "", "image": ""}
+    values = {"title": "", "price": "", "category": "", "stock": "", "description": "", "image": ""}
     csrf = get_or_create_csrf_token(request)
     resp = templates.TemplateResponse("offre_form.html", {
         "request": request,
@@ -139,7 +165,7 @@ async def creer_offre(
     stock_raw = (form_data.get("stock") or "").strip()
     description = (form_data.get("description") or "").strip()
     image = (form_data.get("image") or "").strip()
-    active = "active" in form_data
+    # (supprimé) active = "active" in form_data
 
     try:
         price_f = float(price_raw)
@@ -155,7 +181,6 @@ async def creer_offre(
         "price": price_f,
         "category": category,
         "stock": stock_i,
-        "active": bool(active),
         "description": description,
         "image": image,
     })
@@ -200,7 +225,7 @@ async def mettre_a_jour_offre(
     stock_raw = (form_data.get("stock") or "").strip()
     description = (form_data.get("description") or "").strip()
     image = (form_data.get("image") or "").strip()
-    active = "active" in form_data
+    # (supprimé) active = "active" in form_data
 
     try:
         price_f = float(price_raw)
@@ -218,7 +243,6 @@ async def mettre_a_jour_offre(
             "price": price_f,
             "category": category,
             "stock": stock_i,
-            "active": bool(active),
             "description": description,
             "image": image,
         },
@@ -292,3 +316,87 @@ async def admin_scan_validate(request: Request, user: dict = Depends(require_adm
     except Exception:
         # En cas d'erreur, on revient sur la page avec le token
         return RedirectResponse(url=f"/admin/scan?token={token}", status_code=HTTP_303_SEE_OTHER)
+
+@router.post("/users/{user_id}/update")
+async def srv_update_user(user_id: str, request: Request, user: dict = Depends(require_admin)):
+    form_data = await request.form()
+    if not validate_csrf_token(request, form_data):
+        return RedirectResponse(url="/admin?view=users&error=CSRF%20invalide", status_code=HTTP_303_SEE_OTHER)
+    email = (form_data.get("email") or "").strip()
+    full_name = (form_data.get("full_name") or "").strip()
+    role = (form_data.get("role") or "").strip()
+    if not email:
+        return RedirectResponse(url="/admin?view=users&error=email%20requis", status_code=HTTP_303_SEE_OTHER)
+    data: dict = {"email": email}
+    if full_name:
+        data["full_name"] = full_name
+    if role:
+        data["role"] = role
+    updated = admin_service.update_user(user_id, data)
+    if not updated:
+        return RedirectResponse(url="/admin?view=users&error=Echec%20de%20la%20mise%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/admin?view=users&message=Utilisateur%20mis%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
+
+@router.get("/users/{user_id}/edit", response_class=HTMLResponse)
+def afficher_formulaire_edition_user(request: Request, user_id: str, user: dict = Depends(require_admin)):
+    u = admin_service.get_user_by_id(user_id)
+    if not u:
+        return RedirectResponse(url="/admin?view=users&error=Utilisateur%20introuvable", status_code=HTTP_303_SEE_OTHER)
+    csrf = get_or_create_csrf_token(request)
+    resp = templates.TemplateResponse("admin_user_form.html", {
+        "request": request,
+        "user": user,
+        "values": u,
+        "action_url": f"/admin/users/{user_id}/update",
+        "csrf_token": csrf,
+    })
+    attach_csrf_cookie_if_missing(resp, request, csrf)
+    return resp
+
+# --- Actions serveur (POST) pour Commandes ---
+@router.post("/commandes/{commande_id}/update")
+async def srv_update_commande(commande_id: str, request: Request, user: dict = Depends(require_admin)):
+    form_data = await request.form()
+    if not validate_csrf_token(request, form_data):
+        return RedirectResponse(url="/admin?view=commandes&error=CSRF%20invalide", status_code=HTTP_303_SEE_OTHER)
+
+    data = {}
+
+    price_str = (form_data.get("price_paid") or "").strip()
+    if price_str:
+        try:
+            data["price_paid"] = float(price_str)
+        except Exception:
+            return RedirectResponse(url="/admin?view=commandes&error=Prix%20invalide", status_code=HTTP_303_SEE_OTHER)
+
+    user_id = (form_data.get("user_id") or "").strip()
+    if user_id:
+        data["user_id"] = user_id
+
+    offre_id = (form_data.get("offre_id") or "").strip()
+    if offre_id:
+        data["offre_id"] = offre_id
+
+    if not data:
+        return RedirectResponse(url="/admin?view=commandes&error=Aucune%20donn%C3%A9e%20%C3%A0%20mettre%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
+
+    updated = admin_service.update_commande(commande_id, data)
+    if not updated:
+        return RedirectResponse(url="/admin?view=commandes&error=Echec%20de%20la%20mise%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/admin?view=commandes&message=Commande%20mise%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
+
+@router.get("/commandes/{commande_id}/edit", response_class=HTMLResponse)
+def afficher_formulaire_edition_commande(request: Request, commande_id: str, user: dict = Depends(require_admin)):
+    c = admin_service.get_commande_by_id(commande_id)
+    if not c:
+        return RedirectResponse(url="/admin?view=commandes&error=Commande%20introuvable", status_code=HTTP_303_SEE_OTHER)
+    csrf = get_or_create_csrf_token(request)
+    resp = templates.TemplateResponse("admin_commande_form.html", {
+        "request": request,
+        "user": user,
+        "values": c,
+        "action_url": f"/admin/commandes/{commande_id}/update",
+        "csrf_token": csrf,
+    })
+    attach_csrf_cookie_if_missing(resp, request, csrf)
+    return resp

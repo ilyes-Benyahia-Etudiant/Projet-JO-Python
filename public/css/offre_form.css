@@ -1,0 +1,192 @@
+/* RESET & BASE */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f0f4f8 0%, #c9d6e8 100%);
+  color: #333;
+  line-height: 1.6;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CARD CONTAINER */
+.card {
+  max-width: 600px;
+  width: 100%;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin: 2rem auto;
+}
+
+/* HEADER VISUAL */
+.visual {
+  background: linear-gradient(120deg, #0085C7, #F4C300, #009F3D);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  color: white;
+}
+
+.visual-inner h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+}
+
+.visual-inner .lead {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+/* FORM STYLING */
+.form {
+  padding: 2.5rem;
+}
+
+.group {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #555;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: #fafafa;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #0085C7;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(0, 133, 199, 0.1);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* BUTTONS */
+.btn-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* PRIMARY BUTTON (Créer/Enregistrer) */
+.btn:not(.btn-secondary) {
+  background: #DF0024; /* Rouge olympique */
+  color: white;
+}
+
+.btn:not(.btn-secondary):hover {
+  background: #a6001b;
+}
+
+/* SECONDARY BUTTON (Annuler) */
+.btn-secondary {
+  background: #f1f3f5;
+  color: #555;
+  border: 1px solid #ddd;
+}
+
+.btn-secondary:hover {
+  background: #e2e6ea;
+  border-color: #ccc;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+
+  .card {
+    margin: 1rem;
+    border-radius: 12px;
+  }
+
+  .visual {
+    padding: 1.5rem 1rem;
+  }
+
+  .visual-inner h1 {
+    font-size: 1.75rem;
+  }
+
+  .form {
+    padding: 1.5rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+/* ANNEAUX OLYMPIQUES EN BACKGROUND SUBTIL (OPTIONNEL) */
+.visual::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  width: 100px;
+  height: 20px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='20' viewBox='0 0 100 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%230085C7' stroke-width='3'/%3E%3Ccircle cx='30' cy='10' r='8' fill='none' stroke='%23F4C300' stroke-width='3'/%3E%3Ccircle cx='50' cy='10' r='8' fill='none' stroke='%23000000' stroke-width='3'/%3E%3Ccircle cx='70' cy='10' r='8' fill='none' stroke='%23009F3D' stroke-width='3'/%3E%3Ccircle cx='90' cy='10' r='8' fill='none' stroke='%23DF0024' stroke-width='3'/%3E%3C/svg%3E") no-repeat;
+  opacity: 0.3;
+}
+
+.visual::after {
+  content: "";
+  position: absolute;
+  bottom: 10px;
+  left: 20px;
+  width: 100px;
+  height: 20px;
+  transform: scaleX(-1);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='20' viewBox='0 0 100 20'%3E%3Ccircle cx='10' cy='10' r='8' fill='none' stroke='%230085C7' stroke-width='3'/%3E%3Ccircle cx='30' cy='10' r='8' fill='none' stroke='%23F4C300' stroke-width='3'/%3E%3Ccircle cx='50' cy='10' r='8' fill='none' stroke='%23000000' stroke-width='3'/%3E%3Ccircle cx='70' cy='10' r='8' fill='none' stroke='%23009F3D' stroke-width='3'/%3E%3Ccircle cx='90' cy='10' r='8' fill='none' stroke='%23DF0024' stroke-width='3'/%3E%3C/svg%3E") no-repeat;
+  opacity: 0.15;
+}

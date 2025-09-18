@@ -1,25 +1,14 @@
+# module backend.commandes.models
 from typing import List, Dict, Any, Optional
-from backend.models.db import get_supabase, get_service_supabase
+from backend.infra.supabase_client import get_service_supabase
+from backend.admin import repository as admin_repository
 import logging
 
 logger = logging.getLogger(__name__)
 
 def fetch_admin_commandes(limit: int = 100) -> List[dict]:
-    """
-    Commandes pour l'admin, avec jointures sur users et offres
-    """
-    try:
-        res = (
-            get_supabase()
-            .table("commandes")
-            .select("id, token, price_paid, created_at, users(email), offres(title, price)")
-            .order("created_at", desc=True)
-            .limit(limit)
-            .execute()
-        )
-        return res.data or []
-    except Exception:
-        return []
+    # Délègue à la source unique de vérité
+    return admin_repository.fetch_admin_commandes(limit)
 
 def create_pending_commande(offre_id: str, user_id: str, price_paid: float) -> Optional[Dict[str, Any]]:
     try:
@@ -30,7 +19,6 @@ def create_pending_commande(offre_id: str, user_id: str, price_paid: float) -> O
                 "offre_id": offre_id,
                 "user_id": user_id,
                 "price_paid": price_paid,
-                "status": "pending",
             })
             .select("id, token")
             .execute()
@@ -46,7 +34,6 @@ def fulfill_commande(token: str, stripe_session_id: str) -> bool:
             get_service_supabase()
             .table("commandes")
             .update({
-                "status": "completed",
                 "stripe_session_id": stripe_session_id,
             })
             .eq("token", token)

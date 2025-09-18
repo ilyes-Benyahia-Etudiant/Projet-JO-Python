@@ -42,7 +42,7 @@ def user_session(request: Request, user: Dict[str, Any] = Depends(require_user))
     data = get_user_dashboard(user.get("id"))
     resp = templates.TemplateResponse(
         "session.html",
-        {"request": request, "offres": data["offres"], "commandes": data["commandes"], "user": user},
+        {"request": request, "offres": data["offres"], "user": user},
     )
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp.headers["Pragma"] = "no-cache"

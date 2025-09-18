@@ -12,7 +12,7 @@ def fetch_admin_commandes(limit: int = 100) -> List[dict]:
         res = (
             get_service_supabase()
             .table("commandes")
-            .select("id, token, price_paid, status, created_at, users(email), offres(title, price)")
+            .select("id, token, price_paid, created_at, users(email), offres(title, price)")
             .order("created_at", desc=True)
             .limit(limit)
             .execute()
@@ -30,7 +30,6 @@ def create_pending_commande(offre_id: str, user_id: str, price_paid: float) -> O
                 "offre_id": offre_id,
                 "user_id": user_id,
                 "price_paid": price_paid,
-                "status": "pending",
             })
             .select("id, token")
             .execute()
@@ -46,7 +45,6 @@ def fulfill_commande(token: str, stripe_session_id: str) -> bool:
             get_service_supabase()
             .table("commandes")
             .update({
-                "status": "completed",
                 "stripe_session_id": stripe_session_id,
             })
             .eq("token", token)

@@ -1,20 +1,16 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
-from typing import List, Dict
-
-# On importe depuis notre nouveau module "tickets"
-from backend.tickets.service import get_user_tickets as service_get_user_tickets
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from backend.utils.security import require_user
+from .service import get_user_tickets
+from .service import get_user_tickets_count
 from backend.config import BASE_URL
 from backend.utils.qrcode_utils import generate_qr_code
+from typing import Any, Dict, List
+from .service import get_user_tickets_count
 
-# On change le préfixe pour être plus standard (API)
-router = APIRouter(prefix="/api/v1/tickets", tags=["Tickets API"])
+router = APIRouter(prefix="/api/v1/tickets", tags=["Tickets"])
 
 @router.get("/", response_model=List[Dict])
-def get_user_tickets(
-    request: Request,
-    user: dict = Depends(require_user),
-):
+def list_tickets(user: Dict[str, Any] = Depends(require_user)):
     """
     Endpoint pour récupérer les tickets de l'utilisateur authentifié.
     """
@@ -22,8 +18,13 @@ def get_user_tickets(
     if not user_id:
         raise HTTPException(status_code=403, detail="Utilisateur non valide")
     
-    tickets = service_get_user_tickets(user_id)
+    tickets = get_user_tickets(user_id)
     return tickets
+
+@router.get("/count")
+def tickets_count(user: Dict[str, Any] = Depends(require_user)):
+    count = get_user_tickets_count(user.get("id"))
+    return {"count": count}
 
 @router.get("/{ticket_token}/qrcode")
 def get_ticket_qrcode(ticket_token: str, request: Request, user: dict = Depends(require_user)):
@@ -31,7 +32,7 @@ def get_ticket_qrcode(ticket_token: str, request: Request, user: dict = Depends(
     Génère un QR code pour un billet spécifique de l'utilisateur courant.
     """
     user_id = user.get("id")
-    tickets = service_get_user_tickets(user_id)
+    tickets = get_user_tickets(user_id)
     ticket = next((c for c in tickets if c.get("token") == ticket_token), None)
     if not ticket:
         raise HTTPException(status_code=404, detail="Billet non trouvé")

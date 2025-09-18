@@ -1,8 +1,9 @@
+# module backend.validation.repository
 from typing import Any, Dict, Optional
 import logging
 from supabase import create_client
 from backend.config import SUPABASE_URL, SUPABASE_ANON
-from backend.infra.supabase_client import get_supabase, get_service_supabase
+from backend.infra.supabase_client import get_service_supabase
 from postgrest.exceptions import APIError
 
 logger = logging.getLogger(__name__)

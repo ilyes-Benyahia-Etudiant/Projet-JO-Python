@@ -1,336 +1,216 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Administration</title>
-  <link rel="stylesheet" href="/static/css/index.css">
+  <title>Administrateur JO</title>
+  <link rel="stylesheet" href="/static/css/style_admin.css">
+  <!--<link rel="stylesheet" href="/static/css/index.css">-->
   <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
+  <meta name="csrf-token" content="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
 </head>
 <body>
-  <div class="card">
-    <div class="visual">
-      <div class="visual-inner">
-        <h1>Espace Administrateur</h1>
-        <p class="lead">Cette page est réservée aux utilisateurs avec le rôle <strong>admin</strong>.</p>
-        <div class="footer">
-          <p>Connecté en tant que {{ email or 'admin' }}.</p>
-        </div>
+  <header>  
+    <nav class="admin-navbar">
+      <div class="nav-left">
+        <div class="olympic-rings">
+            <span class="ring blue"></span>
+            <span class="ring yellow"></span>
+            <span class="ring black"></span>
+            <span class="ring green"></span>
+            <span class="ring red"></span>
+            
+          </div>
+        <span class="nav-title">Administeur JO</span>
       </div>
-    </div>
-
-    <div class="form">
-      <div class="group">
-        <div class="label">Informations</div>
-        <div id="admin-user" class="user-card">
-          <div><strong>Email:</strong> {{ email or '' }}</div>
-          <div><strong>Rôle:</strong> {{ role or '' }}</div>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <a href="/admin" class="btn">Rafraîchir</a>
-        <a href="/admin/offres/new" class="btn">Ajouter une offre</a>
-        <a href="/admin/scan" class="btn">Scanner un billet</a>
-        <!-- formulaire de logout -->
+      <div class="nav-right">
+        <a href="/admin" class="btn-nav">Rafraîchir</a>
+        <a href="/admin/offres/new" class="btn-nav">Ajouter une offre</a>
+        <a href="/admin/scan" class="btn-nav">Scanner un billet</a>
         <form action="/auth/logout" method="post" style="display:inline;">
           <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
-          <button type="submit" class="btn btn-warning">Déconnexion</button>
+          <button type="submit" class="btn-nav btn-danger">Déconnexion</button>
         </form>
       </div>
-
-      {% if msg %}
-        <div class="msg ok" style="display:block">{{ msg }}</div>
-      {% endif %}
-
-      <!-- Dashboard: 3 carrés -->
-      <div id="admin-dashboard" class="group">
-        <div class="label">Tableau de bord</div>
-        <div id="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
-          <div id="card-commandes" class="card-item" style="border:1px solid #ddd; padding:12px; cursor:pointer;">
-            <div style="font-weight:bold;">Commandes réalisées</div>
-            <div id="count-commandes" style="font-size:24px;">—</div>
-            <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+    </nav>
+  </header>
+  <main id="admin-main">
+      <div class="card">
+        <div class="visual">
+          <div class="visual-inner">
+            <h1>Espace Admin</h1>
+            </div>
           </div>
-          <div id="card-users" class="card-item" style="border:1px solid #ddd; padding:12px; cursor:pointer;">
-            <div style="font-weight:bold;">Utilisateurs inscrits</div>
-            <div id="count-users" style="font-size:24px;">—</div>
-            <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+        </div>
+
+        <div class="form">
+          <div class="group">
+            <div class="label">Informations</div>
+            <div id="admin-user" class="user-card">
+              <div><strong>Email:</strong> {{ email or (user and user.get('email')) or '' }}</div>
+              <div><strong>Rôle:</strong> {{ role or (user and user.get('role')) or '' }}</div>
+            </div>
           </div>
-          <div id="card-offres" class="card-item" style="border:1px solid #ddd; padding:12px; cursor:pointer;">
-            <div style="font-weight:bold;">Manage offres</div>
-            <div id="count-offres" style="font-size:24px;">—</div>
-            <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+
+         
+
+          {% if message %}
+            <div class="msg ok" style="display:block">{{ message }}</div>
+          {% endif %}
+          {% if msg %}
+            <div class="msg ok" style="display:block">{{ msg }}</div>
+          {% endif %}
+          {% if error %}
+            <div class="msg error" style="display:block">{{ error }}</div>
+          {% endif %}
+
+          <div id="admin-dashboard" class="group">
+            <div class="label">Tableau de bord</div>
+            <div id="cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+              <a href="/admin?view=commandes" id="card-commandes" class="card-item" style="display:block;border:1px solid #ddd; padding:12px; text-decoration:none; color:inherit; cursor:pointer;">
+                <div style="font-weight:bold;">Commandes réalisées</div>
+                <div id="count-commandes" style="font-size:24px;">{{ commandes_count or 0 }}</div>
+                <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+              </a>
+              <a href="/admin?view=users" id="card-users" class="card-item" style="display:block;border:1px solid #ddd; padding:12px; text-decoration:none; color:inherit; cursor:pointer;">
+                <div style="font-weight:bold;">Utilisateurs inscrits</div>
+                <div id="count-users" style="font-size:24px;">{{ users_count or 0 }}</div>
+                <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+              </a>
+              <a href="/admin?view=offres" id="card-offres" class="card-item" style="display:block;border:1px solid #ddd; padding:12px; text-decoration:none; color:inherit; cursor:pointer;">
+                <div style="font-weight:bold;">Manage offres</div>
+                <div id="count-offres" style="font-size:24px;">{{ offres_count or 0 }}</div>
+                <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+              </a>
+            </div>
+          </div>
+
+          <div id="data-view" class="group">
+            <div class="label">Données</div>
+            <div id="data-content" class="table-wrap" style="overflow:auto;">
+
+              {% if active_view == 'commandes' %}
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>id</th>
+                      <th>utilisateur</th>
+                      <th>offre</th>
+                      <th>prix payé</th>
+                      <th>token</th>
+                      <th>créée le</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% if commandes and commandes|length > 0 %}
+                      {% for c in commandes %}
+                      <tr>
+                        <td>{{ c.id }}</td>
+                        <td>{{ (c.users and c.users.email) or c.user_id or '' }}</td>
+                        <td>{{ (c.offres and c.offres.title) or c.offre_id or '' }}</td>
+                        <td>{{ c.price_paid if c.price_paid is not none else '' }}</td>
+                        <td>{{ c.token or '' }}</td>
+                        <td>{{ c.created_at or '' }}</td>
+                        <td>
+                          <a class="btn" href="/admin/commandes/{{ c.id }}/edit">Modifier</a>
+                          <form action="/admin/commandes/{{ c.id }}/delete" method="post" style="display:inline-block;">
+                            <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
+                            <button type="submit" onclick="return confirm('Supprimer cette commande ?');">Supprimer</button>
+                          </form>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr><td colspan="7" style="text-align:center;color:#666;">Aucune commande</td></tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+
+              {% elif active_view == 'users' %}
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>id</th>
+                      <th>email</th>
+                      <th>nom complet</th>
+                      <th>created_at</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% if users and users|length > 0 %}
+                      {% for u in users %}
+                      <tr>
+                        <td>{{ u.id }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>{{ u.full_name or '' }}</td>
+                        <td>{{ u.created_at or '' }}</td>
+                        <td>
+                          <a class="btn" href="/admin/users/{{ u.id }}/edit">Modifier</a>
+                          <form action="/admin/users/{{ u.id }}/delete" method="post" style="display:inline-block;">
+                            <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
+                            <button type="submit" onclick="return confirm('Supprimer cet utilisateur ?');">Supprimer</button>
+                          </form>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr><td colspan="5" style="text-align:center;color:#666;">Aucun utilisateur</td></tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+
+              {% elif active_view == 'offres' %}
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>id</th>
+                      <th>title</th>
+                      <th>price</th>
+                      <th>category</th>
+                      <th>stock</th>
+                      <th>created_at</th>
+                      <th>updated_at</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% if offres and offres|length > 0 %}
+                      {% for o in offres %}
+                      <tr>
+                        <td>{{ o.id }}</td>
+                        <td>{{ o.title }}</td>
+                        <td>{{ o.price }}</td>
+                        <td>{{ o.category }}</td>
+                        <td>{{ o.stock }}</td>
+                        <td>{{ o.created_at }}</td>
+                        <td>{{ o.updated_at }}</td>
+                        <td>
+                          <a class="btn" href="/admin/offres/{{ o.id }}/edit">Modifier</a>
+                          <form action="/admin/offres/{{ o.id }}/delete" method="post" style="display:inline-block;">
+                            <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
+                            <button type="submit" onclick="return confirm('Supprimer cette offre ?');">Supprimer</button>
+                          </form>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr><td colspan="8" style="text-align:center;color:#666;">Aucune offre</td></tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+
+              {% else %}
+                <div style="color:#666;">
+                  Sélectionnez une section via les cartes du tableau de bord ci-dessus (Commandes, Utilisateurs ou Offres).
+                </div>
+              {% endif %}
+
+            </div>
           </div>
         </div>
       </div>
-
-      <!-- Zone d’affichage dynamique -->
-      <div id="data-view" class="group">
-        <div class="label">Données</div>
-        <div id="data-content" class="table-wrap" style="overflow:auto;"></div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Expose CSRF token côté client
-    window.CSRF_TOKEN = "{{ csrf_token or request.cookies.get('csrf_token', '') }}";
-
-    // Échappement HTML
-    function esc(v) {
-      if (v === null || v === undefined) return "";
-      return String(v).replace(/[&<>"']/g, function(m) { return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[m]); });
-    }
-
-    // Fetch JSON helper
-    async function fetchJSON(url) {
-      const res = await fetch(url, { credentials: "same-origin" });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      return res.json();
-    }
-
-    // Rendu table générique
-    function renderTable(headers, rows) {
-      const thead = "<thead><tr>" + headers.map(function(h){ return "<th>" + esc(h) + "</th>"; }).join("") + "</tr></thead>";
-      const tbody = "<tbody>" + rows.map(function(r){ return "<tr>" + r.map(function(c){ return "<td>" + c + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody>";
-      return "<table class='table'>" + thead + tbody + "</table>";
-    }
-
-    // Offres: actions via lien d'édition + formulaire POST suppression (CSRF)
-    function renderOffres(items) {
-      const headers = ["id", "title", "price", "category", "stock", "active", "created_at", "updated_at", "description", "image", "Actions"];
-      const rows = items.map(function(row) {
-        const id = row.id || "";
-        const editLink = '<a href="/admin/offres/' + esc(id) + '/edit" title="Modifier" aria-label="Modifier" style="text-decoration:none;">✏️</a>';
-        const deleteForm =
-          '<form action="/admin/offres/' + esc(id) + '/delete" method="post" style="display:inline;margin-left:8px;">' +
-          '<input type="hidden" name="X-CSRF-Token" value="' + (window.CSRF_TOKEN || "") + '">' +
-          '<button type="submit" title="Supprimer" aria-label="Supprimer" style="background:none;border:none;cursor:pointer;font-size:16px;color:#c00;">❌</button>' +
-          '</form>';
-        const actions = editLink + deleteForm;
-        return [
-          esc(row.id || ""),
-          esc(row.title || ""),
-          (row.price != null ? esc(row.price) : ""),
-          esc(row.category || ""),
-          (row.stock != null ? esc(row.stock) : ""),
-          esc(String(row.active)),
-          esc(row.created_at || ""),
-          esc(row.updated_at || ""),
-          esc(row.description || ""),
-          esc(row.image || ""),
-          actions
-        ];
-      });
-      return renderTable(headers, rows);
-    }
-
-    // Commandes: actions via data-attributes + délégation (pas d'onclick inline)
-    function renderCommandes(items) {
-      const headers = ["id", "utilisateur", "offre", "prix payé", "status", "token", "créée le", "Actions"];
-      const rows = items.map(function(c) {
-        const userEmail = (c.users && c.users.email) ? c.users.email : (c.user_id || "");
-        const offreTitle = (c.offres && c.offres.title) ? c.offres.title : (c.offre_id || "");
-        const id = c.id || "";
-
-        const edit =
-          '<a href="#" class="act cmd-edit" title="Modifier" aria-label="Modifier"' +
-          ' data-action="commande-edit" data-id="' + esc(id) + '"' +
-          ' data-status="' + esc(c.status || "") + '"' +
-          ' data-price="' + (c.price_paid != null ? esc(String(c.price_paid)) : "") + '"' +
-          ' style="text-decoration:none;">✏️</a>';
-
-        const del =
-          '<button type="button" class="act cmd-del" title="Supprimer" aria-label="Supprimer"' +
-          ' data-action="commande-del" data-id="' + esc(id) + '"' +
-          ' style="background:none;border:none;cursor:pointer;font-size:16px;color:#c00;margin-left:8px;">❌</button>';
-
-        const actions = edit + del;
-
-        return [
-          esc(id),
-          esc(userEmail),
-          esc(offreTitle),
-          (c.price_paid != null ? esc(c.price_paid) : ""),
-          esc(c.status || ""),
-          esc(c.token || ""),
-          esc(c.created_at || ""),
-          actions
-        ];
-      });
-      return renderTable(headers, rows);
-    }
-
-    // Utilisateurs: actions via data-attributes + délégation
-    function renderUsers(items) {
-      const headers = ["id", "email", "nom complet", "created_at", "Actions"];
-      const rows = items.map(function(u) {
-        const id = u.id || "";
-        const email = u.email || "";
-        const fullname = u.full_name || "";
-
-        const edit =
-          '<a href="#" class="act user-edit" title="Modifier" aria-label="Modifier"' +
-          ' data-action="user-edit" data-id="' + esc(id) + '" data-email="' + esc(email) + '"' +
-          ' style="text-decoration:none;">✏️</a>';
-
-        const del =
-          '<button type="button" class="act user-del" title="Supprimer" aria-label="Supprimer"' +
-          ' data-action="user-del" data-id="' + esc(id) + '"' +
-          ' style="background:none;border:none;cursor:pointer;font-size:16px;color:#c00;margin-left:8px;">❌</button>';
-
-        const actions = edit + del;
-        return [esc(id), esc(email), esc(fullname), esc(u.created_at || ""), actions];
-      });
-      return renderTable(headers, rows);
-    }
-
-    // API d'actions
-    window.Admin = {
-      editUser: async function(id, currentEmail) {
-        const email = prompt("Nouvel email pour l'utilisateur:", currentEmail || "");
-        if (!email) return;
-        const res = await fetch("/admin/api/users/" + encodeURIComponent(id) + "/update", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": window.CSRF_TOKEN || ""
-          },
-          body: JSON.stringify({ email: email })
-        });
-        if (!res.ok) { alert("Echec de la mise à jour de l'utilisateur"); return; }
-        await showUsers();
-        await loadStats();
-      },
-
-      deleteUser: async function(id) {
-        if (!confirm("Confirmer la suppression de cet utilisateur ?")) return;
-        const res = await fetch("/admin/api/users/" + encodeURIComponent(id) + "/delete", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "X-CSRF-Token": window.CSRF_TOKEN || "" }
-        });
-        if (!res.ok) { alert("Echec de la suppression de l'utilisateur"); return; }
-        await showUsers();
-        await loadStats();
-      },
-
-      editCommande: async function(id, currentStatus, currentPrice) {
-        const status = prompt("Nouveau status (ex: pending/completed) :", currentStatus || "");
-        if (status === null) return;
-        const priceStr = prompt("Nouveau prix payé (laisser vide pour ne pas changer) :", (currentPrice || "").toString());
-        const body = {};
-        if ((status || "").trim() !== "") body.status = status.trim();
-        if (priceStr && priceStr.trim() !== "") {
-          const p = Number(priceStr);
-          if (Number.isNaN(p)) { alert("Prix invalide"); return; }
-          body.price_paid = p;
-        }
-        if (Object.keys(body).length === 0) return;
-        const res = await fetch("/admin/api/commandes/" + encodeURIComponent(id) + "/update", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": window.CSRF_TOKEN || ""
-          },
-          body: JSON.stringify(body)
-        });
-        if (!res.ok) { alert("Echec de la mise à jour de la commande"); return; }
-        await showCommandes();
-        await loadStats();
-      },
-
-      deleteCommande: async function(id) {
-        if (!confirm("Confirmer la suppression de cette commande ?")) return;
-        const res = await fetch("/admin/api/commandes/" + encodeURIComponent(id) + "/delete", {
-          method: "POST",
-          credentials: "same-origin",
-          headers: { "X-CSRF-Token": window.CSRF_TOKEN || "" }
-        });
-        if (!res.ok) { alert("Echec de la suppression de la commande"); return; }
-        await showCommandes();
-        await loadStats();
-      }
-    };
-
-    // Stats
-    async function loadStats() {
-      try {
-        const data = await fetchJSON("/admin/api/stats");
-        document.getElementById("count-commandes").textContent = (data.commandes_count != null ? data.commandes_count : "0");
-        document.getElementById("count-users").textContent = (data.users_count != null ? data.users_count : "0");
-        document.getElementById("count-offres").textContent = (data.offres_count != null ? data.offres_count : "0");
-      } catch (e) {
-        document.getElementById("count-commandes").textContent = "—";
-        document.getElementById("count-users").textContent = "—";
-        document.getElementById("count-offres").textContent = "—";
-      }
-    }
-
-    // Affichages
-    async function showOffres() {
-      const box = document.getElementById("data-content");
-      box.innerHTML = "Chargement...";
-      try {
-        const data = await fetchJSON("/admin/api/offres");
-        box.innerHTML = renderOffres(data.items || []);
-      } catch (e) {
-        box.innerHTML = "<div class='user-placeholder'>Erreur de chargement des offres.</div>";
-      }
-    }
-
-    async function showCommandes() {
-      const box = document.getElementById("data-content");
-      box.innerHTML = "Chargement...";
-      try {
-        const data = await fetchJSON("/admin/api/commandes");
-        box.innerHTML = renderCommandes(data.items || []);
-      } catch (e) {
-        box.innerHTML = "<div class='user-placeholder'>Erreur de chargement des commandes.</div>";
-      }
-    }
-
-    async function showUsers() {
-      const box = document.getElementById("data-content");
-      box.innerHTML = "Chargement...";
-      try {
-        const data = await fetchJSON("/admin/api/users");
-        box.innerHTML = renderUsers(data.items || []);
-      } catch (e) {
-        box.innerHTML = "<div class='user-placeholder'>Erreur de chargement des utilisateurs.</div>";
-      }
-    }
-
-    // Délégation d'événements pour les actions dynamiques
-    (function setupActionsDelegation(){
-      const box = document.getElementById("data-content");
-      box.addEventListener("click", function(e) {
-        const el = e.target.closest("[data-action]");
-        if (!el) return;
-        e.preventDefault();
-        const action = el.getAttribute("data-action");
-        if (action === "commande-edit") {
-          Admin.editCommande(el.getAttribute("data-id"), el.getAttribute("data-status") || "", el.getAttribute("data-price") || "");
-        } else if (action === "commande-del") {
-          Admin.deleteCommande(el.getAttribute("data-id"));
-        } else if (action === "user-edit") {
-          Admin.editUser(el.getAttribute("data-id"), el.getAttribute("data-email") || "");
-        } else if (action === "user-del") {
-          Admin.deleteUser(el.getAttribute("data-id"));
-        }
-      });
-    })();
-
-    // Listeners des cartes
-    document.getElementById("card-commandes").addEventListener("click", showCommandes);
-    document.getElementById("card-users").addEventListener("click", showUsers);
-    document.getElementById("card-offres").addEventListener("click", showOffres);
-
-    // Init
-    loadStats();
-  </script>
+  </main>
 </body>
 </html>

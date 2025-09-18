@@ -1,3 +1,4 @@
+# module backend.app
 import logging
 import os
 import secrets
@@ -98,7 +99,7 @@ def mount_static_files(app: FastAPI) -> None:
 
 def register_security_middleware(app: FastAPI) -> None:
     @app.middleware("http")
-    async def security_headers_and_csrf(request: Request, call_next):
+    async def security_headers(request: Request, call_next):
         method = request.method.upper()
         path = request.url.path
         has_session = bool(request.cookies.get("sb_access"))
@@ -142,25 +143,30 @@ def register_security_middleware(app: FastAPI) -> None:
 
         response = await call_next(request)
         # En-têtes de sécurité
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("Referrer-Policy", "no-referrer")
-        response.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
-        if COOKIE_SECURE:
-            response.headers.setdefault("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+        if "X-Frame-Options" not in response.headers:
+            response.headers["X-Frame-Options"] = "DENY"
+        if "X-Content-Type-Options" not in response.headers:
+            response.headers["X-Content-Type-Options"] = "nosniff"
+        if "Referrer-Policy" not in response.headers:
+            response.headers["Referrer-Policy"] = "no-referrer"
+        if "Permissions-Policy" not in response.headers:
+            response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        if COOKIE_SECURE and "Strict-Transport-Security" not in response.headers:
+            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
 
         csp_connect = ["'self'"]
         if SUPABASE_URL:
             csp_connect.append(SUPABASE_URL.rstrip("/"))
-        swagger_cdns = ["https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdn.tailwindcss.com"]
+        swagger_cdns = ["https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"]
         csp_connect.extend(swagger_cdns)
-        extra_img_sources = ["https://fastapi.tiangolo.com"]
+        extra_img_sources = ["https://fastapi.tiangolo.com", "https://images.unsplash.com", "https://upload.wikimedia.org", "https://cdn.pixabay.com", "https://media.istockphoto.com"]
 
         csp = (
             "default-src 'self'; "
             "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
             f"img-src 'self' data: blob: {' '.join(extra_img_sources)}; "
             f"style-src 'self' 'unsafe-inline' {' '.join(swagger_cdns)}; "
+            f"font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
             f"script-src 'self' 'unsafe-inline' {' '.join(swagger_cdns)}; "
             f"connect-src {' '.join(csp_connect)}"
         )
@@ -229,34 +235,23 @@ def register_routes(app: FastAPI) -> None:
     async def favicon():
         return Response(status_code=HTTP_204_NO_CONTENT)
 
-def register_routers(app: FastAPI) -> None:
-    # Pages web (HTML)
-    app.include_router(users_web_router)
-    app.include_router(auth_web_router)
-    app.include_router(validate_web_router)
-    # API v1
-    app.include_router(auth_api_router)
-    app.include_router(commandes_views.router)
-    app.include_router(tickets_views.router)
-    app.include_router(validation_views.router)
-    app.include_router(payments_views.router)
-    app.include_router(users_api_router)
-    # Admin
-    app.include_router(admin_router)
-    # Health & monitoring
-    app.include_router(health_router)
+# Ajout: import du registre centralisé
+from backend.app_setup.routers import register_routers
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Projet JO Python", lifespan=lifespan)
+    app = FastAPI(title="JO API")
     register_basic_middlewares(app)
     mount_static_files(app)
     register_security_middleware(app)
     register_no_cache_middleware(app)
     register_exception_handlers(app)
     register_routes(app)
+    # Remplace les inclusions dispersées par l’appel centralisé
     register_routers(app)
+
     return app
 
+# App globale
 app = create_app()
 
 # Ancienne fonction conservée pour compat éventuelle (n’effectue plus rien)

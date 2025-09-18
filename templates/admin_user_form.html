@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edition utilisateur</title>
+  <link rel="stylesheet" href="/static/css/index.css">
+  <meta name="csrf-token" content="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
+  <style>
+    /* RESET & BASE */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f0f4f8 0%, #c9d6e8 100%);
+  color: #333;
+  line-height: 1.6;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* CARD CONTAINER */
+.card {
+  max-width: 600px;
+  width: 100%;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin: 2rem auto;
+}
+
+/* HEADER VISUAL */
+.visual {
+  background: linear-gradient(120deg, #0085C7, #F4C300, #009F3D);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  color: white;
+  position: relative;
+}
+
+.visual-inner h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+}
+
+.visual-inner .lead {
+  font-size: 1.05rem;
+  opacity: 0.95;
+  font-weight: 400;
+  margin: 0.25rem 0;
+  background: rgba(255,255,255,0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: inline-block;
+  backdrop-filter: blur(5px);
+}
+
+/* FORM STYLING */
+.form {
+  padding: 2.5rem;
+}
+
+.group {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #555;
+  margin: 1.5rem 0 0.5rem 0;
+  letter-spacing: 0.5px;
+  padding-left: 4px;
+  border-left: 4px solid #DF0024;
+}
+
+input[type="email"],
+input[type="text"] {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: #fafafa;
+}
+
+input[type="email"]:focus,
+input[type="text"]:focus {
+  outline: none;
+  border-color: #0085C7;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(0, 133, 199, 0.1);
+}
+
+/* BUTTONS GROUP */
+.btn-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn {
+  background: #DF0024; /* Rouge olympique */
+  color: white;
+}
+
+.btn:hover {
+  background: #a6001b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(223, 0, 36, 0.3);
+}
+
+.btn-warning {
+  background: #f1f3f5 !important;
+  color: #555 !important;
+  border: 1px solid #ddd;
+}
+
+.btn-warning:hover {
+  background: #e2e6ea !important;
+  border-color: #ccc;
+  transform: translateY(-2px);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+
+  .card {
+    margin: 1rem;
+    border-radius: 12px;
+  }
+
+  .visual {
+    padding: 1.5rem 1rem;
+  }
+
+  .visual-inner h1 {
+    font-size: 1.75rem;
+  }
+
+  .form {
+    padding: 1.5rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+/* OPTIONNEL : Petits anneaux en filigrane */
+.visual::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  right: 25px;
+  width: 80px;
+  height: 16px;
+  background: url("image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='16' viewBox='0 0 80 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Ccircle cx='24' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Ccircle cx='40' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Ccircle cx='56' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Ccircle cx='72' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3C/svg%3E") no-repeat;
+  opacity: 0.5;
+}
+
+.visual::after {
+  content: "";
+  position: absolute;
+  bottom: 15px;
+  left: 25px;
+  width: 80px;
+  height: 16px;
+  transform: scaleX(-1);
+  background: url("image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='16' viewBox='0 0 80 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Ccircle cx='24' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Ccircle cx='40' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Ccircle cx='56' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3Ccircle cx='72' cy='8' r='6' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3C/svg%3E") no-repeat;
+  opacity: 0.25;
+}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="visual">
+      <div class="visual-inner">
+        <h1>Modifier utilisateur</h1>
+        <p class="lead">ID: {{ values.id }}</p>
+      </div>
+    </div>
+    <div class="form">
+      <form method="post" action="{{ action_url }}">
+        <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
+        <div class="group">
+          <div class="label">Email</div>
+          <input type="email" name="email" value="{{ values.email or '' }}" required />
+        </div>
+        <div class="group">
+          <div class="label">Nom complet</div>
+          <input type="text" name="full_name" value="{{ values.full_name or '' }}" />
+        </div>
+        <div class="group">
+          <div class="label">Rôle</div>
+          <input type="text" name="role" value="{{ values.role or '' }}" placeholder="admin ou user" />
+        </div>
+        <div class="btn-group">
+          <button type="submit" class="btn">Enregistrer</button>
+          <a href="/admin?view=users" class="btn btn-warning">Annuler</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

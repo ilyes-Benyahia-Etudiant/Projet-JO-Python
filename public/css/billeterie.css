@@ -1,0 +1,194 @@
+
+:root {
+  --primary: #0077e6;      /* Bleu olympique */
+  --secondary: #ffcc00;    /* Jaune olympique */
+  --success: #00c853;      /* Vert */
+  --danger: #ea4335;       /* Rouge */
+  --dark: #202124;
+  --light: #f8f9fa;
+  --gray-light: #e9ecef;
+  --gray: #adb5bd;
+  --gray-dark: #6c757d;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow: 0 4px 16px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--dark);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Layout sans JS: footer non fixe et toujours en bas si contenu court */
+html, body { height: 100%; }           /* important pour le flex full height */
+body { display: flex; flex-direction: column; }
+main { flex: 1 0 auto; }               /* main prend la place disponible */
+.main-footer { position: static; }     /* pas de fixed, pas de recouvrement */
+
+/*background: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 50%, #f3e5f5 100%);*/
+
+
+
+/* ========== MAIN ========== */
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  
+}
+
+/* ========== OFFRES ========== */
+.events-section {
+  padding: 4rem 0;
+  margin-top: 112px;
+}
+#webcrumbs .events-section,
+body .events-section {
+  /* Surcharger le background blanc de index.css pour hériter du fond du body */
+  background: transparent !important;
+}
+
+.section-title {
+  text-align: center;           
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 3rem;
+  color: var(--dark);
+  position: relative;
+}
+
+.section-title::after {
+  content: "";
+  display: block;
+  width: 80px;
+  height: 4px;
+  background: var(--secondary);
+  margin: 1rem auto 0;          
+  border-radius: 2px;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.event-card {
+  background: white;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  position: relative;
+}
+
+.event-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow);
+}
+
+
+.event-img {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4ff, #fff5e6);
+  font-size: 4rem;
+  color: var(--primary);
+  transition: var(--transition);
+}
+
+.event-card:hover .event-img {
+  transform: scale(1.05);
+  color: var(--secondary);
+}
+
+/* Icônes personnalisées */
+.event-img.solo::before {
+  content: "🥇"; /* Médaille d'or */
+}
+
+.event-img.duo::before {
+  content: "❤️"; /* Cœur pour duo */
+}
+
+.event-img.famille::before {
+  content: "👨‍👩‍👧‍👦"; /* Famille */
+}
+
+.event-content {
+  padding: 1.5rem;
+  text-align: center; /* ✅ Contenu centré */
+}
+
+.event-content h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--dark);
+}
+
+.event-content p {
+  color: var(--gray-dark);
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+/* Bouton centré */
+.event-content .btn-login {
+  margin: 0 auto;
+  display: block;
+  text-align: center;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1024px) {
+  .events-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .events-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .event-img {
+    height: 180px;
+    font-size: 3.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  main {
+    padding: 1rem;
+  }
+
+  .section-title {
+    font-size: 1.8rem;
+  }
+
+  .event-content h3 {
+    font-size: 1.3rem;
+  }
+
+  .event-img {
+    font-size: 3rem;
+  }
+}
+
+

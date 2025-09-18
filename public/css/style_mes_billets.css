@@ -1,0 +1,224 @@
+/* Thème général pour la page Mes Billets */
+body {
+    font-family: 'Arial', sans-serif;
+    color: #333;
+}
+
+/* Titre de la section */
+.section-title {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Grille des événements */
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Carte d'événement */
+.event-card {
+    background: #FFFFFF;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.event-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.event-card img {
+    max-width: 100%;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.event-card h3 {
+    font-size: 1.5rem;
+    color: #ED2939; /* Rouge JO */
+    margin: 10px 0;
+}
+
+.event-card p {
+    font-size: 1rem;
+    color: #333;
+    margin: 5px 0;
+}
+
+/* Boutons */
+.btn {
+    background-color: #0033A0;
+    color: #FFFFFF;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+    margin: 10px;
+}
+
+.btn:hover {
+    background-color: #002080;
+}
+
+/* Responsive pour petits écrans */
+@media (max-width: 768px) {
+    .events-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+}
+
+/* Styles spécifiques pour les boutons, adaptés du thème JO */
+.btn-logout {
+  background: #ED2939; /* Rouge JO pour déconnexion */
+}
+
+.btn-secondary {
+  background: #FFFFFF;
+  color: #0033A0;
+  border: 1px solid #0033A0;
+}
+
+.btn-secondary:hover {
+  background: #0033A0;
+  color: #FFFFFF;
+}
+
+/* Responsive pour petits écrans */
+@media (max-width: 768px) {
+    .events-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+    }
+}
+
+/* Styles pour la nav bar, adaptés de session */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  padding: 16px 32px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  position: relative;
+  z-index: 10;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.olympic-rings {
+  display: flex;
+  gap: 0;
+  align-items: center;
+}
+
+.ring {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-left: -6px;
+  border: none; /* Suppression de la bordure pour harmoniser */
+}
+
+.ring.blue { background-color: #3cb4e7; margin-left: 0; }
+.ring.yellow { background-color: #f7d038; }
+.ring.black { background-color: #222; }
+.ring.green { background-color: #3cc47c; }
+.ring.red { background-color: #e94b4b; }
+
+.navbar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #222;
+  margin-left: 12px;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.navbar-buttons {  /* Nouvelle classe pour aligner les boutons comme dans session */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  margin-left: 20px;
+}
+
+.hamburger span {
+  display: block;
+  width: 28px;
+  height: 3px;
+  background: #555;
+  border-radius: 2px;
+}
+
+/* Styles pour boutons, adaptés du thème JO */
+.btn {
+  background-color: #0033A0; /* Bleu JO */
+  color: #FFFFFF;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+  margin: 10px;
+}
+
+.btn:hover {
+  background-color: #002080;
+}
+
+.btn-logout {
+  background: #ED2939; /* Rouge JO pour déconnexion */
+}
+
+.btn-secondary {
+  background: #FFFFFF;
+  color: #0033A0;
+  border: 1px solid #0033A0;
+}
+
+.btn-secondary:hover {
+  background: #0033A0;
+  color: #FFFFFF;
+}
+
+/* Responsive (adapté de session) */
+@media (max-width: 1024px) {
+  .hamburger { display: flex; }
+}
+
+@media (min-width: 1025px) {
+  .hamburger { display: none; }
+}

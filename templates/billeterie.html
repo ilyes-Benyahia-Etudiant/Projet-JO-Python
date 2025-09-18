@@ -1,18 +1,23 @@
 <!doctype html>
 <html lang="fr">
 <head>
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <title>Billetterie</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+
+  
+  <link rel="stylesheet" href="/public/css/index.css">
+  <link rel="stylesheet" href="/public/css/billeterie.css">
+  <!-- Font Awesome pour les icônes sociales -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-  <link rel="stylesheet" href="/static/css/index.css">
-  <link rel="stylesheet" href="/static/css/styles.css">
   <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
+
 </head>
+
 <body>
-  <!-- Navbar reprise de l'accueil -->
+ 
   <header>
     <nav class="navbar">
       <div class="navbar-left">
@@ -27,7 +32,6 @@
       </div>
       <ul class="navbar-links" id="primary-navigation">
         <li><a href="/">Accueil</a></li>
-        <li><a href="/billets.html">Evenements</a></li>
         <li><a href="/billeterie.html" aria-current="page">Billeterie</a></li>
       </ul>
       <div class="navbar-actions">
@@ -42,118 +46,101 @@
   </header>
 
   <main>
-    <!-- Section offres (réutilise la grille d'événements pour un rendu cohérent) -->
-    <section class="events-section">
-      <h2 class="section-title">Nos Offres</h2>
-      <div class="events-grid" style="grid-template-columns: repeat(3, 1fr);">
-        <!-- Offre Solo -->
-        <div class="event-card">
-          <img src="/static/images/olympic games.jpg" alt="Offre Solo" class="event-img">
-          <div class="event-content">
-            <h3>Offre Solo</h3>
-            <p>Accès pour 1 personne à l'événement de votre choix.</p>
-            <p style="margin-top:8px;color:#444">Idéal pour vivre l'expérience des Jeux en solo.</p>
-            <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px">
-              <a href="/auth" class="btn-login">Choisir</a>
-            </div>
-          </div>
-        </div>
-        <!-- Offre Duo -->
-        <div class="event-card">
-          <img src="/static/images/Design sans titre.png" alt="Offre Duo" class="event-img">
-          <div class="event-content">
-            <h3>Offre Duo</h3>
-            <p>Accès pour 2 personnes, partagez l'émotion à deux.</p>
-            <p style="margin-top:8px;color:#444">Parfait pour un couple ou deux amis.</p>
-            <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px">
-              <a href="/auth" class="btn-login">Choisir</a>
-            </div>
-          </div>
-        </div>
-        <!-- Offre Familiale -->
-        <div class="event-card">
-          <img src="/static/images/olympic games Paris.jpg" alt="Offre Familiale" class="event-img">
-          <div class="event-content">
-            <h3>Offre Familiale</h3>
-            <p>Accès pour 4 personnes, pour des souvenirs inoubliables.</p>
-            <p style="margin-top:8px;color:#444">L'option idéale pour toute la famille.</p>
-            <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:12px">
-              <a href="/auth" class="btn-login">Choisir</a>
-            </div>
-          </div>
+  <!-- Section offres -->
+  <section class="events-section">
+    <h2 class="section-title">Nos Offres</h2>
+    <div class="events-grid">
+      <!-- Offre Solo -->
+      <div class="event-card">
+        <div class="event-img solo"></div> <!-- ✅ Icône médaille -->
+        <div class="event-content">
+          <h3>Offre Solo</h3>
+          <p>Accès pour 1 personne à l'événement de votre choix.</p>
+          <p style="margin-top:8px;color:#444">Idéal pour vivre l'expérience des Jeux en solo.</p>
+          <a href="/auth" class="btn-login">Choisir</a>
         </div>
       </div>
-    </section>
-  </main>
-<div id="webcrumbs">
-  <div class="max-w-[1280px] mx-auto px-4 sm:px-6">
-    <footer class="text-gray-600 border-t border-gray-200">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 pt-5">
-        <div>
-          <h3 class="font-bold text-lg mb-4">À propos</h3>
-          <ul class="space-y-2">
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Qui sommes-nous</a></li>
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Partenaires officiels</a></li>
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Carrières</a></li>
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Presse</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-bold text-lg mb-4">Support</h3>
-          <ul class="space-y-2">
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Centre d'aide</a></li>
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Contacter le support</a></li>
-            <li><a href="#" class="hover:text-primary-700 transition-colors">FAQ</a></li>
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Conditions de vente</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-bold text-lg mb-4">Informations légales</h3>
-          <ul class="space-y-2">
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Conditions d'utilisation</a></li>
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Politique de confidentialité</a></li>
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Mentions légales</a></li>
-            <li><a href="#" class="hover:text-primary-700 transition-colors">Cookies</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-bold text-lg mb-4">Suivez-nous</h3>
-          <div class="flex space-x-4 mb-4">
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
-              <i class="fa-brands fa-facebook text-lg"></i>
-            </a>
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
-              <i class="fa-brands fa-twitter text-lg"></i>
-            </a>
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
-              <i class="fa-brands fa-instagram text-lg"></i>
-            </a>
-            <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
-              <i class="fa-brands fa-youtube text-lg"></i>
-            </a>
-          </div>
-          <p class="text-sm">Téléchargez notre application</p>
-          <div class="flex space-x-2 mt-2">
-            <a href="#" class="transition-transform hover:scale-105">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store" class="h-10" keywords="app store, download, ios app"/>
-            </a>
-            <a href="#" class="transition-transform hover:scale-105">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" class="h-10" keywords="google play, download, android app"/>
-            </a>
-          </div>
+
+      <!-- Offre Duo -->
+      <div class="event-card">
+        <div class="event-img duo"></div> <!-- ✅ Icône cœur -->
+        <div class="event-content">
+          <h3>Offre Duo</h3>
+          <p>Accès pour 2 personnes, partagez l'émotion à deux.</p>
+          <p style="margin-top:8px;color:#444">Parfait pour un couple ou deux amis.</p>
+          <a href="/auth" class="btn-login">Choisir</a>
         </div>
       </div>
-      <div class="border-t pt-6 pb-4 flex flex-col md:flex-row justify-between items-center">
-        <p>© 2025 OlympicTickets. Tous droits réservés.</p>
-        <div class="flex items-center space-x-2 mt-4 md:mt-0">
-          <img src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_1280.png" alt="Visa" class="h-6" keywords="visa, payment method, credit card"/>
-          <img src="https://images.unsplash.com/photo-1628625194933-ac2b3c0109e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxtYXN0ZXJjYXJkfGVufDB8fHx8MTc0NjI1NDcwN3ww&ixlib=rb-4.0.3&q=80&w=1080" alt="Mastercard" class="h-6" keywords="mastercard, payment method, credit card"/>
-          <img src="https://images.unsplash.com/photo-1587906697341-bfbde76785c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxwYXlwYWx8ZW58MHx8fHwxNzQ2Mzc2MTM4fDA&ixlib=rb-4.0.3&q=80&w=1080" alt="Paypal" class="h-6" keywords="paypal, payment method, online payment"/>
+
+      <!-- Offre Familiale -->
+      <div class="event-card">
+        <div class="event-img famille"></div> <!-- ✅ Icône famille -->
+        <div class="event-content">
+          <h3>Offre Familiale</h3>
+          <p>Accès pour 4 personnes, pour des souvenirs inoubliables.</p>
+          <p style="margin-top:8px;color:#444">L'option idéale pour toute la famille.</p>
+          <a href="/auth" class="btn-login">Choisir</a>
         </div>
       </div>
+    </div>
+  </section>
+</main>
+
+
+    <!--FOOTER-->
+    <footer class="main-footer">
+        <div class="footer-grid">
+          <div class="footer-column">
+            <h3>À propos</h3>
+            <ul class="footer-links">
+              <li><a href="#">Qui sommes-nous</a></li>
+              <li><a href="#">Partenaires officiels</a></li>
+              <li><a href="#">Carrières</a></li>
+              <li><a href="#">Presse</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Support</h3>
+            <ul class="footer-links">
+              <li><a href="#">Centre d'aide</a></li>
+              <li><a href="#">Contacter le support</a></li>
+              <li><a href="#">FAQ</a></li>
+              <li><a href="#">Conditions de vente</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Informations légales</h3>
+            <ul class="footer-links">
+              <li><a href="#">Conditions d'utilisation</a></li>
+              <li><a href="#">Politique de confidentialité</a></li>
+              <li><a href="#">Mentions légales</a></li>
+              <li><a href="#">Cookies</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Suivez-nous</h3>
+            <div class="footer-social">
+              <a href="#" class="social-icon"><i class="fa-brands fa-facebook"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-twitter"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-youtube"></i></a>
+            </div>
+            <p>Téléchargez notre application</p>
+            <div class="footer-apps">
+              <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store"></a>
+              <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play"></a>
+            </div>
+          </div>
+          </div>
+          <div class="footer-bottom">
+            <p>© 2025 OlympicTickets. Tous droits réservés.</p>
+            <div class="payment-icons">
+              <img src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_1280.png" alt="Visa">
+              <img src="https://images.unsplash.com/photo-1628625194933-ac2b3c0109e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxtYXN0ZXJjYXJkfGVufDB8fHx8MTc0NjI1NDcwN3ww&ixlib=rb-4.0.3&q=80&w=1080" alt="Mastercard">
+              <img src="https://images.unsplash.com/photo-1587906697341-bfbde76785c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxwYXlwYWx8ZW58MHx8fHwxNzQ2Mzc2MTM4fDA&ixlib=rb-4.0.3&q=80&w=1080" alt="Paypal">
+            </div>
+          </div>
     </footer>
-  </div>
-</div>
 
 
 <script src="/public/js/app/http.js"></script>

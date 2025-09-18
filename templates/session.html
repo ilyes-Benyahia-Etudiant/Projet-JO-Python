@@ -4,48 +4,126 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Espace Utilisateur</title>
-  <link rel="stylesheet" href="/static/css/index.css">
+  <link rel="stylesheet" href="/public/css/index.css">
   <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="/public/css/session-toast.css">
+  <link rel="stylesheet" href="/public/css/style_session.css">
+  <link rel="stylesheet" href="/public/css/footer.css">
+  
 </head>
-<body>
-  <header style="padding:12px 16px;border-bottom:1px solid #eee">
-    <a href="#" style="text-decoration:none">Mon profil</a> 
-    <a href="/mes-billets" style="text-decoration:none; margin-left: 12px;">Mes billets</a>
-    
-    <form action="/auth/logout" method="post" style="display:inline; margin-left: 12px;">
-      <input type="hidden" name="X-CSRF-Token" value="{{ request.cookies.get('csrf_token', '') }}">
-      <button type="submit" class="btn btn-logout">Déconnexion</button>
-    </form>
-  </header>
-  <main style="max-width:1100px;margin:24px auto">
-    <!-- Nouveau bloc d'accueil -->
-    <section style="margin-bottom:16px; padding:12px; border:1px solid #eee; border-radius:8px; background:#fafafa">
-      <h1 style="margin:0 0 6px 0;">
-        Bienvenue {{ user.metadata.full_name or user.metadata.name or user.email  }}
-      </h1>
-      <p style="margin:0; color:#555">Connecté avec l’adresse <strong>{{ user.email }}</strong></p>
+<body class="session-page">
+  <header>
+  <nav class="navbar">
+    <div class="navbar-left">
+      <!-- On garde uniquement les anneaux olympiques ici -->
+      <div class="olympic-rings">
+        <span class="ring blue"></span>
+        <span class="ring yellow"></span>
+        <span class="ring black"></span>
+        <span class="ring green"></span>
+        <span class="ring red"></span>
+        <span class="navbar-title">Olympic Games</span>
+      </div>
+    </div>
+
+    <div class="navbar-links">
+      <!-- Optionnel : si tu veux ajouter des liens centrés plus tard -->
+    </div>
+
+    <div class="navbar-actions">
+      <div class="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <form action="/auth/logout" method="post" class="logout-form">
+        <input type="hidden" name="X-CSRF-Token" value="{{ request.cookies.get('csrf_token', '') }}">
+        <button type="submit" class="btn btn-logout">Déconnexion</button>
+      </form>
+    </div>
+  </nav>
+</header>
+
+  <main class="session-main">
+    <section class="card welcome-card">
+      <h1>Bienvenue {{ user.metadata.full_name or user.metadata.name or user.email  }}</h1>
+      <p>{{ user.email }}</p>
     </section>
-    <div style="display:flex; gap:24px; align-items:flex-start">
-      <section id="catalogue" style="flex:1">
-        <h1>Catalogue</h1>
+
+    <!-- Bloc centré: Mes billets (carré) + Panier -->
+    <div class="top-layout">
+      <section id="my-tickets-overview" class="card my-tickets my-tickets--square">
+        <div class="my-tickets__content">
+          <div class="cart-item-icon" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path fill="#111" d="M21 5h-9a2 2 0 0 0-2-2H3v6a2 2 0 0 1 0 4v6h7a2 2 0 0 1 2-2h9V5zm-3 8h-6v-2h6v2z"/>
+            </svg>
+          </div>
+          <a href="/mes-billets" class="my-tickets__title">
+            <h2>Mes billets</h2>
+          </a>
+          <span id="tickets-count-pill" class="badge" aria-label="Nombre de billets">0</span>
+        </div>
+      </section>
+
+      <aside id="cart" class="session-cart card olympic-accent">
+        <div class="cart-header">
+          <div class="cart-title-group">
+            <h2>Panier</h2>
+            <span id="cart-count-pill" class="badge badge--cart" aria-label="Articles dans le panier">0</span>
+          </div>
+          <button id="cart-clear" class="cart-clear-button" type="button" title="Vider le panier" aria-label="Vider le panier">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+              <path d="M10 11v6"></path>
+              <path d="M14 11v6"></path>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="cart-items"></div>
+        <p id="cart-empty">Votre panier est vide.</p>
+        <div id="cart-summary" class="cart-summary">
+          <strong>Total: <span id="cart-total">0,00 €</span></strong>
+          <button id="cart-pay" class="btn">Payer</button>
+        </div>
+      </aside>
+    </div>
+
+    <div class="session-layout">
+      <section id="catalogue">
+        <h1 class="jo-title">Offres Billets</h1>
         {% if offres and offres|length > 0 %}
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
+        <div class="offers-grid">
           {% for o in offres %}
-          <article style="border:1px solid #eee;border-radius:8px;padding:12px">
-            <h3>{{ o.title }}</h3>
-            {% if o.image %}<img src="{{ o.image }}" alt="{{ o.title }}" style="max-width:100%;height:auto"/>{% endif %}
-            <p>Catégorie: {{ o.category }}</p>
-            <p>Prix: {{ o.price }} €</p>
-            <p>Stock: {{ o.stock }}</p>
-            {% if o.description %}<p>{{ o.description }}</p>{% endif %}
+          <article class="offer-card olympic-accent">
+            <h3><span aria-hidden="true">🎟️</span> {{ o.title }}</h3>
+
+            <p class="meta">
+              <!--<span class="meta-label">Catégorie</span>-->
+              <span class="meta-value">{{ o.category }}</span>
+            </p>
+
+            <p class="price">
+              <span class="meta-label">Prix</span>
+              <span class="meta-value">{{ o.price }} €</span>
+            </p>
+
+            <p class="stock">
+              <span class="meta-label">Stock</span>
+              <span class="meta-value">{{ o.stock }}</span>
+            </p>
+
+            {% if o.description %}<p class="desc">{{ o.description }}</p>{% endif %}
+
             <button
-              class="btn-add-to-cart"
+              class="btn btn-add-to-cart"
               data-id="{{ o.id or o.title }}"
               data-title="{{ o.title }}"
               data-price="{{ o.price }}"
               data-image="{{ o.image }}"
-              style="margin-top:8px"
             >Ajouter au panier</button>
           </article>
           {% endfor %}
@@ -53,54 +131,73 @@
         {% else %}
         <p>Aucune offre disponible.</p>
         {% endif %}
-
-        {% if commandes and commandes|length > 0 %}
-        <section style="margin-top:32px">
-          <h2>Mes commandes</h2>
-          <div style="overflow:auto">
-            <table style="width:100%;border-collapse:collapse">
-              <thead>
-                <tr>
-                  <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">Offre</th>
-                  <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">Prix payé</th>
-                  <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">Token</th>
-                  <th style="text-align:left;padding:8px;border-bottom:1px solid #eee">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for c in commandes %}
-                <tr>
-                  <td style="padding:8px;border-bottom:1px solid #f3f3f3">
-                    {% if c.offres %}{{ c.offres.title }}{% else %}{{ c.offre_id }}{% endif %}
-                  </td>
-                  <td style="padding:8px;border-bottom:1px solid #f3f3f3">{{ c.price_paid }} €</td>
-                  <td style="padding:8px;border-bottom:1px solid #f3f3f3">{{ c.token }}</td>
-                  <td style="padding:8px;border-bottom:1px solid #f3f3f3">{{ c.created_at }}</td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </section>
-        {% endif %}
       </section>
-
-      <aside id="cart" style="width:320px; border:1px solid #eee; border-radius:8px; padding:12px; position:sticky; top:12px;">
-        <h2 style="margin-top:0">Panier</h2>
-        <div id="cart-items"></div>
-        <p id="cart-empty" style="color:#666">Votre panier est vide.</p>
-        <div id="cart-summary" style="margin-top:12px; display:flex; align-items:center; justify-content:space-between">
-          <strong>Total: <span id="cart-total">0,00 €</span></strong>
-          <button id="cart-pay" class="btn">Payer</button>
-        </div>
-      </aside>
     </div>
-    <!-- Conteneur du toast succès -->
+
+   
     <div id="toast-success" role="status" aria-live="polite"></div>
   </main>
+
+   <!--Footer-->
+    <footer class="main-footer">
+        <div class="footer-grid">
+          <div class="footer-column">
+            <h3>À propos</h3>
+            <ul class="footer-links">
+              <li><a href="#">Qui sommes-nous</a></li>
+              <li><a href="#">Partenaires officiels</a></li>
+              <li><a href="#">Carrières</a></li>
+              <li><a href="#">Presse</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Support</h3>
+            <ul class="footer-links">
+              <li><a href="#">Centre d'aide</a></li>
+              <li><a href="#">Contacter le support</a></li>
+              <li><a href="#">FAQ</a></li>
+              <li><a href="#">Conditions de vente</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Informations légales</h3>
+            <ul class="footer-links">
+              <li><a href="#">Conditions d'utilisation</a></li>
+              <li><a href="#">Politique de confidentialité</a></li>
+              <li><a href="#">Mentions légales</a></li>
+              <li><a href="#">Cookies</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Suivez-nous</h3>
+            <div class="footer-social">
+              <a href="#" class="social-icon"><i class="fa-brands fa-facebook"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-twitter"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-youtube"></i></a>
+            </div>
+            <p>Téléchargez notre application</p>
+            <div class="footer-apps">
+              <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store"></a>
+              <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play"></a>
+            </div>
+          </div>
+          </div>
+          <div class="footer-bottom">
+            <p>© 2025 OlympicTickets. Tous droits réservés.</p>
+            <div class="payment-icons">
+              <img src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_1280.png" alt="Visa">
+              <img src="https://images.unsplash.com/photo-1628625194933-ac2b3c0109e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxtYXN0ZXJjYXJkfGVufDB8fHx8MTc0NjI1NDcwN3ww&ixlib=rb-4.0.3&q=80&w=1080" alt="Mastercard">
+              <img src="https://images.unsplash.com/photo-1587906697341-bfbde76785c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxwYXlwYWx8ZW58MHx8fHwxNzQ2Mzc2MTM4fDA&ixlib=rb-4.0.3&q=80&w=1080" alt="Paypal">
+            </div>
+          </div>
+    </footer>
+  <!-- En bas de la page, avec les autres scripts -->
   <script src="/public/js/app/http.js"></script>
   <script src="/public/js/app/payment-confirm.js"></script>
+  <!-- scripts -->
   <script src="/public/js/app/cart.js"></script>
   <script src="/public/js/app/session.js"></script>
+  <!-- fin scripts -->
 </body>
 </html>

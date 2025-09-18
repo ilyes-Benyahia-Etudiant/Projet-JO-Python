@@ -22,16 +22,12 @@ router = APIRouter(prefix="/api/v1/payments", tags=["Payments API"])
 
 @router.post("/checkout", dependencies=[Depends(optional_rate_limit(times=10, seconds=60))])
 async def create_checkout_session(request: Request, user: dict = Depends(require_user)):
-    """
-    Body attendu:
-    {
-      "items": [ { "id": "<offre_id>", "quantity": 2 }, ... ]
-    }
-    """
+    # Body attendu:
+    # {
+    #   "items": [ { "id": "<offre_id>", "quantity": 2 }, ... ]
+    # }
     try:
-        # Import lazy pour compat tests (backend.models est patché par conftest)
         import os
-        import backend.models as models
 
         body = await request.json()
         items: List[Dict[str, Any]] = body.get("items") or []
@@ -47,7 +43,7 @@ async def create_checkout_session(request: Request, user: dict = Depends(require
             # URLs de succès/annulation: réutilise les routes des pages
             base_success = str(request.url_for("mes_billets_page"))
             success_url = f"{base_success}?session_id={{CHECKOUT_SESSION_ID}}&success=1"
-            cancel_url = str(request.url_for("billeterie_page"))
+            cancel_url = str(request.url_for("user_session"))
 
             session = stripe_client.create_session(
                 line_items=line_items,
@@ -60,6 +56,7 @@ async def create_checkout_session(request: Request, user: dict = Depends(require
         except HTTPException as e:
             # Fallback de compat pour tests d’intégration (mocks sur backend.models.*)
             if os.environ.get("PYTEST_CURRENT_TEST"):
+                import backend.models as models  # importé uniquement en mode test
                 base_url = str(request.base_url).rstrip("/")
                 line_items = models.to_line_items(models.get_offers_map(list(quantities.keys())), quantities)
                 metadata = models.make_metadata(user_id=user.get("id", ""), quantities=quantities)

@@ -36,3 +36,11 @@ def update_commande(commande_id: str, data: Dict[str, Any]) -> Optional[dict]:
 
 def delete_commande(commande_id: str) -> bool:
     return admin_repository.delete_commande(commande_id)
+
+# Wrappers d'accès pour les formulaires d'édition
+def get_commande_by_id(commande_id: str) -> Optional[dict]:
+    return admin_repository.get_commande_by_id(commande_id)
+
+def get_user_by_id(user_id: str) -> Optional[dict]:
+    from backend.users.repository import get_user_by_id as _get_user_by_id
+    return _get_user_by_id(user_id)

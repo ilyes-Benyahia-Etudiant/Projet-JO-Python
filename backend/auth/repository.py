@@ -4,31 +4,44 @@ from backend.infra.supabase_client import (
     get_supabase,
     get_service_supabase,
 )
-from backend.models.supabase import (
-    sign_in_password as _auth_sign_in_password,
-    sign_up_account as _auth_sign_up_account,
-    send_reset_password as _auth_send_reset_password,
-    update_user_password as _auth_update_user_password,
-)
 
 # --- Auth (supabase.auth.*) ---
 
 def auth_sign_in_password(email: str, password: str):
-    return _auth_sign_in_password(email, password)
+    client = get_supabase()
+    return client.auth.sign_in_with_password({"email": email, "password": password})
 
-def auth_sign_up_account(email: str, password: str, options_data: Optional[Dict[str, Any]] = None, email_redirect_to: Optional[str] = None):
-    return _auth_sign_up_account(
-        email=email,
-        password=password,
-        options_data=options_data,
-        email_redirect_to=email_redirect_to,
-    )
+def auth_sign_up_account(
+    email: str,
+    password: str,
+    options_data: Optional[Dict[str, Any]] = None,
+    email_redirect_to: Optional[str] = None
+):
+    client = get_supabase()
+    options: Dict[str, Any] = {}
+    if options_data:
+        options["data"] = options_data
+    if email_redirect_to:
+        options["email_redirect_to"] = email_redirect_to
+    if options:
+        return client.auth.sign_up({"email": email, "password": password}, options=options)
+    return client.auth.sign_up({"email": email, "password": password})
 
 def auth_send_reset_password(email: str, redirect_to: str):
-    return _auth_send_reset_password(email, redirect_to)
+    client = get_supabase()
+    return client.auth.reset_password_for_email(email, options={"redirect_to": redirect_to})
 
 def auth_update_user_password(user_token: str, new_password: str):
-    return _auth_update_user_password(user_token, new_password)
+    # Appel direct GoTrue avec le token utilisateur (Bearer)
+    import httpx
+    from backend.config import SUPABASE_URL, SUPABASE_ANON
+    url = f"{SUPABASE_URL.rstrip('/')}/auth/v1/user"
+    headers = {
+        "Authorization": f"Bearer {user_token}",
+        "apikey": SUPABASE_ANON,
+        "Content-Type": "application/json",
+    }
+    return httpx.put(url, json={"password": new_password}, headers=headers, timeout=10)
 
 def get_user_from_access_token(access_token: str) -> Dict[str, Any]:
     """
@@ -46,5 +59,4 @@ def get_user_from_access_token(access_token: str) -> Dict[str, Any]:
     return user or {}
 
 # --- Table users (profil applicatif) ---
-
-# Les fonctions get_user_by_email, get_user_by_id, upsert_user_profile sont désormais importées depuis backend.users.repository
+# Les fonctions get_user_by_email, get_user_by_id, upsert_user_profile restent importées depuis backend.users.repository

@@ -18,15 +18,16 @@ def register_security_middleware(app: FastAPI) -> None:
         csp_connect = ["'self'"]
         if SUPABASE_URL:
             csp_connect.append(SUPABASE_URL.rstrip("/"))
-        swagger_cdns = ["https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdn.tailwindcss.com"]
+        swagger_cdns = ["https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"]
         csp_connect.extend(swagger_cdns)
-        extra_img_sources = ["https://fastapi.tiangolo.com"]
+        extra_img_sources = ["https://fastapi.tiangolo.com", "https://images.unsplash.com", "https://upload.wikimedia.org", "https://cdn.pixabay.com", "https://media.istockphoto.com"]
 
         csp = (
             "default-src 'self'; "
             "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
             f"img-src 'self' data: blob: {' '.join(extra_img_sources)}; "
             f"style-src 'self' 'unsafe-inline' {' '.join(swagger_cdns)}; "
+            f"font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
             f"script-src 'self' 'unsafe-inline' {' '.join(swagger_cdns)}; "
             f"connect-src {' '.join(csp_connect)}"
         )

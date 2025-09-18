@@ -1,14 +1,12 @@
 from typing import Optional, Dict, Any
 from backend.auth.models import AuthResponse, make_auth_response, handle_exception
-from backend.models.supabase import (
-    sign_in_password,
-    sign_up_account,
-    send_reset_password,
-    update_user_password,
-)
 from backend.users.repository import get_user_by_email
 from backend.config import SIGNUP_REDIRECT_URL
 from .repository import (
+    auth_sign_in_password as sign_in_password,
+    auth_sign_up_account as sign_up_account,
+    auth_send_reset_password as send_reset_password,
+    auth_update_user_password as _update_user_password,
     get_user_from_access_token as _repo_get_user_from_token,
     upsert_user_profile as _repo_upsert_user_profile,
 )

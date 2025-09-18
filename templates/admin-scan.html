@@ -4,10 +4,264 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin - Scan Billet</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/static/css/index.css">
-  <link rel="stylesheet" href="/static/css/styles.css">
+  <script src="https://cdn.tailwindcss.com  "></script>
+  <!--<link rel="stylesheet" href="/static/css/index.css">
+  <link rel="stylesheet" href="/static/css/styles.css">-->
   <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
+  <style>
+    /* ========== RESET & BASE ========== */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ========== NAVBAR ========== */
+.navbar {
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Anneaux olympiques + titre */
+.olympic-rings {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ring {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.blue { border-color: #0085C7; }
+.yellow { border-color: #F4C300; }
+.black { border-color: #000000; }
+.green { border-color: #009F3D; }
+.red { border-color: #DF0024; }
+
+.navbar-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #DF0024;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+}
+
+/* Liens de navigation */
+.navbar-links {
+  display: flex;
+  list-style: none;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar-links a {
+  text-decoration: none;
+  color: #555;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.navbar-links a:hover {
+  background: #f0f4f8;
+  color: #0085C7;
+}
+
+/* ========== FORM CONTROLS ========== */
+.form-control {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: #fafafa;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #0085C7;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(0, 133, 199, 0.1);
+}
+
+.btn-danger {
+  background: #DF0024 !important; /* Rouge */
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-danger:hover {
+  background: #9e001a !important;
+}
+/* ========== BUTTONS ========== */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: #0085C7; /* Bleu olympique */
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #005f8e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 133, 199, 0.3);
+}
+
+.btn-success {
+  background: #009F3D; /* Vert olympique */
+  color: white;
+}
+
+.btn-success:hover {
+  background: #006b2a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 159, 61, 0.3);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .navbar-links {
+    margin-top: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .form-control {
+    min-width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .olympic-rings {
+    gap: 2px;
+  }
+
+  .ring {
+    width: 16px;
+    height: 16px;
+  }
+
+  .navbar-title {
+    font-size: 1.1rem;
+  }
+}
+
+/* ========== CENTERED GROUP ========== */
+.centered-group {
+  max-width: 500px;
+  margin: 2rem auto 0;
+  padding: 0 1rem;
+}
+
+/* ========== LABEL ========== */
+.label {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #000;
+  margin: 1.5rem 0 0.75rem 0;
+  padding-bottom: 0.4rem;
+  border-bottom: 3px solid #DF0024; /* Rouge olympique */
+  display: flex;
+  justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ========== USER CARD ========== */
+#admin-user {
+  background: linear-gradient(135deg, #f0f7ff, #e6f2ff); /* Dégradé bleu très doux */
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 2px solid #0085C7; /* Bordure bleu olympique */
+  box-shadow: 0 4px 12px rgba(0, 133, 199, 0.15);
+  font-size: 1.05rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+#admin-user:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 133, 199, 0.25);
+}
+
+#admin-user strong {
+  color: #0085C7; /* Bleu olympique pour les labels */
+  font-weight: 700;
+  display: inline-block;
+  min-width: 80px;
+}
+
+#admin-user div {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(5px);
+}
+
+/* ========== OPTIONNEL : Icônes ou décoration ========== */
+.label::before {
+  content: "🏅 ";
+  margin-right: 8px;
+}
+
+#admin-user::before {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(to right, #0085C7, #F4C300, #000000, #009F3D, #DF0024);
+  margin: 0 auto 1rem;
+  border-radius: 2px;
+}
+
+
+  </style>
 </head>
 <body class="bg-gray-50">
   <header>
@@ -22,14 +276,21 @@
           <span class="navbar-title">Admin Scan</span>
         </div>
       </div>
-      <ul class="navbar-links" id="primary-navigation">
-        <li><a href="/session">Ma Session</a></li>
-        <li><a href="/admin/offres">Admin Offres</a></li>
-      </ul>
+      <form action="/auth/logout" method="post" style="display:inline;">
+          <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
+          <button type="submit" class="btn-nav btn-danger">Déconnexion</button>
+      </form>
     </nav>
   </header>
 
   <main class="container mx-auto p-6">
+          <div class="group centered-group">
+            <div class="label">Informations</div>
+            <div id="admin-user" class="user-card">
+              <div><strong>Email:</strong> {{ email or (user and user.get('email')) or '' }}</div>
+              <div><strong>Rôle:</strong> {{ role or (user and user.get('role')) or '' }}</div>
+            </div>
+          </div>
     <div class="max-w-xl mx-auto bg-white shadow rounded p-6">
       <h2 class="text-2xl font-semibold mb-4">Scanner / Valider un billet</h2>
       <p class="text-gray-600 mb-4">

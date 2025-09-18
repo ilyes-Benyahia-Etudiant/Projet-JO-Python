@@ -1,5 +1,6 @@
-from typing import Any, Iterable
-from fastapi import FastAPI, Request
+# module backend.utils.csrf
+from typing import Any, Iterable, Optional
+from fastapi import FastAPI, Request, Header, HTTPException, Depends
 from fastapi.responses import Response, JSONResponse
 import secrets
 import urllib.parse
@@ -102,3 +103,22 @@ def register_csrf_middleware(app: FastAPI) -> None:
         response = await call_next(request)
         attach_csrf_cookie_if_missing(response, request, token)
         return response
+
+
+def csrf_protect(
+    request: Request,
+    x_csrf_token: Optional[str] = Header(default=None, alias=CSRF_HEADER_NAME),
+) -> None:
+    """
+    Dépendance à utiliser sur les routes sensibles (POST/PUT/PATCH/DELETE).
+    Valide que le header X-CSRF-Token correspond au cookie csrf_token, sauf sur CSRF_EXEMPT_PATHS.
+    """
+    path = str(request.url.path or "").rstrip("/")
+    if path in CSRF_EXEMPT_PATHS:
+        return
+    cookie_token = request.cookies.get(CSRF_COOKIE_NAME)
+    header_token = x_csrf_token or request.headers.get(CSRF_HEADER_NAME)
+    if not cookie_token or not header_token:
+        raise HTTPException(status_code=403, detail="CSRF token missing")
+    if not secrets.compare_digest(str(cookie_token), str(header_token)):
+        raise HTTPException(status_code=403, detail="CSRF token invalid")

@@ -4,17 +4,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Accueil — Mon Application</title>
-    <!-- Consolidation: un seul fichier CSS global -->
-     <script src="https://cdn.tailwindcss.com"></script>
-     <link rel="stylesheet" href="/public/css/index.css">
-    <link rel="stylesheet" href="/public/css/styles.css">
+
+    
+    <!--<script src="https://cdn.tailwindcss.com"></script>-->
+    <!--<link rel="stylesheet" href="/public/css/styles.css">-->
+    <!--<link rel="stylesheet" href="/public/index.css">-->
+
+    <link rel="stylesheet" href="/public/css/index.css">
+    
+
     <!-- Packs d'icônes -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
   </head>
+
+
+
   <body class="home">
+
+    <!--HEADER-->
     <header>
+
       <nav class="navbar">
         <div class="navbar-left">
           <div class="olympic-rings">
@@ -33,7 +44,7 @@
         </ul>
         <div class="navbar-actions">
           
-          <!-- Après -->
+          
           <a class="btn-login" href="/auth">Connexion</a>
           <div class="hamburger">
             <span></span>
@@ -42,371 +53,285 @@
           </div>
         </div>
       </nav>
+
     </header>
 
-    <main class="container">
+    <!--END HEADER-->
+
+
+    <main>
       <section class="hero">
         
-        <div class="carousel-container">
-          <div class="carousel">
-            <div class="carousel-track">
-              <img src="/public/images/olympic games Paris.jpg" alt="Image 1" class="carousel-img">
-              <img src="/public/images/olympic games.jpg" alt="Image 2" class="carousel-img">
-              <img src="/public/images/Design sans titre.png" alt="Image 3" class="carousel-img">
+          <div class="carousel-container">
+            <div class="carousel">
+              <div class="carousel-track">
+                <img src="https://cdn.pixabay.com/photo/2017/08/24/21/41/tartan-track-2678544_1280.jpg" alt="Image 1" class="carousel-img">
+                <img src="https://cdn.pixabay.com/photo/2017/08/19/13/49/olympic-stadium-2658628_1280.jpg" alt="Image 2" class="carousel-img">
+                <img src="/public/images/olympic games.jpg" alt="Image 3" class="carousel-img">
+              </div>
+              <div class="hero-content">
+                <h1>Bienvenue Jeux Olympiques 2024</h1>
+                <p>Retrouvez les informations sur les Jeux Olympiques 2024, les épreuves, les billets et bien plus encore.</p>
+                <a href="/billets.html" class="btn-primary">Réservez vos billets</a>
+              </div>
             </div>
-            <div class="hero-content">
-              <h1>Bienvenue Jeux Olympiques 2024</h1>
-              <p>Retrouvez les informations sur les Jeux Olympiques 2024, les épreuves, les billets et bien plus encore.</p>
-              <a href="/billets.html" class="btn-primary">Réservez vos billets</a>
+          </div>
+        
+      </section>
+      
+   
+
+      <section class="events-section" id="events"> 
+        <h2 class="section-title">Événements à venir</h2>
+        <div class="events-grid">
+          <div class="event-card">
+            <img src="/public/images/olympic games Paris.jpg" alt="Athlétisme" class="event-img">
+            <div class="event-content">
+              <h3>Athlétisme</h3>
+              <p>Découvrez les épreuves d'athlétisme des JO 2024 au Stade de France.</p>
+              <button class="event-btn"><span class="arrow">→</span></button>
+            </div>
+          </div>
+          <div class="event-card">
+            <img src="/public/images/olympic games.jpg" alt="Natation" class="event-img">
+            <div class="event-content">
+              <h3>Natation</h3>
+              <p>Les plus grands nageurs s'affrontent dans des compétitions spectaculaires.</p>
+              <button class="event-btn"><span class="arrow">→</span></button>
+            </div>
+          </div>
+          <div class="event-card">
+            <img src="/public/images/Design sans titre.png" alt="Gymnastique" class="event-img">
+            <div class="event-content">
+              <h3>Gymnastique</h3>
+              <p>Admirez l'élégance et la précision des gymnastes olympiques.</p>
+              <button class="event-btn"><span class="arrow">→</span></button>
+            </div>
+          </div>
+          <div class="event-card">
+            <img src="/public/images/olympic games Paris.jpg" alt="Escrime" class="event-img">
+            <div class="event-content">
+              <h3>Escrime</h3>
+              <p>L'art du combat et de la stratégie dans sa forme la plus élégante.</p>
+              <button class="event-btn"><span class="arrow">→</span></button>
+            </div>
+          </div>
+          <div class="event-card">
+            <img src="/public/images/olympic games.jpg" alt="Judo" class="event-img">
+            <div class="event-content">
+              <h3>Judo</h3>
+              <p>La voie de la souplesse : technique et respect sur le tatami.</p>
+              <button class="event-btn"><span class="arrow">→</span></button>
+            </div>
+          </div>
+          <div class="event-card">
+            <img src="/public/images/Design sans titre.png" alt="Tennis" class="event-img">
+            <div class="event-content">
+              <h3>Tennis</h3>
+              <p>Des échanges intenses sur les courts olympiques.</p>
+              <button class="event-btn"><span class="arrow">→</span></button>
+            </div>
+          </div>
+          <div class="event-card">
+            <img src="/public/images/olympic games Paris.jpg" alt="Cyclisme" class="event-img">
+            <div class="event-content">
+              <h3>Cyclisme</h3>
+              <p>Vitesse et endurance sur les routes de Paris.</p>
+              <button class="event-btn"><span class="arrow">→</span></button>
+            </div>
+          </div>
+          <div class="event-card">
+            <img src="/public/images/olympic games.jpg" alt="Boxe" class="event-img">
+            <div class="event-content">
+              <h3>Boxe</h3>
+              <p>La noble science du ring aux Jeux Olympiques.</p>
+              <button class="event-btn"><span class="arrow">→</span></button>
             </div>
           </div>
         </div>
       </section>
-    </main>
 
-    <section class="events-section" id="events"> 
-      <h2 class="section-title">Événements à venir</h2>
-      <div class="events-grid">
-        <div class="event-card">
-          <img src="/public/images/olympic games Paris.jpg" alt="Athlétisme" class="event-img">
-          <div class="event-content">
-            <h3>Athlétisme</h3>
-            <p>Découvrez les épreuves d'athlétisme des JO 2024 au Stade de France.</p>
-            <button class="event-btn"><span class="arrow">→</span></button>
+      <!-- Feature -->
+      <section id="features">
+        <div class="features-container">
+          <h2>Pourquoi choisir OlympicTickets ?</h2>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="icon-circle"><span class="material-symbols-outlined">verified</span></div>
+              <h3>Billets Officiels</h3>
+              <p>Tous nos billets sont garantis 100% officiels et sécurisés.</p>
+            </div>
+            <div class="feature-card">
+              <div class="icon-circle"><span class="material-symbols-outlined">workspace_premium</span></div>
+              <h3>Places Premium</h3>
+              <p>Accès à des sièges premium pour une expérience inoubliable.</p>
+            </div>
+            <div class="feature-card">
+              <div class="icon-circle"><span class="material-symbols-outlined">support_agent</span></div>
+              <h3>Support 24/7</h3>
+              <p>Notre équipe est disponible à tout moment pour vous aider.</p>
+            </div>
+            <div class="feature-card">
+              <div class="icon-circle"><span class="material-symbols-outlined">payments</span></div>
+              <h3>Paiement Sécurisé</h3>
+              <p>Plusieurs options de paiement toutes sécurisées et fiables.</p>
+            </div>
           </div>
         </div>
-        <div class="event-card">
-          <img src="/public/images/olympic games.jpg" alt="Natation" class="event-img">
-          <div class="event-content">
-            <h3>Natation</h3>
-            <p>Les plus grands nageurs s'affrontent dans des compétitions spectaculaires.</p>
-            <button class="event-btn"><span class="arrow">→</span></button>
-          </div>
-        </div>
-        <div class="event-card">
-          <img src="/public/images/Design sans titre.png" alt="Gymnastique" class="event-img">
-          <div class="event-content">
-            <h3>Gymnastique</h3>
-            <p>Admirez l'élégance et la précision des gymnastes olympiques.</p>
-            <button class="event-btn"><span class="arrow">→</span></button>
-          </div>
-        </div>
-        <div class="event-card">
-          <img src="/public/images/olympic games Paris.jpg" alt="Escrime" class="event-img">
-          <div class="event-content">
-            <h3>Escrime</h3>
-            <p>L'art du combat et de la stratégie dans sa forme la plus élégante.</p>
-            <button class="event-btn"><span class="arrow">→</span></button>
-          </div>
-        </div>
-        <div class="event-card">
-          <img src="/public/images/olympic games.jpg" alt="Judo" class="event-img">
-          <div class="event-content">
-            <h3>Judo</h3>
-            <p>La voie de la souplesse : technique et respect sur le tatami.</p>
-            <button class="event-btn"><span class="arrow">→</span></button>
-          </div>
-        </div>
-        <div class="event-card">
-          <img src="/public/images/Design sans titre.png" alt="Tennis" class="event-img">
-          <div class="event-content">
-            <h3>Tennis</h3>
-            <p>Des échanges intenses sur les courts olympiques.</p>
-            <button class="event-btn"><span class="arrow">→</span></button>
-          </div>
-        </div>
-        <div class="event-card">
-          <img src="/public/images/olympic games Paris.jpg" alt="Cyclisme" class="event-img">
-          <div class="event-content">
-            <h3>Cyclisme</h3>
-            <p>Vitesse et endurance sur les routes de Paris.</p>
-            <button class="event-btn"><span class="arrow">→</span></button>
-          </div>
-        </div>
-        <div class="event-card">
-          <img src="/public/images/olympic games.jpg" alt="Boxe" class="event-img">
-          <div class="event-content">
-            <h3>Boxe</h3>
-            <p>La noble science du ring aux Jeux Olympiques.</p>
-            <button class="event-btn"><span class="arrow">→</span></button>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Ajout: sections features → footer provenant de landing page, sous wrapper #webcrumbs -->
-    <div id="webcrumbs">
-      <div class="max-w-[1280px] mx-auto px-4 sm:px-6">
-        <section id="features" class="mb-16">
-          <div class="bg-primary-50 rounded-2xl p-8 shadow-lg">
-            <h2 class="text-3xl font-bold mb-10 text-center">Pourquoi choisir OlympicTickets?</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div class="flex flex-col items-center text-center p-4 bg-white rounded-xl shadow-md transform transition-all hover:scale-105">
-                <div class="bg-primary-100 p-4 rounded-full mb-4">
-                  <span class="material-symbols-outlined text-4xl text-primary-700">verified</span>
-                </div>
-                <h3 class="text-xl font-bold mb-2">Billets Officiels</h3>
-                <p class="text-gray-600">Tous nos billets sont garantis 100% officiels et sécurisés.</p>
-              </div>
-              <div class="flex flex-col items-center text-center p-4 bg-white rounded-xl shadow-md transform transition-all hover:scale-105">
-                <div class="bg-primary-100 p-4 rounded-full mb-4">
-                  <span class="material-symbols-outlined text-4xl text-primary-700">workspace_premium</span>
-                </div>
-                <h3 class="text-xl font-bold mb-2">Places Premium</h3>
-                <p class="text-gray-600">Accès à des sièges premium pour une expérience inoubliable.</p>
-              </div>
-              <div class="flex flex-col items-center text-center p-4 bg-white rounded-xl shadow-md transform transition-all hover:scale-105">
-                <div class="bg-primary-100 p-4 rounded-full mb-4">
-                  <span class="material-symbols-outlined text-4xl text-primary-700">support_agent</span>
-                </div>
-                <h3 class="text-xl font-bold mb-2">Support 24/7</h3>
-                <p class="text-gray-600">Notre équipe est disponible à tout moment pour vous aider.</p>
-              </div>
-              <div class="flex flex-col items-center text-center p-4 bg-white rounded-xl shadow-md transform transition-all hover:scale-105">
-                <div class="bg-primary-100 p-4 rounded-full mb-4">
-                  <span class="material-symbols-outlined text-4xl text-primary-700">payments</span>
-                </div>
-                <h3 class="text-xl font-bold mb-2">Paiement Sécurisé</h3>
-                <p class="text-gray-600">Plusieurs options de paiement toutes sécurisées et fiables.</p>
+      <!-- Venues -->
+      <section id="venues">
+        <h2>Sites Olympiques</h2>
+        <div class="venues-grid">
+          <div class="venue-card">
+            <img src="https://cdn.pixabay.com/photo/2016/08/13/11/57/stadium-1590576_1280.jpg" alt="Stade de France"/>
+            <div class="venue-overlay">
+              <h3>Stade de France</h3>
+              <p>Athlétisme, Cérémonies</p>
+            </div>
+          </div>
+          <div class="venue-card">
+            <img src="https://cdn.pixabay.com/photo/2021/06/04/06/54/racket-6308994_1280.jpg" alt="Roland-Garros"/>
+            <div class="venue-overlay">
+              <h3>Roland-Garros</h3>
+              <p>Tennis, Boxe</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Testimonials -->
+      <section id="testimonials">
+        <h2>Témoignages</h2>
+        <div class="testimonials-grid">
+          <div class="testimonial-card">
+            <div class="stars">★★★★★</div>
+            <p>"Excellent service! J'ai pu réserver des places incroyables pour la finale d'athlétisme."</p>
+            <div class="user">
+              <img src="https://images.unsplash.com/photo-1541855127-2e944b899d9a" alt="Sophie Martin"/>
+              <div>
+                <h4>Sophie Martin</h4>
+                <p>Paris, France</p>
               </div>
             </div>
           </div>
-        </section>
-        <section id="venues" class="mb-16">
-          <h2 class="text-3xl font-bold mb-8 text-center">Sites Olympiques</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="relative rounded-xl overflow-hidden h-[300px] shadow-lg group">
-              <img src="https://images.unsplash.com/photo-1577471488278-16eec37ffcc2" alt="Stade de France" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" keywords="Stade de France, stadium, olympic venue, paris"/>
-              <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
-                <h3 class="text-2xl font-bold text-white">Stade de France</h3>
-                <p class="text-white/90">Athlétisme, Cérémonies</p>
-              </div>
-            </div>
-            <div class="relative rounded-xl overflow-hidden h-[300px] shadow-lg group">
-              <img src="https://images.unsplash.com/photo-1495121553079-4c61bcce1894" alt="Roland-Garros" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" keywords="Roland Garros, tennis, olympic venue, paris"/>
-              <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
-                <h3 class="text-2xl font-bold text-white">Roland-Garros</h3>
-                <p class="text-white/90">Tennis, Boxe</p>
+          <div class="testimonial-card">
+            <div class="stars">★★★★☆</div>
+            <p>"Très satisfait de mon achat de billets pour la natation. Le site est facile à utiliser."</p>
+            <div class="user">
+              <img src="https://images.unsplash.com/photo-1541855103-b7d652724617" alt="Thomas Dubois"/>
+              <div>
+                <h4>Thomas Dubois</h4>
+                <p>Lyon, France</p>
               </div>
             </div>
           </div>
-        </section>
-        <section id="testimonials" class="mb-16">
-          <h2 class="text-3xl font-bold mb-8 text-center">Témoignages</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-              <div class="flex items-center mb-4">
-                <div class="flex text-yellow-400">
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                </div>
-              </div>
-              <p class="text-gray-700 mb-4">&quot;Excellent service! J'ai pu réserver des places incroyables pour la finale d'athlétisme. Le processus était simple et rapide.&quot;</p>
-              <div class="flex items-center">
-                <img src="https://images.unsplash.com/photo-1541855127-2e944b899d9a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHx0ZXN0aW1vbmlhbHxlbnwwfHx8fDE3NDYyNzIxMzN8MA&ixlib=rb-4.0.3&q=80&w=1080" alt="Sophie Martin" class="w-12 h-12 rounded-full mr-4" keywords="testimonial, woman portrait, customer"/>
-                <div>
-                  <h4 class="font-bold">Sophie Martin</h4>
-                  <p class="text-sm text-gray-600">Paris, France</p>
-                </div>
-              </div>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-              <div class="flex items-center mb-4">
-                <div class="flex text-yellow-400">
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star_half</span>
-                </div>
-              </div>
-              <p class="text-gray-700 mb-4">&quot;Très satisfait de mon achat de billets pour la natation. Le site est facile à utiliser et les billets sont arrivés rapidement.&quot;</p>
-              <div class="flex items-center">
-                <img src="https://images.unsplash.com/photo-1541855103-b7d652724617?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwyfHx0ZXN0aW1vbmlhbHxlbnwwfHx8fDE3NDYyNzIxMzN8MA&ixlib=rb-4.0.3&q=80&w=1080" alt="Thomas Dubois" class="w-12 h-12 rounded-full mr-4" keywords="testimonial, man portrait, customer"/>
-                <div>
-                  <h4 class="font-bold">Thomas Dubois</h4>
-                  <p class="text-sm text-gray-600">Lyon, France</p>
-                </div>
-              </div>
-            </div>
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-              <div class="flex items-center mb-4">
-                <div class="flex text-yellow-400">
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                  <span class="material-symbols-outlined">star</span>
-                </div>
-              </div>
-              <p class="text-gray-700 mb-4">&quot;Je recommande vivement ce site pour l'achat de billets olympiques. Service client exceptionnel et places parfaites!&quot;</p>
-              <div class="flex items-center">
-                <img src="https://images.unsplash.com/photo-1585842352667-39107fc979b9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwzfHx0ZXN0aW1vbmlhbHxlbnwwfHx8fDE3NDYyNzIxMzN8MA&ixlib=rb-4.0.3&q=80&w=1080" alt="Claire Bernard" class="w-12 h-12 rounded-full mr-4" keywords="testimonial, woman portrait, customer"/>
-                <div>
-                  <h4 class="font-bold">Claire Bernard</h4>
-                  <p class="text-sm text-gray-600">Marseille, France</p>
-                </div>
+          <div class="testimonial-card">
+            <div class="stars">★★★★★</div>
+            <p>"Je recommande vivement ce site pour l'achat de billets olympiques."</p>
+            <div class="user">
+              <img src="https://images.unsplash.com/photo-1585842352667-39107fc979b9" alt="Claire Bernard"/>
+              <div>
+                <h4>Claire Bernard</h4>
+                <p>Marseille, France</p>
               </div>
             </div>
           </div>
-        </section>
-        <section id="faq" class="mb-16">
-          <div class="bg-white rounded-2xl shadow-lg p-8">
-            <h2 class="text-3xl font-bold mb-8 text-center">Questions Fréquentes</h2>
-            <div class="max-w-3xl mx-auto">
-              <details class="mb-4 border-b pb-4">
-                <summary class="font-bold text-lg cursor-pointer flex justify-between items-center"> Comment puis-je acheter des billets? <span class="material-symbols-outlined transition-transform">expand_more</span> </summary>
-                <p class="mt-2 text-gray-700">Vous pouvez acheter des billets directement sur notre site web. Sélectionnez l'événement qui vous intéresse, choisissez vos places et procédez au paiement sécurisé.</p>
-              </details>
-              <details class="mb-4 border-b pb-4">
-                <summary class="font-bold text-lg cursor-pointer flex justify-between items-center"> Les billets sont-ils remboursables? <span class="material-symbols-outlined transition-transform">expand_more</span> </summary>
-                <p class="mt-2 text-gray-700">Les billets ne sont généralement pas remboursables, mais ils peuvent être revendus sur notre plateforme officielle de revente si vous ne pouvez pas assister à l'événement.</p>
-              </details>
-              <details class="mb-4">
-                <summary class="font-bold text-lg cursor-pointer flex justify-between items-center"> Comment recevoir mes billets? <span class="material-symbols-outlined transition-transform">expand_more</span> </summary>
-                <p class="mt-2 text-gray-700">Les billets sont disponibles en format électronique dans votre compte client ou peuvent être envoyés par courrier recommandé selon votre choix lors de l'achat.</p>
-              </details>
-              <details class="mb-4">
-                <summary class="font-bold text-lg cursor-pointer flex justify-between items-center"> Peut-on acheter des billets pour plusieurs événements? <span class="material-symbols-outlined transition-transform">expand_more</span> </summary>
-                <p class="mt-2 text-gray-700">Oui, vous pouvez acheter des billets pour autant d'événements que vous le souhaitez. Nous proposons également des packs multi-événements à tarifs avantageux.</p>
-              </details>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq">
+        <h2>Questions Fréquentes</h2>
+        <div class="faq-container">
+          <details>
+            <summary>Comment puis-je acheter des billets ?</summary>
+            <p>Vous pouvez acheter des billets directement sur notre site web...</p>
+          </details>
+          <details>
+            <summary>Les billets sont-ils remboursables ?</summary>
+            <p>Les billets ne sont généralement pas remboursables...</p>
+          </details>
+          <details>
+            <summary>Comment recevoir mes billets ?</summary>
+            <p>Les billets sont disponibles en format électronique...</p>
+          </details>
+          <details>
+            <summary>Peut-on acheter des billets pour plusieurs événements ?</summary>
+            <p>Oui, vous pouvez acheter des billets pour autant d'événements...</p>
+          </details>
+        </div>
+      </section>
+
+    </main>  
+
+      <!--Footer-->
+    <footer class="main-footer">
+        <div class="footer-grid">
+          <div class="footer-column">
+            <h3>À propos</h3>
+            <ul class="footer-links">
+              <li><a href="#">Qui sommes-nous</a></li>
+              <li><a href="#">Partenaires officiels</a></li>
+              <li><a href="#">Carrières</a></li>
+              <li><a href="#">Presse</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Support</h3>
+            <ul class="footer-links">
+              <li><a href="#">Centre d'aide</a></li>
+              <li><a href="#">Contacter le support</a></li>
+              <li><a href="#">FAQ</a></li>
+              <li><a href="#">Conditions de vente</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Informations légales</h3>
+            <ul class="footer-links">
+              <li><a href="#">Conditions d'utilisation</a></li>
+              <li><a href="#">Politique de confidentialité</a></li>
+              <li><a href="#">Mentions légales</a></li>
+              <li><a href="#">Cookies</a></li>
+            </ul>
+          </div>
+          <div class="footer-column">
+            <h3>Suivez-nous</h3>
+            <div class="footer-social">
+              <a href="#" class="social-icon"><i class="fa-brands fa-facebook"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-twitter"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+              <a href="#" class="social-icon"><i class="fa-brands fa-youtube"></i></a>
+            </div>
+            <p>Téléchargez notre application</p>
+            <div class="footer-apps">
+              <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store"></a>
+              <a href="#"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play"></a>
             </div>
           </div>
-        </section>
-        <section id="newsletter" class="mb-16">
-          <div class="bg-primary-700 rounded-2xl p-8 shadow-xl text-white">
-            <div class="text-center mb-6">
-              <h2 class="text-3xl font-bold mb-2">Restez informé</h2>
-              <p class="text-primary-100">Inscrivez-vous à notre newsletter pour recevoir les dernières informations sur les billets et événements</p>
-            </div>
-            <form class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4">
-              <input type="email" placeholder="Votre adresse email" class="flex-grow py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 text-gray-800"/>
-              <button class="bg-white text-primary-700 hover:bg-primary-100 py-3 px-6 rounded-lg font-bold transition-all transform hover:scale-105"> S'inscrire </button>
-            </form>
           </div>
-        </section>
-        <footer class="text-gray-600 border-t border-gray-200">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 pt-5">
-            <div>
-              <h3 class="font-bold text-lg mb-4">À propos</h3>
-              <ul class="space-y-2">
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Qui sommes-nous</a></li>
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Partenaires officiels</a></li>
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Carrières</a></li>
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Presse</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 class="font-bold text-lg mb-4">Support</h3>
-              <ul class="space-y-2">
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Centre d'aide</a></li>
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Contacter le support</a></li>
-                <li><a href="#" class="hover:text-primary-700 transition-colors">FAQ</a></li>
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Conditions de vente</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 class="font-bold text-lg mb-4">Informations légales</h3>
-              <ul class="space-y-2">
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Conditions d'utilisation</a></li>
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Politique de confidentialité</a></li>
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Mentions légales</a></li>
-                <li><a href="#" class="hover:text-primary-700 transition-colors">Cookies</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 class="font-bold text-lg mb-4">Suivez-nous</h3>
-              <div class="flex space-x-4 mb-4">
-                <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
-                  <i class="fa-brands fa-facebook text-lg"></i>
-                </a>
-                <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
-                  <i class="fa-brands fa-twitter text-lg"></i>
-                </a>
-                <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
-                  <i class="fa-brands fa-instagram text-lg"></i>
-                </a>
-                <a href="#" class="bg-gray-100 hover:bg-primary-100 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
-                  <i class="fa-brands fa-youtube text-lg"></i>
-                </a>
-              </div>
-              <p class="text-sm">Téléchargez notre application</p>
-              <div class="flex space-x-2 mt-2">
-                <a href="#" class="transition-transform hover:scale-105">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store" class="h-10" keywords="app store, download, ios app"/>
-                </a>
-                <a href="#" class="transition-transform hover:scale-105">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" class="h-10" keywords="google play, download, android app"/>
-                </a>
-              </div>
-            </div>
-          </div>
-          <div class="border-t pt-6 pb-4 flex flex-col md:flex-row justify-between items-center">
+          <div class="footer-bottom">
             <p>© 2025 OlympicTickets. Tous droits réservés.</p>
-            <div class="flex items-center space-x-2 mt-4 md:mt-0">
-              <img src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_1280.png" alt="Visa" class="h-6" keywords="visa, payment method, credit card"/>
-              <img src="https://images.unsplash.com/photo-1628625194933-ac2b3c0109e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxtYXN0ZXJjYXJkfGVufDB8fHx8MTc0NjI1NDcwN3ww&ixlib=rb-4.0.3&q=80&w=1080" alt="Mastercard" class="h-6" keywords="mastercard, payment method, credit card"/>
-              <img src="https://images.unsplash.com/photo-1587906697341-bfbde76785c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxwYXlwYWx8ZW58MHx8fHwxNzQ2Mzc2MTM4fDA&ixlib=rb-4.0.3&q=80&w=1080" alt="Paypal" class="h-6" keywords="paypal, payment method, online payment"/>
+            <div class="payment-icons">
+              <img src="https://cdn.pixabay.com/photo/2021/12/06/13/48/visa-6850402_1280.png" alt="Visa">
+              <img src="https://images.unsplash.com/photo-1628625194933-ac2b3c0109e7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxtYXN0ZXJjYXJkfGVufDB8fHx8MTc0NjI1NDcwN3ww&ixlib=rb-4.0.3&q=80&w=1080" alt="Mastercard">
+              <img src="https://images.unsplash.com/photo-1587906697341-bfbde76785c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3MzkyNDZ8MHwxfHNlYXJjaHwxfHxwYXlwYWx8ZW58MHx8fHwxNzQ2Mzc2MTM4fDA&ixlib=rb-4.0.3&q=80&w=1080" alt="Paypal">
             </div>
           </div>
-        </footer>
-      </div>
-    </div>
+    </footer>
+      
+   
 
-    <!-- Modal d'authentification -->
-    <div class="modal-auth" id="modal-auth" aria-hidden="true">
-      <div class="modal-auth-bg" id="modal-auth-bg" aria-hidden="true"></div>
-      <div class="modal-auth-content" role="dialog" aria-modal="true" aria-labelledby="auth-title">
-        <button class="modal-auth-close" id="modal-auth-close" aria-label="Fermer">&times;</button>
-        <div class="auth-tabs" role="tablist">
-          <button class="auth-tab active" id="tab-login" role="tab" aria-selected="true" aria-controls="login-form">Connexion</button>
-          <button class="auth-tab" id="tab-register" role="tab" aria-selected="false" aria-controls="register-form">Inscription</button>
-        </div>
 
-        <form class="auth-form" id="login-form" method="POST" action="/auth/login">
-          <h2 class="auth-title" id="auth-title">Connexion</h2>
-          <input id="modal-login-email" name="email" type="email" placeholder="Email" autocomplete="email" required>
-          <input id="modal-login-password" name="password" type="password" placeholder="Mot de passe" autocomplete="current-password" required>
-          <div class="auth-options">
-            <label><input type="checkbox" id="remember-me"> Se souvenir de moi</label>
-            <a href="#" class="auth-link" id="modal-forgot">Mot de passe oublié ?</a>
-          </div>
-          <div id="modal-login-msg" class="msg" style="display:none"></div>
-          <button type="submit" class="auth-btn" id="modal-btn-login">Se connecter</button>
-          <div class="auth-divider"><span>ou continuer avec</span></div>
-          <button type="button" class="auth-btn-google" id="modal-btn-google">
-            <svg class="auth-google-icon" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path></svg>
-            Se connecter avec Google
-          </button>
-        </form>
-
-        <form class="auth-form" id="register-form" style="display:none;">
-          <h2 class="auth-title">Inscription</h2>
-          <input id="modal-signup-name" name="full_name" type="text" placeholder="Nom complet" autocomplete="name" required>
-          <input id="modal-signup-email" name="email" type="email" placeholder="Email" autocomplete="email" required>
-          <input id="modal-signup-password" name="password" type="password" placeholder="Mot de passe" autocomplete="new-password" required>
-          <input id="modal-signup-password2" name="password2" type="password" placeholder="Confirmer le mot de passe" autocomplete="new-password" required>
-          <div id="modal-signup-msg" class="msg" style="display:none"></div>
-          <button type="submit" class="auth-btn" id="modal-btn-signup">S'inscrire</button>
-        </form>
-
-        <div class="auth-footer">
-          <p class="auth-footer-text">
-            Pas encore de compte ?
-            <a href="#" class="auth-link" id="switch-to-register">Inscrivez-vous</a>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <script src="/public/js/app/http.js"></script>
-    <script src="/public/js/app/navbar.js"></script>
-    <script src="/public/js/app/auth.js"></script>
-    <script src="/public/js/app/carousel.js?v=2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/public/js/app/app.js"></script>
+      
+      
+      <script src="/public/js/app/http.js"></script>
+      <script src="/public/js/app/carousel.js?v=2"></script>
+      <script src="/public/js/app/navbar.js"></script>
+      <!--<script src="/public/js/app/auth.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+      <script src="/public/js/app/app.js"></script>-->
+  
   </body>
 </html>

@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# module backend.admin.repository
 def fetch_admin_commandes(limit: int = 100) -> List[dict]:
     """
     Commandes pour l'admin, sans jointures (retourne aussi user_id/offre_id pour l'affichage fallback)
@@ -75,10 +76,21 @@ def update_user(user_id: str, data: Dict[str, Any]) -> Optional[dict]:
             .table("users")
             .update(data)
             .eq("id", user_id)
-            .select("*")
             .execute()
         )
-        return (res.data or [None])[0]
+        updated = (res.data or [None])[0]
+        if not updated:
+            # Fallback: relire l'utilisateur
+            res2 = (
+                get_service_supabase()
+                .table("users")
+                .select("*")
+                .eq("id", user_id)
+                .single()
+                .execute()
+            )
+            return res2.data or None
+        return updated
     except Exception:
         logger.exception("admin.repository.update_user failed id=%s data=%s", user_id, data)
         return None
@@ -100,10 +112,39 @@ def update_commande(commande_id: str, data: Dict[str, Any]) -> Optional[dict]:
             .table("commandes")
             .update(data)
             .eq("id", commande_id)
-            .select("*")
             .execute()
         )
-        return (res.data or [None])[0]
+        updated = (res.data or [None])[0]
+        if not updated:
+            # Fallback: relire la commande
+            res2 = (
+                get_service_supabase()
+                .table("commandes")
+                .select("*")
+                .eq("id", commande_id)
+                .single()
+                .execute()
+            )
+            return res2.data or None
+        return updated
     except Exception:
         logger.exception("admin.repository.update_commande failed id=%s data=%s", commande_id, data)
+        return None
+
+# Récupérer une commande par ID (pour préremplir le formulaire d'édition)
+def get_commande_by_id(commande_id: str) -> Optional[dict]:
+    if not commande_id:
+        return None
+    try:
+        res = (
+            get_service_supabase()
+            .table("commandes")
+            .select("id, token, price_paid, created_at, user_id, offre_id")
+            .eq("id", commande_id)
+            .single()
+            .execute()
+        )
+        return res.data or None
+    except Exception:
+        logger.exception("admin.repository.get_commande_by_id failed id=%s", commande_id)
         return None

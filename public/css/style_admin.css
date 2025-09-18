@@ -1,0 +1,385 @@
+/* RESET & BASE */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  color: #333;
+  line-height: 1.6;
+  padding: 0;
+  margin: 0;
+}
+
+/* HEADER & NAVBAR */
+header {
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.admin-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #d6001c; /* Rouge olympique */
+  letter-spacing: 0.5px;
+}
+
+/* ANNEAUX OLYMPIQUES */
+.olympic-rings {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ring {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid;
+}
+
+.blue { border-color: #0085C7; }
+.yellow { border-color: #F4C300; }
+.black { border-color: #000000; }
+.green { border-color: #009F3D; }
+.red { border-color: #DF0024; }
+
+/* NAV BUTTONS */
+.nav-right {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-nav {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  color: white;
+  background: #0085C7; /* Bleu olympique */
+}
+
+.btn-nav:hover {
+  background: #005f8e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 133, 199, 0.3);
+}
+
+.btn-nav:nth-child(2) { background: #009F3D; } /* Vert */
+.btn-nav:nth-child(2):hover { background: #006b2a; }
+
+.btn-nav:nth-child(3) { background: #F4C300; } /* Jaune */
+.btn-nav:nth-child(3):hover { background: #c19d00; }
+
+.btn-danger {
+  background: #DF0024 !important; /* Rouge */
+}
+
+.btn-danger:hover {
+  background: #9e001a !important;
+}
+
+/* MAIN CONTENT */
+#admin-main {
+  padding-left: 80px;
+  padding-right: 80px;
+}
+
+.card {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.visual {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.visual-inner h1 {
+  font-size: 2.5rem;
+  color: #000;
+  margin-bottom: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.visual-inner h1::after {
+  content: "";
+  display: block;
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(to right, #0085C7, #F4C300, #000000, #009F3D, #DF0024);
+  margin: 1rem auto;
+  border-radius: 2px;
+}
+
+/* USER INFO CARD */
+#admin-user {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 10px;
+  border-left: 5px solid #0085C7;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+#admin-user strong {
+  color: #000;
+}
+
+/* BUTTONS GROUP */
+.btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  color: white;
+  background: #0085C7;
+}
+
+.btn:hover {
+  background: #005f8e;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 133, 199, 0.3);
+}
+
+.btn-warning {
+  background: #DF0024 !important;
+}
+
+.btn-warning:hover {
+  background: #9e001a !important;
+}
+
+/* MESSAGES */
+.msg {
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  font-weight: 500;
+}
+
+.msg.ok {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.msg.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* DASHBOARD CARDS */
+#cards {
+  margin: 1.5rem 0;
+  gap: 1.5rem !important;
+}
+
+.card-item {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  text-decoration: none !important;
+  color: inherit !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.card-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  border-color: #0085C7;
+}
+
+.card-item:nth-child(1):hover { border-color: #0085C7; }
+.card-item:nth-child(2):hover { border-color: #009F3D; }
+.card-item:nth-child(3):hover { border-color: #F4C300; }
+
+.card-item div:first-child {
+  font-weight: 700;
+  color: #555;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.card-item div:nth-child(2) {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #000;
+  margin: 0.5rem 0;
+}
+
+.card-item div:last-child {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+/* TABLES */
+.table-wrap {
+  margin-top: 2rem;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 0.95rem;
+}
+
+.table th,
+.table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.table th {
+  background: #f8f9fa;
+  font-weight: 700;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+}
+
+.table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.table td {
+  color: #555;
+}
+
+/* TABLE ACTIONS */
+.table .btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  margin-right: 0.5rem;
+}
+
+.table form {
+  display: inline;
+}
+
+.table button {
+  padding: 0.4rem 0.8rem;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.table button:hover {
+  background: #c82333;
+  transform: none;
+  box-shadow: none;
+}
+
+/* LABELS */
+.label {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #0085C7;
+  display: inline-block;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .admin-navbar {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .nav-right {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn-group {
+    flex-direction: column;
+  }
+
+  .card {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+
+  .visual-inner h1 {
+    font-size: 2rem;
+  }
+
+  #cards {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .olympic-rings {
+    display: none;
+  }
+
+  .nav-title {
+    font-size: 1.3rem;
+  }
+
+  .btn, .btn-nav {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}

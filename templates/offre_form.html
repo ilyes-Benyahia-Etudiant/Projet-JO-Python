@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% if mode == 'edit' %}Modifier une offre{% else %}Ajouter une offre{% endif %}</title>
-  <link rel="stylesheet" href="/static/css/index.css">
+  <link rel="stylesheet" href="/static/css/offre_form.css">
   <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
+  
 </head>
 <body>
   <div class="card">
@@ -38,10 +39,6 @@
           <input id="f_stock" name="stock" type="number" step="1" min="0" value="{{ values.get('stock',0) }}">
         </div>
 
-        <div class="group">
-          <label class="label" for="f_active">active</label>
-          <input id="f_active" name="active" type="checkbox" {% if values.get('active', True) %}checked{% endif %}>
-        </div>
 
         <div class="group">
           <label class="label" for="f_description">description</label>
