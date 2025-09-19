@@ -437,6 +437,32 @@ body {
       rafId = requestAnimationFrame(scanLoop);
     }
 
+    // Ajout: petit son de validation (bip court)
+    function playSuccessBeep() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 880; // Fréquence du bip
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        // montée rapide puis décroissance
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+        osc.start();
+        setTimeout(() => {
+          gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+          osc.stop(ctx.currentTime + 0.16);
+          ctx.close();
+        }, 150);
+      } catch (_) {
+        // pas grave si le contexte audio n'est pas dispo
+      }
+    }
+
     async function fetchAndReplace(url, opts) {
       const res = await fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {}));
       const html = await res.text();
@@ -447,6 +473,8 @@ body {
         oldCard.replaceWith(newCard);
         attachDynamicHandlers();
       }
+      // Ajout: on retourne les éléments pour que l'appelant puisse détecter l'état
+      return { newCard, doc };
     }
 
     function handleSearchSubmit(e) {
@@ -471,13 +499,24 @@ body {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         body
-      }).then(() => {
+      }).then((result) => {
         const input = document.getElementById('token-input');
         if (input) {
           input.value = '';
           input.focus();
         }
         lastToken = null; // autoriser le rescannage du même billet après validation
+
+        // Ajout: si le billet est "Validé", jouer un bip puis effacer l'affichage après 3s
+        const card = (result && result.newCard) || document.getElementById('scan-card');
+        const isValidated = !!(card && card.textContent && card.textContent.includes('Validé'));
+        if (isValidated) {
+          playSuccessBeep();
+        }
+        // Effacement automatique de l'affichage après 3s (retour à l'état initial sans ticket)
+        setTimeout(() => {
+          fetchAndReplace('/admin/scan', { method: 'GET', headers: { 'X-Requested-With': 'fetch' } });
+        }, 3000);
       });
     }
 

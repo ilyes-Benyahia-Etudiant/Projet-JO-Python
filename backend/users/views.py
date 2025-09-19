@@ -39,21 +39,27 @@ def redirect_billets():
 
 @web_router.get("/session", response_class=HTMLResponse)
 def user_session(request: Request, user: Dict[str, Any] = Depends(require_user)):
+    from backend.utils.csrf import get_or_create_csrf_token, attach_csrf_cookie_if_missing
     data = get_user_dashboard(user.get("id"))
+    csrf = get_or_create_csrf_token(request)
     resp = templates.TemplateResponse(
         "session.html",
-        {"request": request, "offres": data["offres"], "user": user},
+        {"request": request, "offres": data["offres"], "user": user, "csrf_token": csrf},
     )
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp.headers["Pragma"] = "no-cache"
     resp.headers["Expires"] = "0"
+    attach_csrf_cookie_if_missing(resp, request, csrf)
     return resp
 
 @web_router.get("/mes-billets", response_class=HTMLResponse)
 @web_router.get("/mes-billets.html", response_class=HTMLResponse)
 def mes_billets_page(request: Request, user: Dict[str, Any] = Depends(require_user)):
-    resp = templates.TemplateResponse("mes-billets.html", {"request": request, "user": user})
+    from backend.utils.csrf import get_or_create_csrf_token, attach_csrf_cookie_if_missing
+    csrf = get_or_create_csrf_token(request)
+    resp = templates.TemplateResponse("mes-billets.html", {"request": request, "user": user, "csrf_token": csrf})
     resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp.headers["Pragma"] = "no-cache"
     resp.headers["Expires"] = "0"
+    attach_csrf_cookie_if_missing(resp, request, csrf)
     return resp

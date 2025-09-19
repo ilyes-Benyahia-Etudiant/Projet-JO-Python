@@ -30,7 +30,7 @@
       <div class="navbar-actions">
         <div class="navbar-buttons">  
           <form action="/auth/logout" method="post" style="display:inline;">
-            <input type="hidden" name="X-CSRF-Token" value="{{ request.cookies.get('csrf_token', '') }}">
+            <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
             <button type="submit" class="btn btn-logout">Déconnexion</button>
           </form>
           <a href="/session" class="btn btn-secondary">Retour à ma session</a>
