@@ -254,6 +254,14 @@ def create_app() -> FastAPI:
 # App globale
 app = create_app()
 
+# Middleware pour forcer HTTPS
+@app.middleware("http")
+async def force_https(request: Request, call_next):
+    if request.headers.get("x-forwarded-proto") == "http":
+        url = request.url._url.replace("http://", "https://")
+        return RedirectResponse(url, status_code=301)
+    return await call_next(request)
+
 # Ancienne fonction conservée pour compat éventuelle (n’effectue plus rien)
 async def init_rate_limiter():
     return
