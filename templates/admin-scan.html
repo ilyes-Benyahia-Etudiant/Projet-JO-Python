@@ -471,9 +471,13 @@ body {
       const oldCard = document.getElementById('scan-card');
       if (newCard && oldCard) {
         oldCard.replaceWith(newCard);
+        // Rebind handlers et re-sélection du DOM après remplacement
+        requeryDom();
         attachDynamicHandlers();
+        // Rebind des boutons caméra (nouveaux éléments)
+        if (startBtn) startBtn.addEventListener('click', startCamera);
+        if (stopBtn) stopBtn.addEventListener('click', stopCamera);
       }
-      // Ajout: on retourne les éléments pour que l'appelant puisse détecter l'état
       return { newCard, doc };
     }
 
@@ -513,9 +517,16 @@ body {
         if (isValidated) {
           playSuccessBeep();
         }
-        // Effacement automatique de l'affichage après 3s (retour à l'état initial sans ticket)
+        // Effacement automatique de l'affichage après 3s (reset) + relance auto de la caméra
         setTimeout(() => {
-          fetchAndReplace('/admin/scan', { method: 'GET', headers: { 'X-Requested-With': 'fetch' } });
+          // 1) stop caméra et boucle
+          stopCamera();
+          // 2) reset la carte
+          fetchAndReplace('/admin/scan', { method: 'GET', headers: { 'X-Requested-With': 'fetch' } })
+            .then(() => {
+              // 3) relancer automatiquement la caméra pour permettre un nouveau scan
+              startCamera();
+            });
         }, 3000);
       });
     }
@@ -529,6 +540,12 @@ body {
       document.querySelectorAll('form[action="/admin/scan/validate"]').forEach(f => {
         f.addEventListener('submit', handleValidateSubmit);
       });
+
+      // Bind des boutons caméra après chaque remplacement
+      const start = document.getElementById('start-camera');
+      const stop = document.getElementById('stop-camera');
+      if (start) start.addEventListener('click', startCamera);
+      if (stop) stop.addEventListener('click', stopCamera);
 
       // Focus sur le champ token pour un rescannage rapide
       const input = document.getElementById('token-input');
