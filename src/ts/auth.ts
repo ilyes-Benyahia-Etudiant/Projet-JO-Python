@@ -11,7 +11,7 @@ interface LoginResponse {
   user: {
     id: string;
     email: string;
-    role: "user" | "admin";
+    role: "user" | "admin" | "scanner";
   };
 }
 
@@ -251,7 +251,12 @@ function initializeAuthForms(): void {
   bindFormSubmit<LoginResponse>({
     formSelector: SELECTORS.loginForm,
     apiEndpoint: "/api/v1/auth/login",
-    redirectUrl: (data) => (data.user.role === "admin" ? "/admin" : "/session"),
+    redirectUrl: (data) =>
+      data.user.role === "admin"
+        ? "/admin"
+        : data.user.role === "scanner"
+        ? "/admin/scan"
+        : "/session",
   });
 
   // Inscription
@@ -271,10 +276,13 @@ function initializeAuthForms(): void {
         "Inscription réussie ! Vérifiez votre email pour confirmer et activer votre compte.";
       setMessage(messageEl, msg, "ok");
 
-      if (asAny && asAny.access_token && asAny.user) {
+      if ((data as any)?.access_token && (data as any)?.user) {
+        const role = (data as any).user?.role || "user";
+        const dest =
+          role === "admin" ? "/admin" : role === "scanner" ? "/admin/scan" : "/session";
         setTimeout(() => {
-          window.location.assign("/");
-        }, 2000);
+          window.location.assign(dest);
+        }, 500);
         return;
       }
       form.reset();

@@ -291,18 +291,29 @@ body {
               <div><strong>Rôle:</strong> {{ role or (user and user.get('role')) or '' }}</div>
             </div>
           </div>
-    <div class="max-w-xl mx-auto bg-white shadow rounded p-6">
+    <div id="scan-card" class="max-w-xl mx-auto bg-white shadow rounded p-6">
       <h2 class="text-2xl font-semibold mb-4">Scanner / Valider un billet</h2>
       <p class="text-gray-600 mb-4">
         Scannez un QR code qui contient une URL de type <code>/admin/scan?token=...</code> ou collez un token manuellement.
       </p>
 
       <!-- Formulaire de recherche (GET) -->
-      <form method="get" action="/admin/scan" class="flex gap-2 items-center flex-wrap">
+      <form id="token-form" method="get" action="/admin/scan" class="flex gap-2 items-center flex-wrap">
         <label for="token-input" class="font-semibold">Token</label>
         <input id="token-input" name="token" type="text" placeholder="Entrez le token du billet" class="form-control min-w-[280px]" value="{{ token or '' }}" />
         <button type="submit" class="btn btn-primary">Rechercher</button>
       </form>
+
+      <!-- Contrôles Caméra -->
+      <div class="mt-4 flex gap-2">
+        <button id="start-camera" type="button" class="btn btn-primary">Activer la caméra</button>
+        <button id="stop-camera" type="button" class="btn" style="display:none;">Arrêter</button>
+      </div>
+      <div id="camera-container" class="mt-2" style="display:none;">
+        <video id="qr-video" playsinline style="width:100%; max-height: 280px; border-radius: 8px; background:#000;"></video>
+        <canvas id="qr-canvas" style="display:none;"></canvas>
+        <div id="scan-hint" class="text-gray-500 mt-1">Alignez le QR code dans le cadre.</div>
+      </div>
 
       <!-- Bandeau de statut -->
       {% if status %}
@@ -312,9 +323,8 @@ body {
             "Validated": {"label": "Validé",          "css": "border-green-600 bg-emerald-100 text-green-700"},
             "AlreadyValidated": {"label": "Déjà validé", "css": "border-red-600 bg-red-100 text-red-600"}
           } %}
-        {% set st = statemap.get(status, {"label":"Inconnu", "css":"border-gray-600 bg-gray-200 text-gray-700"}) %}
-        <div class="mt-3 px-3 py-2 rounded-lg font-semibold border {{ st.css }}">
-          {{ st.label }}
+        <div class="mt-3 px-3 py-2 rounded-lg font-semibold border {{ statemap.get(status, {'label':'Inconnu','css':'border-gray-600 bg-gray-200 text-gray-700'}).css }}">
+          {{ statemap.get(status, {'label':'Inconnu'}).label }}
         </div>
       {% endif %}
 
@@ -343,6 +353,156 @@ body {
       {% endif %}
     </div>
   </main>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script>
+  (function() {
+    const video = document.getElementById('qr-video');
+    const canvas = document.getElementById('qr-canvas');
+    const startBtn = document.getElementById('start-camera');
+    const stopBtn = document.getElementById('stop-camera');
+    const camContainer = document.getElementById('camera-container');
+    const tokenInput = document.getElementById('token-input');
+    let stream = null;
+    let rafId = null;
+    let lastToken = null;
+    let lastScanTs = 0;
+
+    function extractToken(text) {
+      // Si le QR est une URL /admin/scan?token=..., on extrait le token; sinon on considère le texte comme token
+      try {
+        const url = new URL(text, window.location.origin);
+        const t = url.searchParams.get('token');
+        if (t) return t;
+      } catch (e) {}
+      return text;
+    }
+
+    async function startCamera() {
+      if (stream) return;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+        camContainer.style.display = '';
+        startBtn.style.display = 'none';
+        stopBtn.style.display = '';
+        scanLoop();
+      } catch (err) {
+        alert('Impossible d’accéder à la caméra: ' + err);
+      }
+    }
+
+    function stopCamera() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      video.srcObject = null;
+      camContainer.style.display = 'none';
+      startBtn.style.display = '';
+      stopBtn.style.display = 'none';
+    }
+
+    function scanLoop() {
+      if (!stream) return;
+      const w = video.videoWidth, h = video.videoHeight;
+      if (!w || !h) {
+        rafId = requestAnimationFrame(scanLoop);
+        return;
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, w, h);
+      const imageData = ctx.getImageData(0, 0, w, h);
+      const qr = jsQR(imageData.data, w, h, { inversionAttempts: 'dontInvert' });
+      const now = Date.now();
+      if (qr && qr.data) {
+        const token = extractToken(qr.data);
+        if (token && (token !== lastToken || now - lastScanTs > 3000)) {
+          lastToken = token;
+          lastScanTs = now;
+          if (tokenInput) tokenInput.value = token;
+          handleSearchSubmit(new Event('submit', { cancelable: true }));
+          if (navigator.vibrate) navigator.vibrate(100);
+        }
+      }
+      rafId = requestAnimationFrame(scanLoop);
+    }
+
+    async function fetchAndReplace(url, opts) {
+      const res = await fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {}));
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const newCard = doc.getElementById('scan-card');
+      const oldCard = document.getElementById('scan-card');
+      if (newCard && oldCard) {
+        oldCard.replaceWith(newCard);
+        attachDynamicHandlers();
+      }
+    }
+
+    function handleSearchSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('token-input');
+      const token = (input && input.value || '').trim();
+      if (!token) return;
+      const url = '/admin/scan?token=' + encodeURIComponent(token);
+      fetchAndReplace(url, { method: 'GET', headers: { 'X-Requested-With': 'fetch' } });
+    }
+
+    function handleValidateSubmit(e) {
+      e.preventDefault();
+      const form = e.target;
+      const fd = new FormData(form);
+      const body = new URLSearchParams();
+      for (const [k, v] of fd.entries()) body.append(k, v);
+      fetchAndReplace('/admin/scan/validate', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'fetch',
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body
+      }).then(() => {
+        const input = document.getElementById('token-input');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        lastToken = null; // autoriser le rescannage du même billet après validation
+      });
+    }
+
+    function attachDynamicHandlers() {
+      // Re-bind du formulaire GET (recherche token)
+      const tokenForm = document.querySelector('form[action="/admin/scan"][method="get"]');
+      if (tokenForm) tokenForm.addEventListener('submit', handleSearchSubmit);
+
+      // Re-bind du formulaire POST (validation)
+      document.querySelectorAll('form[action="/admin/scan/validate"]').forEach(f => {
+        f.addEventListener('submit', handleValidateSubmit);
+      });
+
+      // Focus sur le champ token pour un rescannage rapide
+      const input = document.getElementById('token-input');
+      if (input) input.focus();
+    }
+
+    // Bind initial
+    attachDynamicHandlers();
+    if (startBtn) startBtn.addEventListener('click', startCamera);
+    if (stopBtn) stopBtn.addEventListener('click', stopCamera);
+    window.addEventListener('beforeunload', stopCamera);
+  })();
+  </script>
 
   <!-- Scripts inutiles pour la version serveur: retirés -->
 </body>

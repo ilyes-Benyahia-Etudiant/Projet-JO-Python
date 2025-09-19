@@ -15,6 +15,7 @@ from backend.validation.repository import get_ticket_by_token, get_last_validati
 from backend.validation.service import validate_ticket_token
 # module backend.admin.views
 from backend.utils.csrf import csrf_protect
+from typing import Dict, Any  # Ajoutez cette ligne pour importer Dict et Any
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -263,9 +264,19 @@ async def supprimer_offre(request: Request, offre_id: str, user: dict = Depends(
         return RedirectResponse(url="/admin?error=Echec%20de%20la%20suppression%20de%20l%27offre", status_code=HTTP_303_SEE_OTHER)
     return RedirectResponse(url="/admin?message=Offre%20supprim%C3%A9e", status_code=HTTP_303_SEE_OTHER)
 
+# imports en haut du fichier (ajouts)
+from fastapi import APIRouter, Request, Depends, Query, HTTPException
+from backend.utils.security import require_admin, get_current_user
+
+# La fonction à la ligne 266 devrait maintenant être valide :
+def require_scanner(user: Dict[str, Any] = Depends(get_current_user)):
+     if not user or user.get("role") not in ("scanner", "admin"):
+        raise HTTPException(status_code=403, detail="Accès réservé aux scanners")
+     return user
+
+# Applique à la route /admin-scan
 @router.get("/scan", response_class=HTMLResponse)
-@router.get("/scan/", response_class=HTMLResponse)
-def admin_scan_page(request: Request, token: Optional[str] = Query(None), user: dict = Depends(require_admin)):
+def admin_scan_get(request: Request, token: Optional[str] = Query(None), user: dict = Depends(require_scanner)):
     csrf = get_or_create_csrf_token(request)
 
     # Contexte par défaut
@@ -299,7 +310,7 @@ def admin_scan_page(request: Request, token: Optional[str] = Query(None), user: 
 
 @router.post("/scan/validate")
 @router.post("/scan/validate/", )
-async def admin_scan_validate(request: Request, user: dict = Depends(require_admin)):
+async def admin_scan_validate(request: Request, user: dict = Depends(require_scanner)):
     # CSRF + récupération formulaire
     form = await request.form()
     if not validate_csrf_token(request, form):
@@ -335,6 +346,9 @@ async def srv_update_user(user_id: str, request: Request, user: dict = Depends(r
     updated = admin_service.update_user(user_id, data)
     if not updated:
         return RedirectResponse(url="/admin?view=users&error=Echec%20de%20la%20mise%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
+    # Redirection adaptée si l'admin s'auto-rétrograde en 'scanner'
+    if (user_id == (user.get("id") or "")) and role and role.lower() == "scanner":
+        return RedirectResponse(url="/admin/scan?message=R%C3%B4le%20modifi%C3%A9%20:%20scanner", status_code=HTTP_303_SEE_OTHER)
     return RedirectResponse(url="/admin?view=users&message=Utilisateur%20mis%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
 
 @router.get("/users/{user_id}/edit", response_class=HTMLResponse)

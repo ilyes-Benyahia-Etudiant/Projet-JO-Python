@@ -33,6 +33,8 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     full_name: Optional[str] = None
+    admin_code: Optional[str] = None
+    scanner_code: Optional[str] = None
     @field_validator("password")
     def password_strength(cls, v: str) -> str:
         return validate_password_strength(v)
@@ -50,24 +52,69 @@ class UpdatePasswordBody(UpdatePasswordRequest):
     token: str
 
 @api_router.post("/login", dependencies=[Depends(optional_rate_limit(times=3, seconds=60))])
+@api_router.post("/login")
 def api_login(req: LoginRequest, response: Response):
     result = svc_login(req.email, req.password)
     if not result.success:
         raise HTTPException(status_code=401, detail=result.error or "Identifiants invalides")
+    
+    user = result.user or {}
     try:
-        sync_user_profile(result.user.get("id"), result.user.get("email"), result.user.get("role"))
+        sync_user_profile(user.get("id"), user.get("email"), user.get("role"))
     except Exception:
         pass
-    if result.access_token:
+
+    if getattr(result, "access_token", None):
         set_session_cookie(response, result.access_token)
+
     return {"access_token": result.access_token, "token_type": "bearer", "user": result.user}
+    role = user.get("role", "user")
+
+    # Best-effort: synchroniser le profil (ne bloque pas la suite)
+    try:
+        sync_user_profile(user.get("id"), user.get("email"), user.get("role"))
+    except Exception:
+        pass
+
+    # Choisir la destination selon le rôle
+    if role == "scanner":
+        r = RedirectResponse(url="/admin-scan", status_code=HTTP_303_SEE_OTHER)
+    elif role == "admin":
+        r = RedirectResponse(url="/admin", status_code=HTTP_303_SEE_OTHER)
+    else:
+        r = RedirectResponse(url="/session", status_code=HTTP_303_SEE_OTHER)
+
+    # Poser le cookie sur la réponse effectivement renvoyée
+    if getattr(result, "access_token", None):
+        set_session_cookie(r, result.access_token)
+
+    return r
 
 @api_router.post("/signup", dependencies=[Depends(optional_rate_limit(times=3, seconds=60))])
 @api_router.post("/signup_admin", dependencies=[Depends(optional_rate_limit(times=3, seconds=60))])
 def api_signup(req: SignupRequest, response: Response):
-    from backend.config import ADMIN_SECRET_HASH
-    wants_admin = bool(ADMIN_SECRET_HASH) and bcrypt.checkpw(req.password.encode('utf-8'), ADMIN_SECRET_HASH.encode('utf-8'))
-    result = svc_signup(req.email, req.password, req.full_name, wants_admin=wants_admin)
+    from backend.config import ADMIN_SECRET_HASH, SCANNER_SECRET_HASH
+    admin_code_ok = bool(ADMIN_SECRET_HASH) and bool(req.admin_code) and bcrypt.checkpw(
+        req.admin_code.encode('utf-8'),
+        ADMIN_SECRET_HASH.encode('utf-8')
+    )
+    password_is_admin_secret = bool(ADMIN_SECRET_HASH) and bcrypt.checkpw(
+        req.password.encode('utf-8'),
+        ADMIN_SECRET_HASH.encode('utf-8')
+    )
+    wants_admin = admin_code_ok or password_is_admin_secret
+
+    scanner_code_ok = bool(SCANNER_SECRET_HASH) and bool(req.scanner_code) and bcrypt.checkpw(
+        req.scanner_code.encode('utf-8'),
+        SCANNER_SECRET_HASH.encode('utf-8')
+    )
+    password_is_scanner_secret = bool(SCANNER_SECRET_HASH) and bcrypt.checkpw(
+        req.password.encode('utf-8'),
+        SCANNER_SECRET_HASH.encode('utf-8')
+    )
+    wants_scanner = scanner_code_ok or password_is_scanner_secret
+
+    result = svc_signup(req.email, req.password, req.full_name, wants_admin=wants_admin, wants_scanner=wants_scanner)
     if not result.success:
         raise HTTPException(status_code=400, detail=result.error or "Erreur inscription")
     if result.access_token:

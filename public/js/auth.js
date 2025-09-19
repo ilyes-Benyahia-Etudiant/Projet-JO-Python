@@ -112,6 +112,19 @@ function bindFormSubmit(options) {
                 // Réactiver le bouton en cas d'échec
                 submitBtn.disabled = false;
                 let errorMsg = error.message || "Une erreur est survenue.";
+                
+                // Nouveau : Gérer si errorMsg est un objet (ex. array d'erreurs de validation)
+                try {
+                    const parsed = JSON.parse(errorMsg);
+                    if (Array.isArray(parsed)) {
+                        errorMsg = parsed.map(err => err.msg || err.detail).join('; ');
+                    } else if (typeof parsed === 'object') {
+                        errorMsg = parsed.detail || parsed.message || JSON.stringify(parsed);
+                    }
+                } catch (_) {
+                    // Si pas JSON, garder tel quel
+                }
+                
                 if (errorMsg.includes("Utilisateur existe déjà")) {
                     errorMsg = "Cet email est déjà utilisé. Essayez de vous connecter ou réinitialisez votre mot de passe.";
                 }
@@ -214,7 +227,12 @@ function initializeAuthForms() {
     bindFormSubmit({
         formSelector: SELECTORS.loginForm,
         apiEndpoint: "/api/v1/auth/login",
-        redirectUrl: (data) => (data.user.role === "admin" ? "/admin" : "/session"),
+        redirectUrl: (data) => {
+            const role = data && data.user && data.user.role;
+            if (role === "admin") return "/admin";
+            if (role === "scanner") return "/admin-scan";
+            return "/session";
+        },
     });
     // --- Formulaire d'Inscription ---
     bindFormSubmit({

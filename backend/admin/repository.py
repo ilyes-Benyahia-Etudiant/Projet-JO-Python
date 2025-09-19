@@ -148,3 +148,24 @@ def get_commande_by_id(commande_id: str) -> Optional[dict]:
     except Exception:
         logger.exception("admin.repository.get_commande_by_id failed id=%s", commande_id)
         return None
+
+# Ajout: mise à jour du rôle côté Supabase Auth (user_metadata.role) via l'API admin
+def set_auth_user_role(user_id: str, role: str) -> bool:
+    try:
+        import httpx
+        from backend.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+        url = f"{SUPABASE_URL.rstrip('/')}/auth/v1/admin/users/{user_id}"
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Content-Type": "application/json",
+        }
+        payload = {"user_metadata": {"role": role}}
+        resp = httpx.put(url, json=payload, headers=headers, timeout=10)
+        if 200 <= resp.status_code < 300:
+            return True
+        logger.error("set_auth_user_role failed: status=%s body=%s", resp.status_code, resp.text)
+        return False
+    except Exception:
+        logger.exception("admin.repository.set_auth_user_role failed id=%s role=%s", user_id, role)
+        return False

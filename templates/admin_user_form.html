@@ -223,9 +223,15 @@ input[type="text"]:focus {
           <div class="label">Nom complet</div>
           <input type="text" name="full_name" value="{{ values.full_name or '' }}" />
         </div>
+        <!-- Remplacement du champ texte par un dropdown -->
         <div class="group">
           <div class="label">Rôle</div>
-          <input type="text" name="role" value="{{ values.role or '' }}" placeholder="admin ou user" />
+          <select name="role">
+            <option value="">-- Sélectionner un rôle --</option>
+            <option value="user" {% if (values.role or '') == 'user' %}selected{% endif %}>Utilisateur</option>
+            <option value="admin" {% if (values.role or '') == 'admin' %}selected{% endif %}>Administrateur</option>
+            <option value="scanner" {% if (values.role or '') == 'scanner' %}selected{% endif %}>Scanner</option>
+          </select>
         </div>
         <div class="btn-group">
           <button type="submit" class="btn">Enregistrer</button>

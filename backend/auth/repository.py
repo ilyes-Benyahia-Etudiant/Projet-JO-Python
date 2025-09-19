@@ -18,14 +18,16 @@ def auth_sign_up_account(
     email_redirect_to: Optional[str] = None
 ):
     client = get_supabase()
-    options: Dict[str, Any] = {}
-    if options_data:
-        options["data"] = options_data
-    if email_redirect_to:
-        options["email_redirect_to"] = email_redirect_to
-    if options:
-        return client.auth.sign_up({"email": email, "password": password}, options=options)
-    return client.auth.sign_up({"email": email, "password": password})
+    credentials = {"email": email, "password": password}
+    
+    if options_data or email_redirect_to:
+        credentials["options"] = {}
+        if options_data:
+            credentials["options"]["data"] = options_data
+        if email_redirect_to:
+            credentials["options"]["redirect_to"] = email_redirect_to  # Correction : 'redirect_to' au lieu de 'email_redirect_to'
+    
+    return client.auth.sign_up(credentials)
 
 def auth_send_reset_password(email: str, redirect_to: str):
     client = get_supabase()

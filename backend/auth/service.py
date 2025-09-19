@@ -12,8 +12,11 @@ from .repository import (
 )
 
 def determine_role(metadata: Dict[str, Any] | None) -> str:
-    if str((metadata or {}).get("role", "")).lower() == "admin":
+    role_lower = str((metadata or {}).get("role", "")).lower()
+    if role_lower == "admin":
         return "admin"
+    if role_lower == "scanner":  # Ajout du nouveau rôle
+        return "scanner"
     return "user"
 
 # --- Cas d’usage Auth exposés ---
@@ -26,7 +29,7 @@ def login(email: str, password: str) -> AuthResponse:
     except Exception as e:
         return handle_exception("sign_in", e)
 
-def signup(email: str, password: str, full_name: Optional[str] = None, wants_admin: bool = False) -> AuthResponse:
+def signup(email: str, password: str, full_name: Optional[str] = None, wants_admin: bool = False, wants_scanner: bool = False) -> AuthResponse:
     try:
         email = (email or "").strip()
 
@@ -35,7 +38,6 @@ def signup(email: str, password: str, full_name: Optional[str] = None, wants_adm
             if get_user_by_email(email):
                 return AuthResponse(False, error="Utilisateur existe déjà")
         except Exception:
-            # En cas d’erreur de lookup, on laisse Supabase décider
             pass
 
         options_data: Dict[str, Any] = {}
@@ -43,6 +45,8 @@ def signup(email: str, password: str, full_name: Optional[str] = None, wants_adm
             options_data["full_name"] = full_name.strip()
         if wants_admin:
             options_data["role"] = "admin"
+        elif wants_scanner:
+            options_data["role"] = "scanner"
 
         res = sign_up_account(
             email=email,

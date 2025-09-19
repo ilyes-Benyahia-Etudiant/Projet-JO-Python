@@ -34,7 +34,8 @@ ADMIN_SIGNUP_CODE = os.getenv("ADMIN_SIGNUP_CODE", "")  # legacy
 # ADMIN_SECRET_PASSWORD = os.getenv("ADMIN_SECRET_PASSWORD", "")  # Comment ou supprime
 
 # Ajoute ou garde
-ADMIN_SECRET_HASH = os.getenv("ADMIN_SECRET_HASH", "")
+ADMIN_SECRET_HASH = _clean_env(os.getenv("ADMIN_SECRET_HASH", ""))
+SCANNER_SECRET_HASH = _clean_env(os.getenv("SCANNER_SECRET_HASH", ""))
 
 # CORS (dev)
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "*").split(",") if o.strip()]
