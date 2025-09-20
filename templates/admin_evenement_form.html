@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin - Événement</title>
+  <link rel="stylesheet" href="/public/css/index.css">
+</head>
+<body>
+  <main class="container" style="max-width: 720px; margin: 40px auto;">
+    <h1 style="margin-bottom: 16px;">
+      {% if mode == "create" %}Créer un événement{% else %}Modifier l'événement{% endif %}
+    </h1>
+    <form method="post" action="{{ action_url }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-control">
+        <label>Type d'événement</label>
+        <input type="text" name="type_evenement" value="{{ values.type_evenement or '' }}" required>
+      </div>
+      <div class="form-control">
+        <label>Nom de l'événement</label>
+        <input type="text" name="nom_evenement" value="{{ values.nom_evenement or '' }}" required>
+      </div>
+      <div class="form-control">
+        <label>Lieu</label>
+        <input type="text" name="lieu" value="{{ values.lieu or '' }}" required>
+      </div>
+      <div class="form-control">
+        <label>Date</label>
+        <input type="date" name="date_evenement" value="{{ (values.date_evenement or '')[:10] }}" required>
+      </div>
+      <div style="margin-top: 16px; display: flex; gap: 8px;">
+        <button type="submit" class="btn-login">
+          {% if mode == "create" %}Créer{% else %}Enregistrer{% endif %}
+        </button>
+        <a href="/admin?view=evenements" class="btn-login" style="background:#555;">Annuler</a>
+      </div>
+    </form>
+    {% if mode == "edit" %}
+    <form method="post" action="{{ action_url.replace('/update', '/delete') }}" style="margin-top: 16px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="btn-login" style="background:#c0392b;">Supprimer</button>
+    </form>
+    {% endif %}
+  </main>
+</body>
+</html>

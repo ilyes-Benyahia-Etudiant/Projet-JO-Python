@@ -1,3 +1,5 @@
+# module backend.admin.service
+
 from typing import List, Optional, Dict, Any
 from backend.admin import repository as admin_repository
 import logging
@@ -46,6 +48,39 @@ def update_offre(offre_id: str, data: Dict[str, Any]) -> Optional[dict]:
     from backend.offres.repository import update_offre as _update_offre
     return _update_offre(offre_id, data)
 
+def list_offres(limit: int = 100) -> List[dict]:
+    from backend.offres.repository import list_offres as _list_offres
+    # Le repo ne gère pas 'limit' pour l’instant, on renvoie tout
+    return _list_offres()
+
+def create_offre(data: Dict[str, Any]) -> Optional[dict]:
+    from backend.offres.repository import create_offre as _create_offre
+    return _create_offre(data)
+
+def delete_offre(offre_id: str) -> bool:
+    from backend.offres.repository import delete_offre as _delete_offre
+    return _delete_offre(offre_id)
+
 def get_user_by_id(user_id: str) -> Optional[dict]:
     from backend.users.repository import get_user_by_id as _get_user_by_id
     return _get_user_by_id(user_id)
+
+def list_evenements() -> List[dict]:
+    from backend.evenements.repository import list_evenements as _list_evenements
+    return _list_evenements()
+
+def get_evenement_by_id(evenement_id: str) -> Optional[dict]:
+    from backend.evenements.repository import get_evenement as _get_evenement
+    return _get_evenement(evenement_id)
+
+def create_evenement(data: Dict[str, Any]) -> Optional[dict]:
+    from backend.evenements.repository import create_evenement as _create_evenement
+    return _create_evenement(data)
+
+def update_evenement(evenement_id: str, data: Dict[str, Any]) -> Optional[dict]:
+    from backend.evenements.repository import update_evenement as _update_evenement
+    return _update_evenement(evenement_id, data)
+
+def delete_evenement(evenement_id: str) -> bool:
+    from backend.evenements.repository import delete_evenement as _delete_evenement
+    return _delete_evenement(evenement_id)

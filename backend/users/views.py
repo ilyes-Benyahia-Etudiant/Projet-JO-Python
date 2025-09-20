@@ -1,37 +1,36 @@
+# module backend.users.views
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from typing import Any, Dict
 from starlette.status import HTTP_303_SEE_OTHER
 from backend.utils.security import require_user
 from backend.utils.templates import templates
 from .service import get_user_dashboard
 from .repository import get_user_orders
+from typing import Dict, Any  # <-- Ajout pour éviter NameError
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
+from backend.utils.templates import templates
+from backend.evenements.repository import list_evenements as _list_evenements
+# Ajout: import des offres
+from backend.offres.repository import list_offres as _list_offres
 
-# API Router (/api/v1/users)
-api_router = APIRouter(prefix="/api/v1/users", tags=["Users API"])
-
-@api_router.get("/orders")
-def api_list_orders(user: Dict[str, Any] = Depends(require_user)):
-    orders = get_user_orders(user.get("id"))
-    return {"orders": orders}
-
-@api_router.get("/dashboard")
-def api_dashboard(user: Dict[str, Any] = Depends(require_user)):
-    data = get_user_dashboard(user.get("id"))
-    return data
-
-# Web Router (pages utilisateurs)
 web_router = APIRouter(tags=["User Pages"])
-
-# --- Routes publiques migrées ---
-@web_router.get("/accueil", include_in_schema=False)
-def accueil_redirect():
-    return RedirectResponse(url="/billeterie", status_code=HTTP_303_SEE_OTHER)
 
 @web_router.get("/billeterie", response_class=HTMLResponse)
 @web_router.get("/billeterie.html", response_class=HTMLResponse)
-def billeterie_page(request: Request):
-    return templates.TemplateResponse("billeterie.html", {"request": request})
+def billeterie_page(request: Request) -> HTMLResponse:
+    evenements = _list_evenements()
+    # Ajout: charger les offres réelles
+    offres = _list_offres()
+    return templates.TemplateResponse(
+        "billeterie.html",
+        {
+            "request": request,
+            "evenements": evenements,
+            "offres": offres,
+        },
+    )
 
 @web_router.get("/billets.html", include_in_schema=False)
 def redirect_billets():
@@ -63,3 +62,4 @@ def mes_billets_page(request: Request, user: Dict[str, Any] = Depends(require_us
     resp.headers["Expires"] = "0"
     attach_csrf_cookie_if_missing(resp, request, csrf)
     return resp
+api_router = APIRouter(prefix="/api/v1/users", tags=["Users API"])

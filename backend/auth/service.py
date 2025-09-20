@@ -104,7 +104,26 @@ def get_user_from_token(access_token: str) -> Dict[str, Any]:
     metadata = raw.get("user_metadata") or {}
     uid = raw.get("id")
     role = determine_role(metadata)
+
+    # Garantir la présence d'une clé utilisateur (bio) si manquante
+    try:
+        sync_user_profile(uid, email, role)
+    except Exception:
+        pass
+
     return {"id": uid, "email": email, "metadata": metadata, "role": role, "token": access_token}
 
 def sync_user_profile(user_id: str, email: str, role: Optional[str] = None) -> bool:
-    return _repo_upsert_user_profile(user_id, email, role)
+    # Génère une clé utilisateur si absente (stockée dans users.bio)
+    from backend.users.repository import get_user_by_id as _repo_get_user_by_id
+    import secrets
+    bio_to_set: Optional[str] = None
+    try:
+        row = _repo_get_user_by_id(user_id)
+        existing_bio = (row or {}).get("bio") or ""
+        if not existing_bio:
+            # Clé utilisateur stable, non réversible
+            bio_to_set = secrets.token_urlsafe(24)
+    except Exception:
+        pass
+    return _repo_upsert_user_profile(user_id, email, role, bio=bio_to_set)

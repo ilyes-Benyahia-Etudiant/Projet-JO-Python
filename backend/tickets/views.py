@@ -37,6 +37,14 @@ def get_ticket_qrcode(ticket_token: str, request: Request, user: dict = Depends(
     if not ticket:
         raise HTTPException(status_code=404, detail="Billet non trouvé")
 
-    base = (BASE_URL.strip().rstrip("/") if BASE_URL else str(request.base_url).rstrip("/"))
-    validate_url = f"{base}/admin/scan?token={ticket_token}"
+    # Construire l’URL de validation avec la clé composite (user_key + "." + ticket_token)
+    from backend.users.repository import get_user_by_id
+    user_row = get_user_by_id(user.get("id"))
+    user_key = (user_row or {}).get("bio") or ""
+    if not user_key:
+        # Clé utilisateur obligatoire pour construire le QR (token composite)
+        raise HTTPException(status_code=400, detail="user_key_required")
+    base = str(request.base_url).rstrip("/")
+    final_token = f"{user_key}.{ticket_token}"
+    validate_url = f"{base}/admin/scan?token={final_token}"
     return {"qr_code": generate_qr_code(validate_url)}

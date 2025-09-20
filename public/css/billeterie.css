@@ -84,6 +84,7 @@ body .events-section {
   margin: 0 auto;
 }
 
+/* Images/Placeholders des cartes */
 .event-card {
   background: white;
   border-radius: var(--radius);
@@ -98,8 +99,16 @@ body .events-section {
   box-shadow: var(--shadow);
 }
 
+/* Ancien bloc .event-img générique (laisse-le, mais on surcharge juste après) */
+.event-card img.event-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  background: none !important;
+}
 
-.event-img {
+.event-card div.event-img {
   height: 200px;
   display: flex;
   align-items: center;
@@ -111,8 +120,7 @@ body .events-section {
 }
 
 .event-card:hover .event-img {
-  transform: scale(1.05);
-  color: var(--secondary);
+  transform: scale(1.03);
 }
 
 /* Icônes personnalisées */
@@ -154,6 +162,53 @@ body .events-section {
   text-align: center;
 }
 
+/* Contenu et flèche de sélection */
+.event-content {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+/* Bouton rond avec flèche */
+.event-select-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.event-select-btn .arrow {
+  display: inline-block;
+  font-size: 18px;
+  font-weight: 700;
+  transform: translateX(0);
+  transition: transform .2s ease;
+}
+
+.event-select-btn:hover {
+  background: #0a6cd6;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+}
+
+.event-select-btn:hover .arrow {
+  transform: translateX(2px);
+}
+
+.event-select-btn:focus-visible {
+  outline: 3px solid rgba(0, 119, 230, 0.35);
+  outline-offset: 2px;
+}
+
 /* ========== RESPONSIVE ========== */
 @media (max-width: 1024px) {
   .events-grid {
@@ -167,9 +222,9 @@ body .events-section {
     gap: 1.5rem;
   }
 
-  .event-img {
+  .event-card img.event-img,
+  .event-card div.event-img {
     height: 180px;
-    font-size: 3.5rem;
   }
 }
 
@@ -186,9 +241,37 @@ body .events-section {
     font-size: 1.3rem;
   }
 
-  .event-img {
-    font-size: 3rem;
+  .event-card img.event-img,
+  .event-card div.event-img {
+    height: 160px;
   }
+}
+
+
+/* ========== ACTIONS NAVBAR (badge panier) ========== */
+.navbar .btn-cart {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+#cart-count-pill {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: #ffd700; /* pastille or var(--secondary) */
+  color: #000;
+  border-radius: 9999px;
+  padding: 2px 6px;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1;
+  min-width: 18px;
+  min-height: 18px;
+  display: none; /* JS passe à inline-flex quand count > 0 */
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
 

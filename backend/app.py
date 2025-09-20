@@ -27,6 +27,7 @@ from backend.tickets import views as tickets_views
 from backend.validation import views as validation_views
 from fastapi_limiter import FastAPILimiter
 from backend.payments import views as payments_views
+from backend.evenements.views import router as evenements_router
 
 try:
     from fakeredis.aioredis import FakeRedis  # fallback tests-only
@@ -248,6 +249,7 @@ def create_app() -> FastAPI:
     register_routes(app)
     # Remplace les inclusions dispersées par l’appel centralisé
     register_routers(app)
+    app.include_router(evenements_router)
 
     return app
 

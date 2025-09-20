@@ -10,6 +10,7 @@
   
   <link rel="stylesheet" href="/public/css/index.css">
   <link rel="stylesheet" href="/public/css/billeterie.css">
+  <link rel="stylesheet" href="/public/css/session-toast.css">
   <!-- Font Awesome pour les icônes sociales -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="icon" href="/public/images/favicon.ico" type="image/x-icon">
@@ -36,6 +37,15 @@
       </ul>
       <div class="navbar-actions">
         <a class="btn-login" href="/auth">Connexion</a>
+        <!-- Icône Panier + pastille -->
+        <a href="/session" class="btn-cart" title="Panier">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="vertical-align:middle">
+            <circle cx="10" cy="20" r="1.6"></circle>
+            <circle cx="18" cy="20" r="1.6"></circle>
+            <path d="M2 3h3l3.6 11.6a2 2 0 0 0 2 1.4H18a2 2 0 0 0 2-1.6L22 7H6"></path>
+          </svg>
+          <span id="cart-count-pill" class="badge" aria-label="Articles dans le panier" style="margin-left:6px; display:none">0</span>
+        </a>
         <div class="hamburger">
           <span></span>
           <span></span>
@@ -45,43 +55,59 @@
     </nav>
   </header>
 
+  <!-- Message d’aide / feedback -->
+  <div id="client-msg" class="msg info" style="max-width:980px;margin:12px auto; display:block">
+    Sélectionnez un événement, puis une offre pour l’ajouter au panier.
+  </div>
+
   <main>
+  <!-- Section événements (inchangée) -->
+  <section class="events-section">
+    <h2 class="section-title">Événements</h2>
+    <div class="events-grid">
+      {% for ev in evenements %}
+      <div class="event-card selectable"
+           data-ev-id="{{ ev.id }}"
+           data-ev-nom="{{ ev.nom_evenement }}"
+           data-ev-type="{{ ev.type_evenement }}"
+           data-ev-date="{{ ev.date_evenement[:10] }}">
+        <img src="/public/images/olympic-medal.png" alt="{{ ev.nom_evenement }}" class="event-img">
+        <div class="event-content">
+          <h3>{{ ev.nom_evenement }}</h3>
+          <p>{{ ev.type_evenement }} • {{ ev.lieu }} • {{ ev.date_evenement[:10] }}</p>
+          <button class="event-select-btn" type="button" title="Sélectionner {{ ev.nom_evenement }}"><span class="arrow">→</span></button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
   <!-- Section offres -->
   <section class="events-section">
     <h2 class="section-title">Nos Offres</h2>
     <div class="events-grid">
-      <!-- Offre Solo -->
-      <div class="event-card">
-        <div class="event-img solo"></div> <!-- ✅ Icône médaille -->
-        <div class="event-content">
-          <h3>Offre Solo</h3>
-          <p>Accès pour 1 personne à l'événement de votre choix.</p>
-          <p style="margin-top:8px;color:#444">Idéal pour vivre l'expérience des Jeux en solo.</p>
-          <a href="/auth" class="btn-login">Choisir</a>
+      {% if offres and offres|length > 0 %}
+        {% for offre in offres %}
+        <div class="event-card">
+          <div class="event-img solo"></div>
+          <div class="event-content">
+            <h3>{{ offre.title }}</h3>
+            <p>Ticket pour {{ offre.title }}.</p>
+            <p style="margin-top:8px;color:#444">Prix: {{ '%.2f'|format(offre.price|default(0)) }} €</p>
+            <button
+              class="btn-login btn-add-to-cart"
+              data-id="{{ offre.id }}"
+              data-title="{{ offre.title }}"
+              data-price="{{ offre.price|default(0) }}"
+              type="button">
+              Ajouter au panier
+            </button>
+          </div>
         </div>
-      </div>
-
-      <!-- Offre Duo -->
-      <div class="event-card">
-        <div class="event-img duo"></div> <!-- ✅ Icône cœur -->
-        <div class="event-content">
-          <h3>Offre Duo</h3>
-          <p>Accès pour 2 personnes, partagez l'émotion à deux.</p>
-          <p style="margin-top:8px;color:#444">Parfait pour un couple ou deux amis.</p>
-          <a href="/auth" class="btn-login">Choisir</a>
-        </div>
-      </div>
-
-      <!-- Offre Familiale -->
-      <div class="event-card">
-        <div class="event-img famille"></div> <!-- ✅ Icône famille -->
-        <div class="event-content">
-          <h3>Offre Familiale</h3>
-          <p>Accès pour 4 personnes, pour des souvenirs inoubliables.</p>
-          <p style="margin-top:8px;color:#444">L'option idéale pour toute la famille.</p>
-          <a href="/auth" class="btn-login">Choisir</a>
-        </div>
-      </div>
+        {% endfor %}
+      {% else %}
+        <p>Aucune offre disponible pour le moment.</p>
+      {% endif %}
     </div>
   </section>
 </main>
@@ -143,8 +169,47 @@
     </footer>
 
 
+<!-- Styles sélection (ombre thème JO simple) -->
+<style>
+  .event-card.selectable { cursor: pointer; transition: box-shadow 0.2s ease; }
+  .event-card.selectable:hover { box-shadow: 0 0 0 3px rgba(31,117,254,0.35); }
+  .event-card.selected { box-shadow: 0 0 0 3px #1f75fe; }
+  .btn-add-to-cart.selected { box-shadow: 0 0 0 3px #1f75fe; }
+  .msg.info { background: #f0f7ff; border-left: 4px solid #1f75fe; padding: 10px 12px; border-radius: 4px; color:#0b3d91; }
+  .msg.warn { background: #fff7e6; border-left: 4px solid #ffab00; color:#7a4e00; }
+</style>
+
 <script src="/public/js/app/http.js"></script>
 <script src="/public/js/auth.js"></script>
 <script src="/static/js/navbar.js"></script>
- </body>
+<!-- Ajout: panier + logique billeterie -->
+<script src="/public/js/app/cart.js"></script>
+<script src="/public/js/app/billeterie.js"></script>
+<section id="evenements" style="margin-top:32px;">
+  <h2>Découvrez nos événements</h2>
+  <div id="events-list" class="cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;"></div>
+</section>
+
+<script>
+  (async function loadEvents(){
+    try {
+      const res = await fetch("/api/v1/evenements", { credentials: "same-origin" });
+      if (!res.ok) return;
+      const events = await res.json();
+      const cont = document.getElementById("events-list");
+      if (!cont) return;
+      cont.innerHTML = (events || []).map(ev => `
+        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:8px;">
+          <div style="font-weight:600;">${ev.title || "Événement"}</div>
+          <div style="color:#666;">${ev.date ? new Date(ev.date).toLocaleDateString() : ""} ${ev.lieu ? "— " + ev.lieu : ""}</div>
+          <p style="margin:8px 0;">${(ev.description || "").slice(0,120)}${(ev.description||"").length>120?"…":""}</p>
+          <a href="/session" class="btn">Choisir une offre</a>
+        </div>
+      `).join("");
+    } catch(e) {
+      console.warn("chargement événements échoué", e);
+    }
+  })();
+</script>
+</body>
 </html>

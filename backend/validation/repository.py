@@ -10,22 +10,21 @@ logger = logging.getLogger(__name__)
 
 def get_ticket_by_token(token: str) -> Optional[Dict[str, Any]]:
     """
-    Récupère une 'commande' (billet) par token, avec détails d'offre.
+    Récupère une 'commande' (billet) par token, avec détails d'offre et l'utilisateur (incluant bio pour vérification).
     """
+    from backend.infra.supabase_client import get_supabase
     try:
         res = (
-            get_service_supabase()
+            get_supabase()
             .table("commandes")
-            .select("id, token, user_id, created_at, offres(title, description, image), users(full_name,email)")
+            .select("id, token, user_id, created_at, offres(title, description, image), users(full_name,email,bio)")
             .eq("token", token)
-            .limit(1)
+            .single()
             .execute()
         )
-        data = (res.data or [])
-        return data[0] if data else None
+        return res.data or None
     except Exception:
         return None
-
 
 def get_last_validation(token: str) -> Optional[Dict[str, Any]]:
     """

@@ -27,6 +27,7 @@
         <a href="/admin" class="btn-nav">Rafraîchir</a>
         <a href="/admin/offres/new" class="btn-nav">Ajouter une offre</a>
         <a href="/admin/scan" class="btn-nav">Scanner un billet</a>
+        <a href="/admin/evenements/new" class="btn-nav">Ajouter un événement</a>
         <form action="/auth/logout" method="post" style="display:inline;">
           <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
           <button type="submit" class="btn-nav btn-danger">Déconnexion</button>
@@ -80,6 +81,11 @@
               <a href="/admin?view=offres" id="card-offres" class="card-item" style="display:block;border:1px solid #ddd; padding:12px; text-decoration:none; color:inherit; cursor:pointer;">
                 <div style="font-weight:bold;">Manage offres</div>
                 <div id="count-offres" style="font-size:24px;">{{ offres_count or 0 }}</div>
+                <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
+              </a>
+              <a href="/admin?view=evenements" id="card-evenements" class="card-item" style="display:block;border:1px solid #ddd; padding:12px; text-decoration:none; color:inherit; cursor:pointer;">
+                <div style="font-weight:bold;">Événements</div>
+                <div id="count-evenements" style="font-size:24px;">{{ evenements_count or 0 }}</div>
                 <div style="font-size:12px;color:#666;">Cliquer pour afficher</div>
               </a>
             </div>
@@ -197,6 +203,45 @@
                       {% endfor %}
                     {% else %}
                       <tr><td colspan="8" style="text-align:center;color:#666;">Aucune offre</td></tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+
+              {% elif active_view == 'evenements' %}
+                <div style="margin-bottom:12px;">
+                  <a href="/admin/evenements/new" class="btn">Ajouter un événement</a>
+                </div>
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>id</th>
+                      <th>type_evenement</th>
+                      <th>nom_evenement</th>
+                      <th>lieu</th>
+                      <th>date_evenement</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% if evenements and evenements|length > 0 %}
+                      {% for e in evenements %}
+                      <tr>
+                        <td>{{ e.id }}</td>
+                        <td>{{ e.type_evenement }}</td>
+                        <td>{{ e.nom_evenement }}</td>
+                        <td>{{ e.lieu }}</td>
+                        <td>{{ e.date_evenement }}</td>
+                        <td>
+                          <a class="btn" href="/admin/evenements/{{ e.id }}/edit">Modifier</a>
+                          <form action="/admin/evenements/{{ e.id }}/delete" method="post" style="display:inline-block;">
+                            <input type="hidden" name="X-CSRF-Token" value="{{ csrf_token or request.cookies.get('csrf_token', '') }}">
+                            <button type="submit" onclick="return confirm('Supprimer cet événement ?');">Supprimer</button>
+                          </form>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr><td colspan="6" style="text-align:center;color:#666;">Aucun événement</td></tr>
                     {% endif %}
                   </tbody>
                 </table>

@@ -45,11 +45,15 @@ def get_ticket_status(token: str, user: dict = Depends(require_user)):
     Consulter l'état d'un billet pour l'administration.
     """
     ensure_admin(user)
-    ticket = get_ticket_by_token(token)
+    # Accepter 'user_key.token' en entrée et n'utiliser que le token brut
+    raw = token or ""
+    raw_token = raw.split(".", 1)[1] if "." in raw else raw
+
+    ticket = get_ticket_by_token(raw_token)
     if not ticket:
         raise HTTPException(status_code=404, detail="Billet introuvable")
 
-    last = get_last_validation(token)
+    last = get_last_validation(raw_token)
     return {
         "ticket": ticket,
         "validation": last or None,

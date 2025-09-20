@@ -16,6 +16,7 @@ from backend.validation.service import validate_ticket_token
 # module backend.admin.views
 from backend.utils.csrf import csrf_protect
 from typing import Dict, Any  # Ajoutez cette ligne pour importer Dict et Any
+from backend.evenements import repository as evenements_repository
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -28,18 +29,20 @@ def admin_page(
     user: dict = Depends(require_admin),
     error: Optional[str] = None,
 ):
-    allowed_views = {"commandes", "users", "offres"}
+    allowed_views = {"commandes", "users", "offres", "evenements"}
     active_view = view if view in allowed_views else None
 
     # Compteurs pour le dashboard
     users_count = admin_repository.count_table_rows("users")
     commandes_count = admin_repository.count_table_rows("commandes")
     offres_count = admin_repository.count_table_rows("offres")
+    evenements_count = admin_repository.count_table_rows("evenements")
 
     # Charger uniquement la liste demandée
     commandes = admin_service.get_admin_commandes() if active_view == "commandes" else []
     users_list = admin_repository.fetch_admin_users() if active_view == "users" else []
     offres = admin_service.list_offres() if active_view == "offres" else []
+    evenements = evenements_repository.list_evenements() if active_view == "evenements" else []
 
     csrf = get_or_create_csrf_token(request)
     resp = templates.TemplateResponse("admin.html", {
@@ -52,9 +55,11 @@ def admin_page(
         "commandes": commandes,
         "users": users_list,
         "offres": offres,
+        "evenements": evenements,
         "commandes_count": commandes_count,
         "users_count": users_count,
         "offres_count": offres_count,
+        "evenements_count": evenements_count,
     })
     attach_csrf_cookie_if_missing(resp, request, csrf)
     return resp
@@ -249,7 +254,7 @@ async def mettre_a_jour_offre(
         },
     )
     if not updated:
-        return RedirectResponse(url="/admin?error=Echec%20de%20la%20mise%20%C3%A0%20jour%20de%20l%27offre", status_code=HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/admin?error=Echec%20de%20la%20mise%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
     return RedirectResponse(url="/admin?message=Offre%20mise%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
 
 @router.post("/offres/{offre_id}/delete", dependencies=[Depends(optional_rate_limit(times=20, seconds=60))])
@@ -414,3 +419,96 @@ def afficher_formulaire_edition_commande(request: Request, commande_id: str, use
     })
     attach_csrf_cookie_if_missing(resp, request, csrf)
     return resp
+
+@router.get("/api/evenements")
+def admin_list_evenements(user: dict = Depends(require_admin)):
+    data = evenements_repository.list_evenements()
+    return JSONResponse({"items": data or []})
+@router.get("/evenements/new", response_class=HTMLResponse)
+@router.get("/evenements/new/", response_class=HTMLResponse)
+def afficher_formulaire_creation_evenement(request: Request, user: dict = Depends(require_admin)):
+    values = {"type_evenement": "", "nom_evenement": "", "lieu": "", "date_evenement": ""}
+    csrf = get_or_create_csrf_token(request)
+    resp = templates.TemplateResponse("admin_evenement_form.html", {
+        "request": request,
+        "mode": "create",
+        "action_url": "/admin/evenements",
+        "values": values,
+        "user": user,
+        "csrf_token": csrf,
+    })
+    attach_csrf_cookie_if_missing(resp, request, csrf)
+    return resp
+
+@router.post("/evenements")
+@router.post("/evenements/")
+async def creer_evenement(request: Request, user: dict = Depends(require_admin)):
+    form_data = await request.form()
+    if not validate_csrf_token(request, form_data):
+        return RedirectResponse(url="/admin?view=evenements&error=CSRF%20invalide", status_code=HTTP_303_SEE_OTHER)
+
+    type_evenement = (form_data.get("type_evenement") or "").strip()
+    nom_evenement = (form_data.get("nom_evenement") or "").strip()
+    lieu = (form_data.get("lieu") or "").strip()
+    date_evenement = (form_data.get("date_evenement") or "").strip()
+
+    if not type_evenement or not nom_evenement or not lieu or not date_evenement:
+        return RedirectResponse(url="/admin?view=evenements&error=Champs%20requis%20manquants", status_code=HTTP_303_SEE_OTHER)
+
+    created = admin_service.create_evenement({
+        "type_evenement": type_evenement,
+        "nom_evenement": nom_evenement,
+        "lieu": lieu,
+        "date_evenement": date_evenement,
+    })
+    if not created:
+        return RedirectResponse(url="/admin?view=evenements&error=Echec%20de%20la%20cr%C3%A9ation", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/admin?view=evenements&message=Ev%C3%A9nement%20cr%C3%A9%C3%A9", status_code=HTTP_303_SEE_OTHER)
+
+@router.get("/evenements/{evenement_id}/edit", response_class=HTMLResponse)
+@router.get("/evenements/{evenement_id}/edit/", response_class=HTMLResponse)
+def afficher_formulaire_edition_evenement(request: Request, evenement_id: str, user: dict = Depends(require_admin)):
+    ligne = admin_service.get_evenement_by_id(evenement_id)
+    if not ligne:
+        return RedirectResponse(url="/admin?view=evenements&error=Ev%C3%A9nement%20introuvable", status_code=HTTP_303_SEE_OTHER)
+    csrf = get_or_create_csrf_token(request)
+    resp = templates.TemplateResponse("admin_evenement_form.html", {
+        "request": request,
+        "mode": "edit",
+        "action_url": f"/admin/evenements/{evenement_id}/update",
+        "values": ligne,
+        "user": user,
+        "csrf_token": csrf,
+    })
+    attach_csrf_cookie_if_missing(resp, request, csrf)
+    return resp
+
+@router.post("/evenements/{evenement_id}/update")
+@router.post("/evenements/{evenement_id}/update/")
+async def mettre_a_jour_evenement(request: Request, evenement_id: str, user: dict = Depends(require_admin)):
+    form_data = await request.form()
+    if not validate_csrf_token(request, form_data):
+        return RedirectResponse(url="/admin?view=evenements&error=CSRF%20invalide", status_code=HTTP_303_SEE_OTHER)
+
+    data = {
+        "type_evenement": (form_data.get("type_evenement") or "").strip(),
+        "nom_evenement": (form_data.get("nom_evenement") or "").strip(),
+        "lieu": (form_data.get("lieu") or "").strip(),
+        "date_evenement": (form_data.get("date_evenement") or "").strip(),
+    }
+    updated = admin_service.update_evenement(evenement_id, data)
+    if not updated:
+        return RedirectResponse(url="/admin?view=evenements&error=Echec%20de%20la%20mise%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/admin?view=evenements&message=Ev%C3%A9nement%20mis%20%C3%A0%20jour", status_code=HTTP_303_SEE_OTHER)
+
+@router.post("/evenements/{evenement_id}/delete")
+@router.post("/evenements/{evenement_id}/delete/")
+async def supprimer_evenement(request: Request, evenement_id: str, user: dict = Depends(require_admin)):
+    form_data = await request.form()
+    if not validate_csrf_token(request, form_data):
+        return RedirectResponse(url="/admin?view=evenements&error=CSRF%20invalide", status_code=HTTP_303_SEE_OTHER)
+
+    ok = admin_service.delete_evenement(evenement_id)
+    if not ok:
+        return RedirectResponse(url="/admin?view=evenements&error=Echec%20de%20la%20suppression", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/admin?view=evenements&message=Ev%C3%A9nement%20supprim%C3%A9", status_code=HTTP_303_SEE_OTHER)

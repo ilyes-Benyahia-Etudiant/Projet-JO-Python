@@ -42,7 +42,7 @@ def get_user_by_email(email: str) -> Optional[dict]:
     except Exception:
         return None
 
-def upsert_user_profile(user_id: str, email: str, role: Optional[str] = None) -> bool:
+def upsert_user_profile(user_id: str, email: str, role: Optional[str] = None, bio: Optional[str] = None) -> bool:
     if not email and not user_id:
         return False
     payload: Dict[str, Any] = {"email": email}
@@ -50,6 +50,8 @@ def upsert_user_profile(user_id: str, email: str, role: Optional[str] = None) ->
         payload["id"] = user_id
     if role:
         payload["role"] = role
+    if bio:
+        payload["bio"] = bio
     try:
         get_service_supabase().table("users").upsert(payload).execute()
         return True

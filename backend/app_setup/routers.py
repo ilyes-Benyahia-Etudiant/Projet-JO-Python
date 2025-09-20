@@ -8,6 +8,7 @@ from backend.validation import views as validation_views
 from backend.payments import views as payments_views
 from backend.admin.views import router as admin_router
 from backend.health.router import router as health_router
+from backend.evenements import views as evenements_views
 
 def register_routers(app: FastAPI) -> None:
     # Pages web (HTML)
@@ -21,6 +22,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(validation_views.router)
     app.include_router(payments_views.router)
     app.include_router(users_api_router)
+    app.include_router(evenements_views.router)
     # Admin
     app.include_router(admin_router)
     # Health & monitoring

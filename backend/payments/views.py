@@ -129,3 +129,21 @@ async def confirm_checkout_post(request: Request, user: dict = Depends(require_u
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id manquant")
     return await confirm_checkout_get(request, session_id=session_id, user=user)
+
+@router.get("/offres")
+def get_offres_by_ids(ids: str, user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
+    """
+    Retourne une liste d'offres {id, title, price} pour hydrater le panier côté client.
+    Paramètre: ids séparés par des virgules (UUIDs).
+    """
+    id_list = [i.strip() for i in (ids or "").split(",") if i.strip()]
+    if not id_list:
+        return {"offres": []}
+    offres = payments_repo.fetch_offres_by_ids(id_list) or []
+    # Normaliser/sécuriser la réponse
+    normalized = [
+        {"id": str(o.get("id") or ""), "title": o.get("title") or "", "price": float(o.get("price") or 0)}
+        for o in offres
+        if o.get("id")
+    ]
+    return {"offres": normalized}
