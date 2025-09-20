@@ -13,11 +13,10 @@ from backend.admin.service import get_offre_by_id
 
 router = APIRouter(prefix="/api/v1/validation", tags=["Validation API"])
 
-def ensure_admin(user: Dict[str, Any]):
-    # Adapte cette vérification à ton modèle utilisateur
-    # Ex: user.get("role") == "admin" OU user.get("is_admin") is True
-    if not (user.get("is_admin") or user.get("role") == "admin"):
-        raise HTTPException(status_code=403, detail="Accès admin requis")
+def ensure_can_scan(user: Dict[str, Any]):
+    # Autoriser admins et opérateurs 'scanner'
+    if not (user.get("is_admin") or user.get("role") in ("admin", "scanner")):
+        raise HTTPException(status_code=403, detail="Accès scanner ou admin requis")
 
 @router.post("/scan")
 def scan_and_validate(payload: Dict[str, Any], user: dict = Depends(require_user)):
@@ -25,7 +24,7 @@ def scan_and_validate(payload: Dict[str, Any], user: dict = Depends(require_user
     Scanner/Valider un billet.
     Body: { "token": "<ticket_token>" }
     """
-    ensure_admin(user)
+    ensure_can_scan(user)
     token = (payload or {}).get("token")
     if not token:
         raise HTTPException(status_code=400, detail="token manquant")
@@ -44,7 +43,7 @@ def get_ticket_status(token: str, user: dict = Depends(require_user)):
     """
     Consulter l'état d'un billet pour l'administration.
     """
-    ensure_admin(user)
+    ensure_can_scan(user)
     # Accepter 'user_key.token' en entrée et n'utiliser que le token brut
     raw = token or ""
     raw_token = raw.split(".", 1)[1] if "." in raw else raw

@@ -151,16 +151,30 @@ class AdminScanPage {
     }
     normalizeResponse(json, kind) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
+        // Gestion explicite des statuts d'erreur fréquents
+        const statusCode = (json === null || json === void 0 ? void 0 : json.__httpStatus) || 0;
+        if (statusCode === 401) {
+            return { status: ValidationStatus.Invalid, message: "Authentification requise (scanner/admin)" };
+        }
+        if (statusCode === 403) {
+            return { status: ValidationStatus.Invalid, message: "Accès scanner ou admin requis" };
+        }
+        if (statusCode === 400) {
+            const detail400 = (json && (json.detail || json.message)) || "Requête invalide";
+            return { status: ValidationStatus.Invalid, message: detail400 };
+        }
         // 404 -> billet inconnu
         if ((json === null || json === void 0 ? void 0 : json.__httpStatus) === 404) {
-            return { status: ValidationStatus.Invalid, message: json.message || "Billet inconnu" };
+            const detail404 = (json && (json.detail || json.message)) || "Billet inconnu";
+            return { status: ValidationStatus.Invalid, message: detail404 };
         }
         // Déballage
         const data = (_b = (_a = json === null || json === void 0 ? void 0 : json.data) !== null && _a !== void 0 ? _a : json) !== null && _b !== void 0 ? _b : {};
         const ticket = (_f = (_d = (_c = data.ticket) !== null && _c !== void 0 ? _c : data.billet) !== null && _d !== void 0 ? _d : (_e = data === null || data === void 0 ? void 0 : data.data) === null || _e === void 0 ? void 0 : _e.ticket) !== null && _f !== void 0 ? _f : null;
         const validation = (_h = (_g = data.validation) !== null && _g !== void 0 ? _g : data.scan) !== null && _h !== void 0 ? _h : null;
         const rawStatus = (data.status || data.result || "").toString().toLowerCase();
-        const msg = data.message;
+        const msg = (data.message || data.detail);
+
         if (kind === "get") {
             // GET: billet connu ? prêt ou déjà validé
             if (ticket && validation) {
@@ -170,8 +184,7 @@ class AdminScanPage {
                 return { status: ValidationStatus.Scanned, ticket, validation, message: msg };
             }
             return { status: ValidationStatus.Invalid, message: msg || "Billet inconnu" };
-        }
-        else {
+        } else {
             // POST: validation
             const isValidated = rawStatus === "validated" || rawStatus === "success" || data.validated === true;
             const isAlreadyValidated = rawStatus === "already_validated" || (typeof msg === "string" && msg.toLowerCase().includes("déjà valid"));
@@ -193,18 +206,25 @@ class AdminScanPage {
             return;
         this.payloadEl.innerHTML = "";
         const { status, ticket, validation, message } = data;
+
+        // Si invalide, montrer aussi un toast explicite
+        if (status === ValidationStatus.Invalid && message) {
+            this.showToast(message, "error");
+        }
+
         // Affiche uniquement le bandeau de statut (sans badge)
         const bannerText = this.getStatusLabel(status);
         this.showStatusBanner(status, this.payloadEl, bannerText);
+
         // Détails
         if (ticket) {
             this.renderTicketDetails(ticket, validation);
-        }
-        else {
+        } else {
             const msgEl = document.createElement("p");
             msgEl.textContent = message || (status === ValidationStatus.Invalid ? "Billet inconnu" : "Aucune donnée");
             this.payloadEl.appendChild(msgEl);
         }
+
         // Bouton de validation si prêt
         if (status === ValidationStatus.Scanned) {
             const validateBtn = document.createElement("button");
