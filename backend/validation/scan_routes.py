@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Form, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import requests
+from urllib.parse import quote
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -49,7 +50,8 @@ def get_admin_scan(request: Request, token: str | None = Query(default=None)):
         return templates.TemplateResponse("admin-scan.html", context)
 
     base_url = str(request.base_url).rstrip("/")
-    url = f"{base_url}/api/v1/validation/ticket/{token}"
+    safe_token = quote(token, safe="")
+    url = f"{base_url}/api/v1/validation/ticket/{safe_token}"
 
     try:
         r = requests.get(url, cookies=request.cookies, timeout=10)

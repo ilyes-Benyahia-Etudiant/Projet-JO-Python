@@ -10,21 +10,72 @@ logger = logging.getLogger(__name__)
 
 def get_ticket_by_token(token: str) -> Optional[Dict[str, Any]]:
     """
-    Récupère une 'commande' (billet) par token, avec détails d'offre et l'utilisateur (incluant bio pour vérification).
+    Récupère une 'commande' (billet) par token.
+    Lecture robuste: on évite les sélections imbriquées dépendantes de FKs et on fait des fetch séparés.
     """
-    from backend.infra.supabase_client import get_supabase
+    # Sécurisation: nettoyer guillemets et, si jamais un composite arrive, ne garder que la partie droite
+    cleaned = (token or "").strip().strip('"').strip("'")
+    if "." in cleaned:
+        cleaned = cleaned.split(".", 1)[1].strip().strip('"').strip("'")
+
     try:
-        res = (
-            get_supabase()
+        base_res = (
+            get_service_supabase()
             .table("commandes")
-            .select("id, token, user_id, created_at, offres(title, description, image), users(full_name,email,bio)")
-            .eq("token", token)
+            .select("id, token, user_id, created_at, offre_id")
+            .eq("token", cleaned)
             .single()
             .execute()
         )
-        return res.data or None
-    except Exception:
+        row = base_res.data or None
+    except Exception as e:
+        logger.exception("Erreur lors de la récupération de la commande par token: %s", e)
         return None
+
+    if not row:
+        return None
+
+    result: Dict[str, Any] = {
+        "id": row.get("id"),
+        "token": row.get("token"),
+        "user_id": row.get("user_id"),
+        "created_at": row.get("created_at"),
+        "offre_id": row.get("offre_id"),
+    }
+
+    # Optionnel: récupérer l'offre associée (retirer 'image' si la colonne n'existe pas)
+    try:
+        if row.get("offre_id"):
+            offre_res = (
+                get_service_supabase()
+                .table("offres")
+                .select("id, title, description")  # image retiré
+                .eq("id", row["offre_id"])
+                .single()
+                .execute()
+            )
+            result["offres"] = offre_res.data or None
+    except Exception as e:
+        logger.warning("Impossible de récupérer l'offre associée: %s", e)
+        result["offres"] = None
+
+    # Optionnel: récupérer l'utilisateur associé (pour bio = user_key)
+    try:
+        if row.get("user_id"):
+            user_res = (
+                get_service_supabase()
+                .table("users")
+                .select("id, full_name, email, bio")
+                .eq("id", row["user_id"])
+                .single()
+                .execute()
+            )
+            result["users"] = user_res.data or None
+    except Exception as e:
+        logger.warning("Impossible de récupérer l'utilisateur associé: %s", e)
+        result["users"] = None
+
+    return result
 
 def get_last_validation(token: str) -> Optional[Dict[str, Any]]:
     """

@@ -13,7 +13,7 @@ def validate_ticket_token(token: str, admin_id: str, admin_token: Optional[str] 
     Retourne l'un des statuts: 'validated', 'already_validated', 'not_found', 'invalid'.
     """
     provided_user_key: Optional[str] = None
-    raw = (token or "").strip()
+    raw = (token or "").strip().strip('"').strip("'")
 
     # Exiger le token composite "user_key.token"
     if "." not in raw:
@@ -23,7 +23,8 @@ def validate_ticket_token(token: str, admin_id: str, admin_token: Optional[str] 
     if len(parts) != 2 or not parts[0] or not parts[1]:
         return ("invalid", {"message": "Format de clé invalide", "reason": "invalid_composite_token"})
 
-    provided_user_key, raw_token = parts[0].strip(), parts[1].strip()
+    provided_user_key = parts[0].strip().strip('"').strip("'")
+    raw_token = parts[1].strip().strip('"').strip("'")
     if not provided_user_key or not raw_token:
         return ("invalid", {"message": "Format de clé invalide", "reason": "invalid_composite_token"})
 

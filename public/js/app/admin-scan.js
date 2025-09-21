@@ -1,384 +1,229 @@
-"use strict";
-// =============================================================================
-// Utilitaires
-// =============================================================================
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    return parts.length === 2 ? parts.pop().split(";").shift() || null : null;
-}
-function getCsrfToken() {
-    return getCookie("csrf_token") || getCookie("csrftoken") || null;
-}
-function getUrlToken() {
+(() => {
+  'use strict';
+
+  const video = document.getElementById('qr-video');
+  const canvas = document.getElementById('qr-canvas');
+  const startBtn = document.getElementById('start-camera');
+  const stopBtn = document.getElementById('stop-camera');
+  const camContainer = document.getElementById('camera-container');
+  const tokenInput = document.getElementById('token-input');
+
+  let stream = null;
+  let rafId = null;
+  let lastToken = null;
+  let lastScanTs = 0;
+
+  function extractToken(text) {
+    // Si le QR est une URL /admin/scan?token=..., on extrait le token; sinon on considère le texte comme token
     try {
-        const params = new URLSearchParams(window.location.search);
-        const token = params.get("token");
-        return (token === null || token === void 0 ? void 0 : token.trim()) || null;
-    }
-    catch (_a) {
-        return null;
-    }
-}
-function escapeHtml(str) {
-    return str
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-// =============================================================================
-// Types et Énumérations
-// =============================================================================
-var ValidationStatus;
-(function (ValidationStatus) {
-    ValidationStatus["Invalid"] = "Invalid";
-    ValidationStatus["Scanned"] = "Scanned";
-    ValidationStatus["Validated"] = "Validated";
-    ValidationStatus["AlreadyValidated"] = "AlreadyValidated";
-})(ValidationStatus || (ValidationStatus = {}));
-// =============================================================================
-// Classe Principale: AdminScanPage
-// =============================================================================
-class AdminScanPage {
-    static initOnce() {
-        if (AdminScanPage.__ADMIN_SCAN_INITED)
-            return;
-        AdminScanPage.__ADMIN_SCAN_INITED = true;
-        new AdminScanPage();
-    }
-    constructor() {
-        this.isValidating = false;
-        this.currentToken = null;
-        this.inputEl = document.querySelector("#token-input");
-        this.validateBtn = document.querySelector("#validate-btn");
-        this.payloadEl = document.querySelector("#validation-result");
-        this.bindEvents();
-        this.prefillFromUrlAndSearch();
-    }
-    bindEvents() {
-        var _a, _b;
-        (_a = this.inputEl) === null || _a === void 0 ? void 0 : _a.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                this.handleSearch();
-            }
-        });
-        (_b = this.validateBtn) === null || _b === void 0 ? void 0 : _b.addEventListener("click", (e) => {
-            e.preventDefault();
-            this.handleSearch();
-        });
-    }
-    handleSearch() {
-        var _a, _b;
-        const token = (_b = (_a = this.inputEl) === null || _a === void 0 ? void 0 : _a.value) === null || _b === void 0 ? void 0 : _b.trim();
-        if (token) {
-            this.searchTicket(token);
-        }
-    }
-    prefillFromUrlAndSearch() {
-        const urlToken = getUrlToken();
-        if (urlToken) {
-            if (this.inputEl)
-                this.inputEl.value = urlToken;
-            this.searchTicket(urlToken);
-        }
-    }
-    performRequest(url, method, body) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.isValidating)
-                return { status: "error", message: "Une opération est déjà en cours." };
-            this.isValidating = true;
-            try {
-                const csrf = getCsrfToken();
-                const res = yield fetch(url, {
-                    method,
-                    headers: Object.assign({ "Content-Type": "application/json" }, (csrf ? { "X-CSRF-Token": csrf } : {})),
-                    body: body ? JSON.stringify(body) : undefined,
-                    credentials: "include",
-                });
-                let data = null;
-                try {
-                    data = yield res.json();
-                }
-                catch (_a) {
-                    data = null;
-                }
-                const wrapped = Object.assign({ __httpStatus: res.status }, (data !== null && data !== void 0 ? data : {}));
-                console.log(`[${method}] ${url} ->`, wrapped);
-                return wrapped;
-            }
-            catch (err) {
-                console.error(`${method} error:`, err);
-                return { __networkError: true, status: "error", message: "Erreur réseau. Veuillez réessayer." };
-            }
-            finally {
-                this.isValidating = false;
-            }
-        });
-    }
-    searchTicket(token) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.currentToken = token;
-            const json = yield this.performRequest(`/api/v1/validation/ticket/${encodeURIComponent(token)}`, "GET");
-            const parsed = this.normalizeResponse(json, "get");
-            this.renderPayload(parsed);
-        });
-    }
-    postValidate() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!this.currentToken)
-                return;
-            const json = yield this.performRequest("/api/v1/validation/scan", "POST", { token: this.currentToken });
-            const parsed = this.normalizeResponse(json, "post");
-            // Nettoyage du champ si validé
-            if (parsed.status === ValidationStatus.Validated && this.inputEl) {
-                this.inputEl.value = "";
-            }
-            // On ne déclenche pas de toast ici; l'affichage se fait sous la barre
-            this.renderPayload(parsed);
-        });
-    }
-    normalizeResponse(json, kind) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
-        // Gestion explicite des statuts d'erreur fréquents
-        const statusCode = (json === null || json === void 0 ? void 0 : json.__httpStatus) || 0;
-        if (statusCode === 401) {
-            return { status: ValidationStatus.Invalid, message: "Authentification requise (scanner/admin)" };
-        }
-        if (statusCode === 403) {
-            return { status: ValidationStatus.Invalid, message: "Accès scanner ou admin requis" };
-        }
-        if (statusCode === 400) {
-            const detail400 = (json && (json.detail || json.message)) || "Requête invalide";
-            return { status: ValidationStatus.Invalid, message: detail400 };
-        }
-        // 404 -> billet inconnu
-        if ((json === null || json === void 0 ? void 0 : json.__httpStatus) === 404) {
-            const detail404 = (json && (json.detail || json.message)) || "Billet inconnu";
-            return { status: ValidationStatus.Invalid, message: detail404 };
-        }
-        // Déballage
-        const data = (_b = (_a = json === null || json === void 0 ? void 0 : json.data) !== null && _a !== void 0 ? _a : json) !== null && _b !== void 0 ? _b : {};
-        const ticket = (_f = (_d = (_c = data.ticket) !== null && _c !== void 0 ? _c : data.billet) !== null && _d !== void 0 ? _d : (_e = data === null || data === void 0 ? void 0 : data.data) === null || _e === void 0 ? void 0 : _e.ticket) !== null && _f !== void 0 ? _f : null;
-        const validation = (_h = (_g = data.validation) !== null && _g !== void 0 ? _g : data.scan) !== null && _h !== void 0 ? _h : null;
-        const rawStatus = (data.status || data.result || "").toString().toLowerCase();
-        const msg = (data.message || data.detail);
+      const url = new URL(text, window.location.origin);
+      const t = url.searchParams.get('token');
+      if (t) return t;
+    } catch (e) {}
+    return text;
+  }
 
-        if (kind === "get") {
-            // GET: billet connu ? prêt ou déjà validé
-            if (ticket && validation) {
-                return { status: ValidationStatus.AlreadyValidated, ticket, validation, message: msg };
-            }
-            if (ticket) {
-                return { status: ValidationStatus.Scanned, ticket, validation, message: msg };
-            }
-            return { status: ValidationStatus.Invalid, message: msg || "Billet inconnu" };
-        } else {
-            // POST: validation
-            const isValidated = rawStatus === "validated" || rawStatus === "success" || data.validated === true;
-            const isAlreadyValidated = rawStatus === "already_validated" || (typeof msg === "string" && msg.toLowerCase().includes("déjà valid"));
-            if (isAlreadyValidated) {
-                return { status: ValidationStatus.AlreadyValidated, ticket, validation, message: msg || "Déjà validé" };
-            }
-            if (isValidated) {
-                return { status: ValidationStatus.Validated, ticket, validation, message: msg || "Billet validé" };
-            }
-            // Si le backend renvoie juste le ticket après POST sans statut clair
-            if (ticket && validation) {
-                return { status: ValidationStatus.Validated, ticket, validation, message: msg || "Billet validé" };
-            }
-            return { status: ValidationStatus.Invalid, message: msg || "Billet inconnu" };
-        }
+  async function startCamera() {
+    if (stream) return;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      });
+      video.srcObject = stream;
+      await video.play();
+      camContainer.style.display = '';
+      if (startBtn) startBtn.style.display = 'none';
+      if (stopBtn) stopBtn.style.display = '';
+      scanLoop();
+    } catch (err) {
+      alert('Impossible d’accéder à la caméra: ' + err);
     }
-    renderPayload(data) {
-        if (!this.payloadEl)
-            return;
-        this.payloadEl.innerHTML = "";
-        const { status, ticket, validation, message } = data;
+  }
 
-        // Si invalide, montrer aussi un toast explicite
-        if (status === ValidationStatus.Invalid && message) {
-            this.showToast(message, "error");
-        }
+  function stopCamera() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+    video.srcObject = null;
+    camContainer.style.display = 'none';
+    if (startBtn) startBtn.style.display = '';
+    if (stopBtn) stopBtn.style.display = 'none';
+  }
 
-        // Affiche uniquement le bandeau de statut (sans badge)
-        const bannerText = this.getStatusLabel(status);
-        this.showStatusBanner(status, this.payloadEl, bannerText);
+  function scanLoop() {
+    if (!stream) return;
+    const w = video.videoWidth, h = video.videoHeight;
+    if (!w || !h) {
+      rafId = requestAnimationFrame(scanLoop);
+      return;
+    }
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, w, h);
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const qr = jsQR(imageData.data, w, h, { inversionAttempts: 'dontInvert' });
+    const now = Date.now();
+    if (qr && qr.data) {
+      const token = extractToken(qr.data);
+      if (token && (token !== lastToken || now - lastScanTs > 3000)) {
+        lastToken = token;
+        lastScanTs = now;
+        if (tokenInput) tokenInput.value = token;
+        handleSearchSubmit(new Event('submit', { cancelable: true }));
+        if (navigator.vibrate) navigator.vibrate(100);
+      }
+    }
+    rafId = requestAnimationFrame(scanLoop);
+  }
 
-        // Détails
-        if (ticket) {
-            this.renderTicketDetails(ticket, validation);
-        } else {
-            const msgEl = document.createElement("p");
-            msgEl.textContent = message || (status === ValidationStatus.Invalid ? "Billet inconnu" : "Aucune donnée");
-            this.payloadEl.appendChild(msgEl);
-        }
+  // petit son de validation
+  function playSuccessBeep() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.01);
+      osc.start();
+      setTimeout(() => {
+        gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15);
+        osc.stop(ctx.currentTime + 0.16);
+        ctx.close();
+      }, 150);
+    } catch (_) {}
+  }
 
-        // Bouton de validation si prêt
-        if (status === ValidationStatus.Scanned) {
-            const validateBtn = document.createElement("button");
-            validateBtn.className = "btn btn-success mt-3";
-            validateBtn.textContent = "Valider le billet";
-            validateBtn.onclick = () => this.postValidate();
-            this.payloadEl.appendChild(validateBtn);
-        }
+  async function fetchAndReplace(url, opts) {
+    try {
+      const res = await fetch(url, Object.assign({ credentials: 'same-origin' }, opts || {}));
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const newCard = doc.getElementById('scan-card');
+      const oldCard = document.getElementById('scan-card');
+      if (newCard && oldCard) {
+        oldCard.replaceWith(newCard);
+        // Ré-attache les écouteurs et met à jour les éléments dynamiques
+        requeryDom();
+      }
+      return { newCard };
+    } catch (err) {
+      console.error('fetchAndReplace error:', err);
+      alert('Erreur réseau pendant la validation. Réessayez.');
+      return { newCard: null };
     }
-    getStatusLabel(status) {
-        const labels = {
-            [ValidationStatus.Invalid]: "Invalide",
-            [ValidationStatus.Scanned]: "Prêt à valider",
-            [ValidationStatus.Validated]: "Validé",
-            [ValidationStatus.AlreadyValidated]: "Déjà validé",
-        };
-        return labels[status] || "Inconnu";
+  }
+
+  function sanitizeTokenInput(value) {
+    return (value || '').trim().replace(/^["']|["']$/g, '');
+  }
+
+  function handleValidateSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+
+    const tokenField = form.querySelector('input[name="token"]');
+    let tokenVal = tokenField ? (tokenField.value || '') : '';
+    tokenVal = sanitizeTokenInput(tokenVal);
+
+    const userKeyInput = document.getElementById('user-key-input');
+    let userKeyVal = userKeyInput ? (userKeyInput.value || '') : '';
+    userKeyVal = sanitizeTokenInput(userKeyVal);
+
+    // Compose automatiquement si token brut + user_key fournie
+    if (tokenVal && tokenVal.indexOf('.') === -1 && userKeyVal) {
+      tokenField.value = `${userKeyVal}.${tokenVal}`;
+    } else {
+      tokenField.value = tokenVal;
     }
-    renderStatusBadge(status) {
-        // Intentionnellement vide: on n'affiche plus le badge de statut
+
+    const finalToken = sanitizeTokenInput(tokenField.value || '');
+    if (!finalToken || finalToken.indexOf('.') === -1) {
+      alert('Clé utilisateur requise: scannez le QR du billet (format user_key.token).');
+      return;
     }
-    renderTicketDetails(ticket, validation) {
-        var _a, _b;
-        if (!this.payloadEl)
-            return;
-        const detailsContainer = document.createElement("div");
-        detailsContainer.className = "mt-3";
-        const title = ticket.title || ((_a = ticket.offre) === null || _a === void 0 ? void 0 : _a.title) || "Billet";
-        const email = ticket.userEmail || ((_b = ticket.users) === null || _b === void 0 ? void 0 : _b.email) || ticket.email || "";
-        const createdAt = ticket.created_at || ticket.createdAt || "";
-        let html = `
-      <div><strong>Token:</strong> ${escapeHtml(ticket.token || "")}</div>
-      <div><strong>Détails:</strong> ${escapeHtml(title)}</div>
-      ${email ? `<div><strong>Acheteur:</strong> ${escapeHtml(email)}</div>` : ""}
-      ${createdAt ? `<div><strong>Créé le:</strong> ${escapeHtml(new Date(createdAt).toLocaleString())}</div>` : ""}
-    `;
-        if (validation) {
-            const scannedAt = validation.scanned_at || validation.scannedAt || validation.created_at || "";
-            const scannedBy = validation.scanned_by || validation.scannedBy || "";
-            html += `
-        <div class="mt-2">
-          ${scannedAt ? `<div><strong>Scanné le:</strong> ${escapeHtml(new Date(scannedAt).toLocaleString())}</div>` : ""}
-          ${scannedBy ? `<div><strong>Scanné par:</strong> ${escapeHtml(scannedBy)}</div>` : ""}
-        </div>
-      `;
-        }
-        detailsContainer.innerHTML = html;
-        this.payloadEl.appendChild(detailsContainer);
+
+    const fd = new FormData(form);
+    const body = new URLSearchParams();
+    for (const [k, v] of fd.entries()) body.append(k, v);
+
+    fetchAndReplace('/admin/scan/validate', {
+      method: 'POST',
+      headers: {
+        'X-Requested-With': 'fetch',
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body
+    }).then(() => {
+      const input = document.getElementById('token-input');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+      lastToken = null;
+
+      setTimeout(() => {
+        stopCamera();
+        fetchAndReplace('/admin/scan', { method: 'GET', headers: { 'X-Requested-With': 'fetch' } })
+          .then(() => startCamera());
+      }, 3000);
+    });
+  }
+
+  function handleSearchSubmit(e) {
+    e.preventDefault();
+    const input = document.getElementById('token-input');
+    const raw = (input && input.value) || '';
+    const token = sanitizeTokenInput(raw);
+    if (!token) return;
+    const url = '/admin/scan?token=' + encodeURIComponent(token);
+    fetchAndReplace(url, { method: 'GET', headers: { 'X-Requested-With': 'fetch' } });
+  }
+
+  function attachDynamicHandlers() {
+    // Form GET (recherche token)
+    const tokenForm = document.querySelector('form[action="/admin/scan"][method="get"]');
+    if (tokenForm) tokenForm.addEventListener('submit', handleSearchSubmit);
+
+    // Form POST (validation)
+    document.querySelectorAll('form[action="/admin/scan/validate"]').forEach(f => {
+      f.addEventListener('submit', handleValidateSubmit);
+    });
+
+    // Boutons caméra
+    const start = document.getElementById('start-camera');
+    const stop = document.getElementById('stop-camera');
+    if (start) start.addEventListener('click', startCamera);
+    if (stop) stop.addEventListener('click', stopCamera);
+
+    // Focus rapide sur champ token
+    const input = document.getElementById('token-input');
+    if (input) input.focus();
+  }
+
+  function requeryDom() {
+    try {
+      if (typeof attachDynamicHandlers === 'function') {
+        attachDynamicHandlers();
+      }
+    } catch (e) {
+      console.warn('requeryDom: attachDynamicHandlers() a échoué ou est introuvable', e);
     }
-    // Bandeau de statut très visible
-    showStatusBanner(status, container, text) {
-        let color = "#DC2626", bg = "#FEE2E2"; // défaut rouge
-        if (status === ValidationStatus.Validated) {
-            color = "#16A34A";
-            bg = "#D1FAE5";
-        }
-        else if (status === ValidationStatus.Scanned) {
-            color = "#D97706";
-            bg = "#FEF3C7";
-        }
-        const banner = document.createElement("div");
-        banner.style.cssText = `
-      padding: 10px 12px;
-      border: 1px solid ${color};
-      background: ${bg};
-      color: ${color};
-      border-radius: 8px;
-      font-weight: 600;
-      margin-bottom: 12px;
-    `;
-        banner.textContent = text;
-        container.appendChild(banner);
-    }
-    // Toast avec support warning selon statut
-    showStatusToast(status, ticket, message) {
-        const summary = ticket ? this.getTicketSummary(ticket) : "";
-        switch (status) {
-            case ValidationStatus.Validated:
-                this.showToast(`Billet validé${summary ? " : " + summary : ""}`, "success");
-                break;
-            case ValidationStatus.AlreadyValidated:
-                this.showToast(`Déjà validé${summary ? " : " + summary : ""}`, "error");
-                break;
-            case ValidationStatus.Scanned:
-                this.showToast(`Prêt à valider${summary ? " : " + summary : ""}`, "warning");
-                break;
-            case ValidationStatus.Invalid:
-            default:
-                this.showToast(message || "Billet inconnu", "error");
-                break;
-        }
-    }
-    getTicketSummary(ticket) {
-        var _a, _b;
-        const title = ticket.title || ((_a = ticket.offre) === null || _a === void 0 ? void 0 : _a.title) || "Billet";
-        const email = ticket.userEmail || ((_b = ticket.users) === null || _b === void 0 ? void 0 : _b.email) || ticket.email || "";
-        const token = ticket.token || "";
-        const parts = [title];
-        if (email)
-            parts.push(email);
-        if (token)
-            parts.push(this.shortToken(token));
-        return parts.join(" — ");
-    }
-    shortToken(t) {
-        if (!t)
-            return "";
-        return t.length > 12 ? `${t.slice(0, 4)}…${t.slice(-4)}` : t;
-    }
-    showToast(message, type = "success") {
-        // Supprimer un toast précédent pour éviter l’empilement
-        const old = document.getElementById("__toast__");
-        if (old)
-            old.remove();
-        let color = "#16A34A", bg = "#D1FAE5";
-        if (type === "error") {
-            color = "#DC2626";
-            bg = "#FEE2E2";
-        }
-        else if (type === "warning") {
-            color = "#D97706";
-            bg = "#FEF3C7";
-        }
-        const el = document.createElement("div");
-        el.id = "__toast__";
-        el.textContent = message;
-        el.style.cssText = `
-      position: fixed;
-      top: 16px;
-      right: 16px;
-      z-index: 99999;
-      background: ${bg};
-      color: ${color};
-      border: 1px solid ${color};
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-weight: 600;
-      box-shadow: 0 4px 10px rgba(0,0,0,.08);
-      transition: opacity 0.3s;
-      max-width: 420px;
-      line-height: 1.3;
-    `;
-        document.body.appendChild(el);
-        setTimeout(() => {
-            el.style.opacity = "0";
-            setTimeout(() => el.remove(), 300);
-        }, 2500);
-    }
-}
-AdminScanPage.__ADMIN_SCAN_INITED = false;
-// =============================================================================
-// Initialisation
-// =============================================================================
-document.addEventListener("DOMContentLoaded", () => {
-    AdminScanPage.initOnce();
-});
-console.log("[admin-scan] script chargé");
+  }
+
+  // Bind initial
+  attachDynamicHandlers();
+  if (startBtn) startBtn.addEventListener('click', startCamera);
+  if (stopBtn) stopBtn.addEventListener('click', stopCamera);
+  window.addEventListener('beforeunload', stopCamera);
+})();

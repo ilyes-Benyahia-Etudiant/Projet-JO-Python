@@ -44,9 +44,16 @@ def get_ticket_status(token: str, user: dict = Depends(require_user)):
     Consulter l'état d'un billet pour l'administration.
     """
     ensure_can_scan(user)
-    # Accepter 'user_key.token' en entrée et n'utiliser que le token brut
-    raw = token or ""
-    raw_token = raw.split(".", 1)[1] if "." in raw else raw
+    # Nettoyer guillemets/espaces et n'utiliser que l'UUID (partie droite après le point)
+    raw = (token or "").strip().strip('"').strip("'")
+    if "." in raw:
+        _, rhs = raw.split(".", 1)
+        raw_token = rhs.strip().strip('"').strip("'")
+    else:
+        raw_token = raw
+
+    if not raw_token:
+        raise HTTPException(status_code=400, detail="Token invalide")
 
     ticket = get_ticket_by_token(raw_token)
     if not ticket:
