@@ -70,19 +70,16 @@
         try {
           const res = await fetch("/api/v1/auth/me", { credentials: "include" });
           if (res.ok) {
-            // Déjà connecté: aller directement à la page session (panier visible)
             window.location.href = "/session";
           } else {
-            // Non connecté: aller vers la page d'auth
             window.location.href = "/auth";
           }
         } catch {
-          // En cas d'erreur réseau, fallback: page d'auth
           window.location.href = "/auth";
         }
         return;
       }
-    
+
       // Icône panier (billeterie)
       const cartLink = e.target.closest('a.btn-cart[href="/session"]');
       if (cartLink) {
@@ -90,28 +87,29 @@
         try {
           const res = await fetch("/api/v1/auth/me", { credentials: "include" });
           if (res.ok) {
-            // Déjà connecté: aller sur /session (cart.js affichera cart.v1)
             window.location.href = "/session";
           } else {
-            // Non connecté: demander authentification avant d'accéder au panier
             window.location.href = "/auth";
           }
         } catch {
-          // Fallback auth
           window.location.href = "/auth";
         }
         return;
       }
+
+      // [FIX] Garde-fou: exiger la sélection d’un événement avant l’ajout au panier
+      const addBtn = e.target.closest(".btn-add-to-cart");
+      if (addBtn) {
+        const evId = addBtn.getAttribute("data-ev-id");
+        if (!evId) {
+          e.preventDefault();
+          showMessage("warn", "Sélectionnez d’abord un événement, puis choisissez votre offre.");
+          return;
+        }
+        // Feedback visuel
+        addBtn.classList.add("selected");
+        window.setTimeout(() => addBtn.classList.remove("selected"), 500);
+      }
     });
-    const btn = e.target && e.target.closest && e.target.closest(".btn-add-to-cart");
-    if (!btn) return;
-    const evId = btn.getAttribute("data-ev-id");
-    if (!evId) {
-      e.preventDefault();
-      showMessage("warn", "Sélectionnez d’abord un événement, puis choisissez votre offre.");
-      return;
-    }
-    btn.classList.add("selected");
-    window.setTimeout(() => btn.classList.remove("selected"), 500);
   });
-});
+})(); // fermeture correcte de l’IIFE

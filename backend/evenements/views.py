@@ -1,11 +1,11 @@
-from typing import Dict, Any
+# Imports (début du fichier)
+from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from backend.utils.security import require_admin
 from backend.evenements import repository as evenements_repository
-from fastapi import APIRouter
-from typing import List, Dict, Any
 from backend.infra.supabase_client import get_supabase
+from postgrest.exceptions import APIError
 
 router = APIRouter(prefix="/api/v1/evenements", tags=["Evenements API"])
 
@@ -58,18 +58,36 @@ def delete_evenement(evenement_id: str):
         raise HTTPException(status_code=400, detail="Echec de suppression")
     return JSONResponse({"ok": True})
 
-router = APIRouter(prefix="/api/v1/evenements", tags=["evenements"])
-
+# Endpoint public: liste pour la Billetterie
 @router.get("", response_model=list[dict])
-def list_evenements() -> List[Dict[str, Any]]:
+def list_evenements_public() -> List[Dict[str, Any]]:
     """
     Liste publique des événements (pour vitrine Billetterie).
+    Normalise le schéma {id, title, date, lieu, description, image} à partir des colonnes
+    réelles {nom_evenement, date_evenement, ...} présentes en DB.
     """
-    res = (
-        get_supabase()
-        .table("evenements")
-        .select("id, title, date, lieu, description, image")
-        .order("date", desc=False)
-        .execute()
-    )
-    return res.data or []
+    try:
+        res = (
+            get_supabase()
+            .table("evenements")
+            .select("id, nom_evenement, type_evenement, date_evenement, lieu")
+            .order("date_evenement", desc=False)
+            .execute()
+        )
+    except APIError:
+        # On renvoie une 500 claire si Supabase échoue
+        raise HTTPException(status_code=500, detail="Erreur de lecture des événements")
+
+    rows = res.data or []
+    normalized: List[Dict[str, Any]] = []
+    for r in rows:
+        normalized.append({
+            "id": r.get("id"),
+            "title": r.get("nom_evenement") or "",
+            "date": r.get("date_evenement") or "",
+            "lieu": r.get("lieu"),
+            "type_evenement": r.get("type_evenement"),
+            "description": r.get("description") or "",  # vide si absent en DB
+            "image": r.get("image") or "",              # vide si absent en DB
+        })
+    return normalized
