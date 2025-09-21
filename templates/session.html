@@ -84,7 +84,7 @@
           </button>
         </div>
         <div id="cart-items"></div>
-        <p id="cart-empty">Votre panier est vide.</p>
+        <p id="cart-empty">Votre panier est vide RDV en <a href="/billeterie">Billetrie</a></p>
         <div id="cart-summary" class="cart-summary">
           <strong>Total: <span id="cart-total">0,00 €</span></strong>
           <button id="cart-pay" class="btn">Payer</button>
@@ -92,47 +92,7 @@
       </aside>
     </div>
 
-    <div class="session-layout">
-      <section id="catalogue">
-        <h1 class="jo-title">Offres Billets</h1>
-        {% if offres and offres|length > 0 %}
-        <div class="offers-grid">
-          {% for o in offres %}
-          <article class="offer-card olympic-accent">
-            <h3><span aria-hidden="true">🎟️</span> {{ o.title }}</h3>
-
-            <p class="meta">
-              <!--<span class="meta-label">Catégorie</span>-->
-              <span class="meta-value">{{ o.category }}</span>
-            </p>
-
-            <p class="price">
-              <span class="meta-label">Prix</span>
-              <span class="meta-value">{{ o.price }} €</span>
-            </p>
-
-            <p class="stock">
-              <span class="meta-label">Stock</span>
-              <span class="meta-value">{{ o.stock }}</span>
-            </p>
-
-            {% if o.description %}<p class="desc">{{ o.description }}</p>{% endif %}
-
-            <button
-              class="btn btn-add-to-cart"
-              data-id="{{ o.id or o.title }}"
-              data-title="{{ o.title }}"
-              data-price="{{ o.price }}"
-              data-image="{{ o.image }}"
-            >Ajouter au panier</button>
-          </article>
-          {% endfor %}
-        </div>
-        {% else %}
-        <p>Aucune offre disponible.</p>
-        {% endif %}
-      </section>
-    </div>
+    
 
    
     <div id="toast-success" role="status" aria-live="polite"></div>

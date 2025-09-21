@@ -54,6 +54,45 @@
     if (stopBtn) stopBtn.style.display = 'none';
   }
 
+  // Petit toast en overlay (vert/jaune/rouge)
+  function showToast(message, type = 'info') {
+    let el = document.getElementById('scan-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'scan-toast';
+      el.style.position = 'fixed';
+      el.style.left = '50%';
+      el.style.top = '16px';
+      el.style.transform = 'translateX(-50%)';
+      el.style.zIndex = '9999';
+      el.style.padding = '10px 14px';
+      el.style.borderRadius = '6px';
+      el.style.color = '#fff';
+      el.style.fontWeight = '600';
+      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+      el.style.transition = 'opacity .2s ease';
+      el.style.opacity = '0.95';
+      document.body.appendChild(el);
+    }
+
+    const colors = {
+      success: '#16a34a', // vert
+      warning: '#ca8a04', // jaune
+      error: '#dc2626',   // rouge
+      info: '#2563eb'     // bleu
+    };
+    el.style.background = colors[type] || colors.info;
+    el.textContent = message;
+
+    clearTimeout(el._hideTimer);
+    el.style.display = 'block';
+    el.style.opacity = '0.95';
+    el._hideTimer = setTimeout(() => {
+      el.style.opacity = '0';
+      setTimeout(() => (el.style.display = 'none'), 250);
+    }, 1800);
+  }
+
   function scanLoop() {
     if (!stream) return;
     const w = video.videoWidth, h = video.videoHeight;
@@ -124,6 +163,44 @@
     }
   }
 
+  // Appel direct à l’API de validation (JSON) sans PRG/redirection
+  async function apiValidateCompositeToken(composite) {
+    const payload = { token: composite };
+    try {
+      const res = await fetch('/api/v1/validation/scan', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'fetch'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const isJson = (res.headers.get('content-type') || '').includes('application/json');
+      const data = isJson ? await res.json() : {};
+
+      if (res.ok) {
+        // Côté API “ok” signifie validé
+        // data.status peut être 'ok' ou 'already_validated' selon l’implémentation actuelle
+        const s = String(data.status || '').toLowerCase();
+        if (s === 'ok' || s === 'validated') {
+          return { kind: 'validated', data };
+        }
+        if (s === 'already_validated') {
+          return { kind: 'already_validated', data };
+        }
+        return { kind: 'validated', data }; // fallback
+      }
+
+      // Erreurs 4xx/404: message dans data.detail ou data.message
+      const msg = data.detail || data.message || 'Validation impossible';
+      return { kind: 'error', message: msg };
+    } catch (err) {
+      return { kind: 'error', message: 'Erreur réseau' };
+    }
+  }
+
   function sanitizeTokenInput(value) {
     return (value || '').trim().replace(/^["']|["']$/g, '');
   }
@@ -149,34 +226,30 @@
 
     const finalToken = sanitizeTokenInput(tokenField.value || '');
     if (!finalToken || finalToken.indexOf('.') === -1) {
-      alert('Clé utilisateur requise: scannez le QR du billet (format user_key.token).');
+      showToast('Clé utilisateur requise: format user_key.token', 'error');
       return;
     }
 
-    const fd = new FormData(form);
-    const body = new URLSearchParams();
-    for (const [k, v] of fd.entries()) body.append(k, v);
+    // Appel direct API, pas de rechargement, pas d’arrêt caméra
+    apiValidateCompositeToken(finalToken).then((result) => {
+      if (result.kind === 'validated') {
+        showToast('Validé', 'success');
+        try { playSuccessBeep(); } catch (_) {}
+      } else if (result.kind === 'already_validated') {
+        showToast('Déjà validé', 'warning');
+      } else {
+        showToast(result.message || 'Validation impossible', 'error');
+      }
 
-    fetchAndReplace('/admin/scan/validate', {
-      method: 'POST',
-      headers: {
-        'X-Requested-With': 'fetch',
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body
-    }).then(() => {
+      // Reset minimal du champ, garder la caméra active et focus pour enchaîner
       const input = document.getElementById('token-input');
       if (input) {
         input.value = '';
         input.focus();
       }
       lastToken = null;
-
-      setTimeout(() => {
-        stopCamera();
-        fetchAndReplace('/admin/scan', { method: 'GET', headers: { 'X-Requested-With': 'fetch' } })
-          .then(() => startCamera());
-      }, 3000);
+    }).catch(() => {
+      showToast('Erreur réseau', 'error');
     });
   }
 

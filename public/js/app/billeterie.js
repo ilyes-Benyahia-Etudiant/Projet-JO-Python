@@ -61,25 +61,57 @@
       else card.addEventListener("click", handler);
     });
 
-    document.addEventListener("click", (e) => {
-      const btn = e.target && e.target.closest && e.target.closest(".btn-add-to-cart");
-      if (!btn) return;
-      const evId = btn.getAttribute("data-ev-id");
-      if (!evId) {
+    // Intercepter le clic sur "Connexion" et l'icône panier pour rediriger selon l'état de connexion
+    document.addEventListener("click", async (e) => {
+      // Connexion
+      const loginLink = e.target.closest('a.btn-login[href="/auth"]');
+      if (loginLink) {
         e.preventDefault();
-        showMessage("warn", "Sélectionnez d’abord un événement, puis choisissez votre offre.");
+        try {
+          const res = await fetch("/api/v1/auth/me", { credentials: "include" });
+          if (res.ok) {
+            // Déjà connecté: aller directement à la page session (panier visible)
+            window.location.href = "/session";
+          } else {
+            // Non connecté: aller vers la page d'auth
+            window.location.href = "/auth";
+          }
+        } catch {
+          // En cas d'erreur réseau, fallback: page d'auth
+          window.location.href = "/auth";
+        }
         return;
       }
-      btn.classList.add("selected");
-      window.setTimeout(() => btn.classList.remove("selected"), 500);
+    
+      // Icône panier (billeterie)
+      const cartLink = e.target.closest('a.btn-cart[href="/session"]');
+      if (cartLink) {
+        e.preventDefault();
+        try {
+          const res = await fetch("/api/v1/auth/me", { credentials: "include" });
+          if (res.ok) {
+            // Déjà connecté: aller sur /session (cart.js affichera cart.v1)
+            window.location.href = "/session";
+          } else {
+            // Non connecté: demander authentification avant d'accéder au panier
+            window.location.href = "/auth";
+          }
+        } catch {
+          // Fallback auth
+          window.location.href = "/auth";
+        }
+        return;
+      }
     });
-
-    // Afficher un message succès quand un article est ajouté au panier
-    document.addEventListener("cart:itemAdded", (evt) => {
-      const d = (evt && evt.detail) || {};
-      const name = d.title || "Article";
-      const count = typeof d.count === "number" ? d.count : "";
-      showMessage("info", `“${name}” ajouté au panier ✓${count !== "" ? " (" + count + ")" : ""}`);
-    });
+    const btn = e.target && e.target.closest && e.target.closest(".btn-add-to-cart");
+    if (!btn) return;
+    const evId = btn.getAttribute("data-ev-id");
+    if (!evId) {
+      e.preventDefault();
+      showMessage("warn", "Sélectionnez d’abord un événement, puis choisissez votre offre.");
+      return;
+    }
+    btn.classList.add("selected");
+    window.setTimeout(() => btn.classList.remove("selected"), 500);
   });
-})();
+});
