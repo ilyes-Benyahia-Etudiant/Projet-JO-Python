@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import requests
 from urllib.parse import quote
+from backend.utils.csrf import get_or_create_csrf_token, attach_csrf_cookie_if_missing
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -45,9 +46,14 @@ def get_admin_scan(request: Request, token: str | None = Query(default=None)):
         "ticket": None,
         "validation": None,
     }
+    # Génère/met à disposition le token CSRF pour le formulaire et pose le cookie si absent
+    csrf = get_or_create_csrf_token(request)
+    context["csrf_token"] = csrf
 
     if not token:
-        return templates.TemplateResponse("admin-scan.html", context)
+        resp = templates.TemplateResponse("admin-scan.html", context)
+        attach_csrf_cookie_if_missing(resp, request, csrf)
+        return resp
 
     base_url = str(request.base_url).rstrip("/")
     safe_token = quote(token, safe="")
@@ -71,7 +77,9 @@ def get_admin_scan(request: Request, token: str | None = Query(default=None)):
     context["message"] = data.get("message")
     context["status"] = normalize_status_from_payload(data)
 
-    return templates.TemplateResponse("admin-scan.html", context)
+    resp = templates.TemplateResponse("admin-scan.html", context)
+    attach_csrf_cookie_if_missing(resp, request, csrf)
+    return resp
 
 @router.post("/admin/scan/validate")
 def post_admin_validate(request: Request, token: str = Form(...)):
