@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 countBadges: [
                     document.getElementById("cart-count-pill"),
                     document.getElementById("cart-fab-badge"),
-                ].filter(Boolean),
+                ],
             };
             this.renderItem = (item) => {
                 const lineTotal = item.price * item.quantity;
@@ -79,6 +79,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log("Fin de addItem – toast devrait être affiché");
             };
             this.cart = this.loadCart();
+            // Mise à jour immédiate du badge au chargement de la page
+            this.updateCartCountBadge();
             this.bindEvents();
             this.render();
         }
@@ -108,15 +110,19 @@ document.addEventListener("DOMContentLoaded", () => {
         updateCartCountBadge() {
             const count = this.countItems();
             this.$.countBadges.forEach((badge) => {
+                if (!badge) return; // Evite l'erreur quand un des badges n'existe pas sur la page
                 badge.textContent = String(count);
                 badge.style.display = count > 0 ? "inline-flex" : "none";
-                badge.setAttribute("aria-label", count > 0
-                    ? `Articles dans le panier: ${count}`
-                    : "Aucun article");
+                badge.setAttribute(
+                    "aria-label",
+                    count > 0 ? `Articles dans le panier: ${count}` : "Articles dans le panier: 0"
+                );
             });
         }
         render() {
             const { items, empty, total } = this.$;
+            // Toujours mettre à jour la pastille, même si la page ne contient pas le drawer panier
+            this.updateCartCountBadge();
             if (!items || !empty || !total)
                 return;
             if (this.cart.length === 0) {

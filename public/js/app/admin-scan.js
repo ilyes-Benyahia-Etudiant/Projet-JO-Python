@@ -64,19 +64,67 @@
     } catch (_) {}
   }
 
+  // Ajout: mise en cache des références DOM
+  function ensureDomRefs() {
+    els.video = els.video || document.getElementById('qr-video');
+    els.canvas = els.canvas || document.getElementById('qr-canvas');
+    els.camContainer = els.camContainer || document.getElementById('camera-container');
+    els.startBtn = els.startBtn || document.getElementById('start-camera');
+    els.stopBtn = els.stopBtn || document.getElementById('stop-camera');
+    els.tokenInput = els.tokenInput || document.getElementById('token-input');
+
+    if (els.video) {
+      els.video.setAttribute('playsinline', '');
+      // Sur iOS, muter la vidéo aide l’autoplay après interaction
+      els.video.muted = true;
+    }
+  }
+
   /*** Caméra ***/
   async function startCamera() {
     if (stream) return;
+
+    ensureDomRefs();
+
+    if (!els.video || !els.camContainer) {
+      alert('Éléments vidéo/caméra introuvables dans la page.');
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('Votre navigateur ne supporte pas getUserMedia. Utilisez HTTPS et un navigateur récent.');
+      return;
+    }
+
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      // Contrainte préférée: caméra arrière
+      const preferred = { video: { facingMode: { ideal: 'environment' } }, audio: false };
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(preferred);
+      } catch (e1) {
+        // Fallback large si la contrainte échoue
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
       els.video.srcObject = stream;
-      await els.video.play();
+      try { await els.video.play(); } catch (_) {}
+
       els.camContainer.style.display = '';
       if (els.startBtn) els.startBtn.style.display = 'none';
       if (els.stopBtn) els.stopBtn.style.display = '';
       scanLoop();
     } catch (err) {
-      alert('Impossible d’accéder à la caméra: ' + err);
+      let msg = 'Impossible d’accéder à la caméra.';
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        msg += ' Cette fonctionnalité nécessite une origine sécurisée (HTTPS).';
+      }
+      if (err?.name === 'NotAllowedError') {
+        msg += ' Permission refusée. Vérifiez les autorisations caméra du navigateur.';
+      }
+      if (err?.name === 'NotFoundError') {
+        msg += ' Aucune caméra détectée sur l’appareil.';
+      }
+      alert(msg);
     }
   }
 
@@ -202,21 +250,16 @@
 
   /*** Init ***/
   function init() {
-    // La validation se fait par soumission de formulaire standard (POST-Redirect-GET)
-    // Pas besoin de handler JS pour la validation, juste pour la caméra et l'autohide.
-    const startBtn = document.getElementById('start-camera');
-    const stopBtn = document.getElementById('stop-camera');
-    startBtn?.addEventListener('click', startCamera);
-    stopBtn?.addEventListener('click', stopCamera);
-    
-    const tokenInput = document.getElementById('token-input');
-    tokenInput?.focus();
+    ensureDomRefs();
 
-    // On attache notre nouvelle fonction au formulaire de validation
+    els.startBtn?.addEventListener('click', startCamera);
+    els.stopBtn?.addEventListener('click', stopCamera);
+
+    els.tokenInput?.focus();
+
     const validateForm = document.getElementById('validate-form');
     validateForm?.addEventListener('submit', handleValidateSubmit);
 
-    // Automasquage si le statut affiché est "Déjà validé"
     applyAutoHideForAlreadyValidated();
 
     window.addEventListener('beforeunload', stopCamera);

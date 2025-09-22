@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Response
-from fastapi.responses import RedirectResponse, FileResponse
-from starlette.status import HTTP_303_SEE_OTHER, HTTP_204_NO_CONTENT
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, RedirectResponse, Response
+from starlette.status import HTTP_204_NO_CONTENT, HTTP_303_SEE_OTHER
 from backend.config import PUBLIC_DIR
 
 def register_routes(app: FastAPI) -> None:

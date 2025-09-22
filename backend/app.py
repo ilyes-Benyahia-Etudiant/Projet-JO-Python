@@ -100,149 +100,15 @@ def mount_static_files(app: FastAPI) -> None:
     app.mount("/static", StaticFiles(directory=str(PUBLIC_DIR)), name="static")
     app.mount("/js", StaticFiles(directory=str(PUBLIC_DIR / "js")), name="js")
 
-def register_security_middleware(app: FastAPI) -> None:
-    @app.middleware("http")
-    async def security_headers(request: Request, call_next):
-        method = request.method.upper()
-        path = request.url.path
-        has_session = bool(request.cookies.get("sb_access"))
-        is_state_changing = method in ("POST", "PUT", "PATCH", "DELETE")
-        is_exempt = (
-            path in CSRF_EXEMPT_PATHS
-            or path.startswith("/public/")
-            or path.startswith("/static/")
-        )
-        set_csrf_cookie_value: str | None = None
-
-        csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME)
-        if not csrf_cookie:
-            set_csrf_cookie_value = secrets.token_urlsafe(32)
-
-        if is_state_changing and has_session and not is_exempt:
-            header_token = request.headers.get(CSRF_HEADER_NAME, "")
-            cookie_token = csrf_cookie or ""
-            form_token = ""
-
-            if not header_token:
-                ctype = request.headers.get("content-type", "")
-                if ctype.startswith("application/x-www-form-urlencoded"):
-                    body = await request.body()
-
-                    async def receive():
-                        return {"type": "http.request", "body": body, "more_body": False}
-                    request._receive = receive
-
-                    try:
-                        parsed_body = urllib.parse.parse_qs(body.decode())
-                        csrf_values = parsed_body.get("X-CSRF-Token", []) + parsed_body.get("csrf_token", [])
-                        if csrf_values:
-                            form_token = csrf_values[0]
-                    except Exception:
-                        form_token = ""
-
-            token = header_token or form_token
-            if not cookie_token or not token or not secrets.compare_digest(token, cookie_token):
-                return JSONResponse(status_code=403, content={"detail": "CSRF verification failed"})
-
-        response = await call_next(request)
-        # En-têtes de sécurité
-        if "X-Frame-Options" not in response.headers:
-            response.headers["X-Frame-Options"] = "DENY"
-        if "X-Content-Type-Options" not in response.headers:
-            response.headers["X-Content-Type-Options"] = "nosniff"
-        if "Referrer-Policy" not in response.headers:
-            response.headers["Referrer-Policy"] = "no-referrer"
-        if "Permissions-Policy" not in response.headers:
-            response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        if COOKIE_SECURE and "Strict-Transport-Security" not in response.headers:
-            response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
-
-        csp_connect = ["'self'"]
-        if SUPABASE_URL:
-            csp_connect.append(SUPABASE_URL.rstrip("/"))
-        swagger_cdns = ["https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"]
-        csp_connect.extend(swagger_cdns)
-        extra_img_sources = ["https://fastapi.tiangolo.com", "https://images.unsplash.com", "https://upload.wikimedia.org", "https://cdn.pixabay.com", "https://media.istockphoto.com"]
-
-        csp = (
-            "default-src 'self'; "
-            "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
-            f"img-src 'self' data: blob: {' '.join(extra_img_sources)}; "
-            f"style-src 'self' 'unsafe-inline' {' '.join(swagger_cdns)}; "
-            f"font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
-            f"script-src 'self' 'unsafe-inline' {' '.join(swagger_cdns)}; "
-            f"connect-src {' '.join(csp_connect)}"
-        )
-        response.headers["Content-Security-Policy"] = csp
-
-        if set_csrf_cookie_value:
-            response.set_cookie(
-                key=CSRF_COOKIE_NAME,
-                value=set_csrf_cookie_value,
-                httponly=False,
-                secure=COOKIE_SECURE,
-                samesite="Lax",
-                max_age=60 * 60,
-                path="/",
-            )
-        return response
-
-def register_no_cache_middleware(app: FastAPI) -> None:
-    @app.middleware("http")
-    async def no_cache_for_protected(request: Request, call_next):
-        response = await call_next(request)
-        path = request.url.path.rstrip("/")
-        if request.method == "GET" and (path == "/session" or path.startswith("/admin")):
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-            response.headers["Pragma"] = "no-cache"
-            response.headers["Expires"] = "0"
-        return response
-
-def register_exception_handlers(app: FastAPI) -> None:
-    @app.exception_handler(HTTPException)
-    async def html_redirect_on_auth_errors(request: Request, exc: HTTPException):
-        if exc.status_code in (401, 403):
-            accept = (request.headers.get("accept") or "").lower()
-            is_api = request.url.path.startswith("/api/")
-            if "text/html" in accept and not is_api:
-                detail = str(getattr(exc, "detail", "")) or (
-                    "Veuillez vous connecter" if exc.status_code == 401 else "Accès interdit"
-                )
-                msg = urllib.parse.quote_plus(detail)
-                return RedirectResponse(url=f"/auth?error={msg}", status_code=HTTP_303_SEE_OTHER)
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
-
-def register_routes(app: FastAPI) -> None:
-    @app.get("/", include_in_schema=False)
-    def root_redirect():
-        index_path = PUBLIC_DIR / "index.html"
-        if index_path.exists():
-            return FileResponse(str(index_path))
-        return RedirectResponse(url="/public/index.html", status_code=HTTP_303_SEE_OTHER)
-
-    @app.get("/index.html", include_in_schema=False)
-    def index_alias():
-        index_path = PUBLIC_DIR / "index.html"
-        if index_path.exists():
-            return FileResponse(str(index_path))
-        return RedirectResponse(url="/public/index.html", status_code=HTTP_303_SEE_OTHER)
-
-    @app.get("/accueil", include_in_schema=False)
-    def accueil_alias():
-        index_path = PUBLIC_DIR / "index.html"
-        if index_path.exists():
-            return FileResponse(str(index_path))
-        return RedirectResponse(url="/public/index.html", status_code=HTTP_303_SEE_OTHER)
-
-    @app.get("/favicon.ico", include_in_schema=False)
-    async def favicon():
-        return Response(status_code=HTTP_204_NO_CONTENT)
-
-# Ajout: import du registre centralisé
-from backend.app_setup.routers import register_routers
+# Remplace les définitions locales par des imports factorisés
+from backend.app_setup.middlewares import register_security_middleware, register_no_cache_middleware, register_basic_middlewares, register_force_https_middleware
+from backend.app_setup.exception_handlers import register_exception_handlers
+from backend.app_setup.routes import register_routes
+from backend.app_setup.static import mount_static_files
+from backend.app_setup.lifespan import lifespan as app_lifespan
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="JO API")
+    app = FastAPI(title="JO API", lifespan=app_lifespan)
     register_basic_middlewares(app)
     mount_static_files(app)
     register_security_middleware(app)
@@ -250,21 +116,17 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
     register_routes(app)
     # Remplace les inclusions dispersées par l’appel centralisé
+    from backend.app_setup.routers import register_routers
     register_routers(app)
     app.include_router(evenements_router)
-
+    # Ajouter le middleware HTTPS en dernier pour qu'il s’exécute en premier
+    register_force_https_middleware(app)
     return app
 
 # App globale
 app = create_app()
 
-# Middleware pour forcer HTTPS
-@app.middleware("http")
-async def force_https(request: Request, call_next):
-    if request.headers.get("x-forwarded-proto") == "http":
-        url = request.url._url.replace("http://", "https://")
-        return RedirectResponse(url, status_code=301)
-    return await call_next(request)
+
 
 # Ancienne fonction conservée pour compat éventuelle (n’effectue plus rien)
 async def init_rate_limiter():
