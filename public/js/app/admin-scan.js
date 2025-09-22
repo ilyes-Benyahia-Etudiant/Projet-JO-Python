@@ -251,8 +251,25 @@
       if (result.kind === 'validated') {
         showToast('Validé', 'success');
         try { playSuccessBeep(); } catch (_) {}
+
+        // Cacher immédiatement le bandeau de statut
+        const statusEl = document.getElementById('scan-status-banner');
+        if (statusEl) statusEl.style.display = 'none';
+
+        // Après 2s, cacher les détails du billet
+        window.setTimeout(() => {
+          const detailsEl = document.getElementById('ticket-details');
+          if (detailsEl) detailsEl.style.display = 'none';
+        }, 2000);
+
       } else if (result.kind === 'already_validated') {
         showToast('Déjà validé', 'warning');
+
+        // Cacher immédiatement le bandeau de statut
+        const statusEl = document.getElementById('scan-status-banner');
+        if (statusEl) statusEl.style.display = 'none';
+
+        // (On conserve les détails, sauf si tu veux aussi les masquer ici)
       } else {
         showToast(result.message || 'Validation impossible', 'error');
       }
