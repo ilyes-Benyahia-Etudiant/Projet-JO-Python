@@ -38,7 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <div class="cart-item-info">
             <div class="cart-item-title" title="${item.title}">${item.title}</div>
-            ${item?.event ? `<div class="cart-item-event">${item.event.type || ""} • ${item.event.nom || ""} • ${item.event.date || ""}</div>` : ""}
             <div class="cart-item-price">${this.formatCurrency(item.price)}</div>
           </div>
           <div class="quantity-group">
@@ -58,13 +57,11 @@ document.addEventListener("DOMContentLoaded", () => {
           </button>
         </div>`;
             };
-            this.addItem = ({ id, title, price, quantity = 1, event }) => {
+            this.addItem = ({ id, title, price, quantity = 1 }) => {
                 console.log(`addItem appelée pour ID: ${id}, Titre: ${title}`);
                 const existing = this.findItem(id);
                 if (existing) {
                     existing.quantity += quantity || 1;
-                    // Si un événement est fourni, on l’associe si absent
-                    if (event && !existing.event) existing.event = event;
                     console.log("Article existant mis à jour");
                 }
                 else {
@@ -73,22 +70,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         title: title || "Article",
                         price: price || 0,
                         quantity: quantity || 1,
-                        event: event || undefined,
                     });
                     console.log("Nouvel article ajouté au panier");
                 }
                 this.saveCart();
                 this.render();
                 this.showToast(`“${title || "Article"}” ajouté au panier`);
-                // Publier un événement global pour que les pages (ex: billeterie) puissent réagir
-                document.dispatchEvent(new CustomEvent("cart:itemAdded", {
-                    detail: { id, title: title || "Article", count: this.countItems() }
-                }));
                 console.log("Fin de addItem – toast devrait être affiché");
             };
             this.cart = this.loadCart();
-            // Ajout: hydrater les prix depuis le backend si nécessaire
-            this.hydratePrices().catch(() => {});
             this.bindEvents();
             this.render();
         }
@@ -127,19 +117,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         render() {
             const { items, empty, total } = this.$;
-            // Toujours mettre à jour la pastille, même si on n'a pas l'UI du panier (billeterie)
-            this.updateCartCountBadge();
-            if (!items || !empty || !total) return;
-
+            if (!items || !empty || !total)
+                return;
             if (this.cart.length === 0) {
                 items.innerHTML = "";
                 empty.style.display = "block";
                 total.textContent = this.formatCurrency(0);
+                this.updateCartCountBadge();
                 return;
             }
             empty.style.display = "none";
             items.innerHTML = this.cart.map(this.renderItem).join("");
             total.textContent = this.formatCurrency(this.calculateTotal());
+            this.updateCartCountBadge();
         }
         formatCurrency(amount) {
             return this.currency.format(amount);
@@ -205,17 +195,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     const id = addBtn.dataset.id;
                     const title = addBtn.dataset.title || "Article";
                     const price = parseFloat(addBtn.dataset.price || "0");
-                    const evId = addBtn.dataset.evId;
-                    const eventInfo = evId
-                        ? {
-                            id: evId,
-                            nom: addBtn.dataset.evNom || "",
-                            type: addBtn.dataset.evType || "",
-                            date: addBtn.dataset.evDate || "",
-                        }
-                        : undefined;
                     if (id)
-                        this.addItem({ id, title, price, event: eventInfo });
+                        this.addItem({ id, title, price });
                     return;
                 }
                 // Actions dans le panier
@@ -290,61 +271,6 @@ document.addEventListener("DOMContentLoaded", () => {
         closeDrawer() {
             const cart = document.getElementById("cart");
             cart === null || cart === void 0 ? void 0 : cart.classList.remove("open");
-        }
-        // Ajout: Hydratation des prix et validation des items via l’API
-        async hydratePrices() {
-            try {
-                const ids = Array.from(new Set(this.cart.map((i) => i.id))).filter(Boolean);
-                if (ids.length === 0) return;
-
-                const url = `/api/v1/payments/offres?ids=${encodeURIComponent(ids.join(","))}`;
-                const res = await fetch(url, { credentials: "include" });
-                if (!res.ok) return;
-                const data = await res.json().catch(() => ({}));
-                const list = (data && data.offres) || [];
-                const byId = new Map(list.map((o) => [String(o.id), o]));
-
-                // Reconstruire le panier: mettre à jour prix/titre et retirer les inconnus
-                let removed = 0;
-                const updated = [];
-                for (const item of this.cart) {
-                    const o = byId.get(String(item.id));
-                    if (!o) {
-                        removed++;
-                        continue; // Offre inconnue: on retire l’article invalide
-                    }
-                    updated.push({
-                        ...item,
-                        title: item.title || o.title || "Article",
-                        price: typeof o.price === "number" ? o.price : Number(o.price || 0),
-                    });
-                }
-                if (removed > 0 || updated.length !== this.cart.length) {
-                    this.cart = updated;
-                    this.saveCart();
-                    this.render();
-                    if (removed > 0) {
-                        this.showToast(`${removed} article(s) retiré(s): offre(s) invalide(s)`);
-                    }
-                } else {
-                    // Si rien retiré, mais prix 0 → mettre à jour pour cohérence
-                    let changed = false;
-                    for (const item of this.cart) {
-                        const o = byId.get(String(item.id));
-                        if (o && (item.price !== o.price)) {
-                            item.price = o.price;
-                            changed = true;
-                        }
-                    }
-                    if (changed) {
-                        this.saveCart();
-                        this.render();
-                    }
-                }
-            } catch (e) {
-                // Tolérant: ne bloque pas l’UI
-                console.warn("hydratePrices failed", e);
-            }
         }
     }
     // ✅ Initialisation

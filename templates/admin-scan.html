@@ -315,28 +315,33 @@ body {
         <div id="scan-hint" class="text-gray-500 mt-1">Alignez le QR code dans le cadre.</div>
       </div>
 
-      <!-- Bandeau d’état -->
+      <!-- Bloc de statut unifié et logique -->
       {% if status %}
         {% set statemap = {
-            "Invalid":   {"label": "Invalide",        "css": "border-red-600 bg-red-100 text-red-600"},
-            "Scanned":   {"label": "Prêt à valider",  "css": "border-amber-600 bg-amber-100 text-amber-700"},
-            "Validated": {"label": "Validé",          "css": "border-green-600 bg-emerald-100 text-green-700"},
-            "AlreadyValidated": {"label": "Déjà validé", "css": "border-red-600 bg-red-100 text-red-600"}
-          } %}
-        <div id="scan-status-banner" class="mt-3 px-3 py-2 rounded-lg font-semibold border {{ statemap.get(status, {'label':'Inconnu','css':'border-gray-600 bg-gray-200 text-gray-700'}).css }}">
-          {{ statemap.get(status, {'label':'Inconnu'}).label }}
+            "Validated":        {"label": "Validé", "css": "border-green-600 bg-emerald-100 text-green-700"},
+            "Scanned":          {"label": "Prêt à valider", "css": "border-amber-600 bg-amber-100 text-amber-700"},
+            "Error":            {"label": "Erreur", "css": "border-red-600 bg-red-100 text-red-600"},
+            "AlreadyValidated": {"label": "Déjà validé", "css": "border-amber-600 bg-amber-100 text-amber-700"},
+            "Invalid":          {"label": "Billet introuvable", "css": "border-red-600 bg-red-100 text-red-600"}
+          }
+        %}
+        {% set status_info = statemap.get(status, statemap['Error']) %}
+
+        <div id="scan-status-banner"
+             data-status="{{ status }}"
+             class="mt-3 px-3 py-2 rounded-lg font-semibold border {{ status_info.css }}">
+          {{ message or status_info.label }}
         </div>
       {% endif %}
 
       <!-- Détails du billet -->
       {% if ticket %}
-        <div id="ticket-details" class="mt-3 space-y-1">
-          <div><strong>Token:</strong> {{ ticket.token }}</div>
-          {% set title = ticket.title or (ticket.offre and ticket.offre.title) or (ticket.offre_title) %}
+        {% set title = ticket.title or (ticket.offre and ticket.offre.title) or (ticket.offre_title) %}
+        {% set email = ticket.userEmail or (ticket.users and ticket.users.email) or ticket.email %}
+        {% set created_at = ticket.created_at or ticket.createdAt %}
+        <div id="ticket-details" class="mt-3">
           {% if title %}<div><strong>Détails:</strong> {{ title }}</div>{% endif %}
-          {% set email = ticket.userEmail or (ticket.users and ticket.users.email) or ticket.email %}
           {% if email %}<div><strong>Acheteur:</strong> {{ email }}</div>{% endif %}
-          {% set created_at = ticket.created_at or ticket.createdAt %}
           {% if created_at %}<div><strong>Créé le:</strong> {{ created_at }}</div>{% endif %}
         </div>
       {% elif message %}
@@ -345,7 +350,7 @@ body {
 
       <!-- Bouton Valider si prêt -->
       {% if status == "Scanned" and token %}
-        <form method="post" action="/admin/scan/validate" class="mt-3">
+        <form id="validate-form" method="post" action="/admin/scan/validate" class="mt-3">
           <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
           <input type="hidden" name="token" value="{{ token }}">
           <button type="submit" class="btn btn-success">Valider le billet</button>

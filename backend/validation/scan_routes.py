@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Request, Form, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import requests
 from urllib.parse import quote
-from backend.utils.csrf import get_or_create_csrf_token, attach_csrf_cookie_if_missing
+from backend.utils.csrf import get_csrf_token
+from backend.utils.jinja import templates
+from backend.validation.schemas import normalize_status_from_payload
+from backend.validation.services import validate_ticket_service
+from backend.validation.schemas import TicketStatus, TicketValidationRequest, TicketValidationResponse
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -12,88 +16,66 @@ def normalize_status_from_payload(payload: dict):
     # Retourne l'un de: "Invalid" | "Scanned" | "Validated" | "AlreadyValidated"
     if not payload:
         return "Invalid"
-
-    # Cas explicite par code HTTP côté appelant (on laisse l'appelant décider)
     status = payload.get("status")
     ticket = payload.get("ticket")
     validation = payload.get("validation")
-
-    # Si l'API renvoie 'validated'/'already_validated'
     if isinstance(status, str):
         s = status.lower()
         if s == "validated":
             return "Validated"
         if s == "already_validated":
             return "AlreadyValidated"
-
-    # Si un ticket existe mais pas de validation => prêt à valider
     if ticket and not validation:
         return "Scanned"
-
-    # Si un ticket et une validation existent => déjà validé
     if ticket and validation:
         return "AlreadyValidated"
-
     return "Invalid"
 
 @router.get("/admin/scan", response_class=HTMLResponse)
-def get_admin_scan(request: Request, token: str | None = Query(default=None)):
+async def get_admin_scan(request: Request, token: str | None = Query(default=None)):
+    """Affiche la page de scan en se basant uniquement sur l'état réel du billet."""
+    csrf_token_value = get_csrf_token(request)
     context = {
-        "request": request,
-        "token": token or "",
-        "status": None,
-        "message": None,
-        "ticket": None,
-        "validation": None,
+        "request": request, "csrf_token": csrf_token_value, "token": token or "",
+        "status": None, "message": None, "ticket": None,
     }
-    # Génère le CSRF pour le template et pose le cookie si manquant
-    csrf = get_or_create_csrf_token(request)
-    context["csrf_token"] = csrf
 
-    if not token:
-        resp = templates.TemplateResponse("admin-scan.html", context)
-        attach_csrf_cookie_if_missing(resp, request, csrf)
-        return resp
+    if token:
+        try:
+            api_url = request.url_for("get_ticket_by_token_api", token=token)
+            r = requests.get(str(api_url), cookies=request.cookies, headers={"Accept": "application/json"}, timeout=5)
+            data = r.json() if r.status_code == 200 else {}
+            status = normalize_status_from_payload(data)
+            ticket = data.get("ticket")
+            message = data.get("message")
 
-    base_url = str(request.base_url).rstrip("/")
-    safe_token = quote(token, safe="")
-    url = f"{base_url}/api/v1/validation/ticket/{safe_token}"
+            # Messages explicites selon le statut
+            if status == "Scanned":
+                message = "Prêt à valider"
+            elif status == "AlreadyValidated":
+                message = "Déjà validé"
+            elif status == "Invalid":
+                message = "Billet introuvable"
 
-    try:
-        r = requests.get(url, cookies=request.cookies, timeout=10)
-        if r.status_code == 404:
-            context["status"] = "Invalid"
-            context["message"] = "Billet inconnu"
-            return templates.TemplateResponse("admin-scan.html", context)
+            context.update({"ticket": ticket, "status": status, "message": message})
+        except requests.RequestException:
+            context.update({"status": "Error", "message": "Erreur de communication API."})
 
-        data = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
-    except Exception as e:
-        context["status"] = "Invalid"
-        context["message"] = f"Erreur réseau: {e}"
-        return templates.TemplateResponse("admin-scan.html", context)
-
-    context["ticket"] = data.get("ticket")
-    context["validation"] = data.get("validation")
-    context["message"] = data.get("message")
-    context["status"] = normalize_status_from_payload(data)
-
-    resp = templates.TemplateResponse("admin-scan.html", context)
-    attach_csrf_cookie_if_missing(resp, request, csrf)
+    resp = templates.TemplateResponse("admin-scan.html", context=context)
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return resp
 
 @router.post("/admin/scan/validate")
-def post_admin_validate(request: Request, token: str = Form(...)):
-    base_url = str(request.base_url).rstrip("/")
-    url = f"{base_url}/api/v1/validation/scan"
-
-    headers = {"Content-Type": "application/json"}
-    csrf = request.cookies.get("csrf_token") or request.cookies.get("csrftoken")
-    if csrf:
-        headers["X-CSRF-Token"] = csrf
-
+async def post_admin_validate(request: Request, token: str = Form(...)):
+    """
+    Valide un billet directement et retourne une réponse JSON.
+    """
     try:
-        r = requests.post(url, json={"token": token}, cookies=request.cookies, headers=headers, timeout=10)
-        # Redirige vers GET /admin/scan?token=... pour un rendu propre après POST (PRG)
-        return RedirectResponse(url=f"/admin/scan?token={token}", status_code=303)
-    except Exception:
-        return RedirectResponse(url=f"/admin/scan?token={token}", status_code=303)
+        validation_payload = TicketValidationRequest(token=token)
+        response_data = await validate_ticket_service(validation_payload)
+        if response_data.status == TicketStatus.VALIDATED:
+            return JSONResponse(content={"status": "validated", "message": "Billet Validé avec succès !"})
+        else:
+            return JSONResponse(status_code=400, content={"status": "error", "message": response_data.message})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": f"Erreur interne du serveur: {e}"})

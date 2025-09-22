@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response, FileResp
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.status import HTTP_303_SEE_OTHER, HTTP_204_NO_CONTENT
 from contextlib import asynccontextmanager
 try:
@@ -78,6 +79,7 @@ async def lifespan(app: FastAPI):
 
 # --- Regroupements de configuration ---
 def register_basic_middlewares(app: FastAPI) -> None:
+    app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "replace_me_with_a_long_random_secret"))
     app.add_middleware(
         CORSMiddleware,
         allow_origins=CORS_ORIGINS,

@@ -218,7 +218,11 @@ function initializeAuthForms() {
     bindFormSubmit({
         formSelector: SELECTORS.loginForm,
         apiEndpoint: "/api/v1/auth/login",
-        redirectUrl: (data) => (data.user.role === "admin" ? "/admin" : (data.user.role === "scanner" ? "/admin/scan" : "/session")),
+        redirectUrl: (data) => data.user.role === "admin"
+            ? "/admin"
+            : data.user.role === "scanner"
+                ? "/admin/scan"
+                : "/session",
     });
     // Inscription
     bindFormSubmit({
@@ -233,13 +237,14 @@ function initializeAuthForms() {
             return out;
         },
         onSuccess: (data, { form, messageEl }) => {
+            var _a;
             const asAny = data;
             const msg = (asAny && asAny.message) ||
                 "Inscription réussie ! Vérifiez votre email pour confirmer et activer votre compte.";
             setMessage(messageEl, msg, "ok");
-            if (asAny && asAny.access_token && asAny.user) {
-                const role = (asAny.user && asAny.user.role) || "user";
-                const dest = role === "admin" ? "/admin" : (role === "scanner" ? "/admin/scan" : "/session");
+            if ((data === null || data === void 0 ? void 0 : data.access_token) && (data === null || data === void 0 ? void 0 : data.user)) {
+                const role = ((_a = data.user) === null || _a === void 0 ? void 0 : _a.role) || "user";
+                const dest = role === "admin" ? "/admin" : role === "scanner" ? "/admin/scan" : "/session";
                 setTimeout(() => {
                     window.location.assign(dest);
                 }, 500);
