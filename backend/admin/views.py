@@ -298,16 +298,20 @@ def admin_scan_get(request: Request, token: Optional[str] = Query(None), user: d
 
     # Si un token est fourni en query => on calcule l'état côté serveur
     if context["token"]:
-        ticket = get_ticket_by_token(context["token"])
+        # Normaliser le token composite: user_key.token => token (partie droite)
+        composite = context["token"]
+        clean_token = composite.rsplit('.', 1)[-1]
+
+        ticket = get_ticket_by_token(clean_token)
         if not ticket:
             context["status"] = "Invalid"
             context["message"] = "Billet introuvable"
         else:
-            last = get_last_validation(context["token"])
+            last = get_last_validation(clean_token)
             context["ticket"] = ticket
             context["validation"] = last or None
-            # S'il existe une validation, on considère le billet comme validé
-            context["status"] = "Validated" if last else "Scanned"
+            # Afficher "Déjà validé" si une validation existe lors de la recherche
+            context["status"] = "AlreadyValidated" if last else "Scanned"
 
     resp = templates.TemplateResponse("admin-scan.html", context)
     attach_csrf_cookie_if_missing(resp, request, csrf)
@@ -463,7 +467,7 @@ async def creer_evenement(request: Request, user: dict = Depends(require_admin))
     })
     if not created:
         return RedirectResponse(url="/admin?view=evenements&error=Echec%20de%20la%20cr%C3%A9ation", status_code=HTTP_303_SEE_OTHER)
-    return RedirectResponse(url="/admin?view=evenements&message=Ev%C3%A9nement%20cr%C3%A9%C3%A9", status_code=HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/admin?view=evenements&message=Ev%C3%A9nement%20cr%C3%A9%C3%A9e", status_code=HTTP_303_SEE_OTHER)
 
 @router.get("/evenements/{evenement_id}/edit", response_class=HTMLResponse)
 @router.get("/evenements/{evenement_id}/edit/", response_class=HTMLResponse)
