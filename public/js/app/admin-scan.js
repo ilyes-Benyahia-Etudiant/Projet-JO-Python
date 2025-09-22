@@ -163,8 +163,15 @@
         lastScanTs = now;
         if (tokenInput) {
           tokenInput.value = token;
-          // Déclenche la soumission du formulaire de recherche
-          tokenInput.form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          // Déclenche la soumission du formulaire de recherche (plus robuste)
+          const form = tokenInput.form;
+          if (form) {
+            if (typeof form.requestSubmit === 'function') {
+              form.requestSubmit();
+            } else {
+              form.submit();
+            }
+          }
         }
         if (navigator.vibrate) navigator.vibrate(100);
       }
@@ -256,6 +263,16 @@
     els.stopBtn?.addEventListener('click', stopCamera);
 
     els.tokenInput?.focus();
+
+    // Soumission auto si le champ token est déjà pré-rempli au chargement
+    const tokenForm = document.getElementById('token-form');
+    if (tokenForm && els.tokenInput && els.tokenInput.value && els.tokenInput.value.trim().length > 0) {
+      if (typeof tokenForm.requestSubmit === 'function') {
+        tokenForm.requestSubmit();
+      } else {
+        tokenForm.submit();
+      }
+    }
 
     const validateForm = document.getElementById('validate-form');
     validateForm?.addEventListener('submit', handleValidateSubmit);
