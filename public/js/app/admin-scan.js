@@ -163,17 +163,34 @@
     }
   }
 
+  // Helper: lire un cookie par nom (pour récupérer csrf_token)
+  function getCookie(name) {
+    const parts = ('; ' + document.cookie).split('; ' + name + '=');
+    if (parts.length < 2) return null;
+    return decodeURIComponent(parts.pop().split(';').shift());
+  }
+
   // Appel direct à l’API de validation (JSON) sans PRG/redirection
   async function apiValidateCompositeToken(composite) {
     const payload = { token: composite };
     try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'fetch'
+      };
+      // Injecter le header CSRF depuis le cookie
+      const csrf =
+        getCookie('csrf_token') ||
+        getCookie('XSRF-TOKEN') ||
+        getCookie('CSRF-TOKEN');
+      if (csrf) {
+        headers['X-CSRF-Token'] = csrf;
+      }
+
       const res = await fetch('/api/v1/validation/scan', {
         method: 'POST',
         credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'fetch'
-        },
+        headers,
         body: JSON.stringify(payload)
       });
 
@@ -182,7 +199,6 @@
 
       if (res.ok) {
         // Côté API “ok” signifie validé
-        // data.status peut être 'ok' ou 'already_validated' selon l’implémentation actuelle
         const s = String(data.status || '').toLowerCase();
         if (s === 'ok' || s === 'validated') {
           return { kind: 'validated', data };

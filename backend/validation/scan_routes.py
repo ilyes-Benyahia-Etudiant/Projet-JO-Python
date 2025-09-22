@@ -46,7 +46,7 @@ def get_admin_scan(request: Request, token: str | None = Query(default=None)):
         "ticket": None,
         "validation": None,
     }
-    # Génère/met à disposition le token CSRF pour le formulaire et pose le cookie si absent
+    # Génère le CSRF pour le template et pose le cookie si manquant
     csrf = get_or_create_csrf_token(request)
     context["csrf_token"] = csrf
 
