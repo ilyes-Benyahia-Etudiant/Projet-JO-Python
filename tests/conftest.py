@@ -119,17 +119,16 @@ def mock_db_dependency(monkeypatch):
     monkeypatch.setattr("backend.users.repository.get_offers", lambda: [])
     monkeypatch.setattr("backend.users.repository.get_user_orders", lambda user_id: [])
 
-    # Patch les fonctions de admin/service
+    
     monkeypatch.setattr("backend.admin.service.get_offre_by_id", lambda offre_id: {"id": offre_id, "title": "Test Offre", "price": 100})
 
-    # Patch les fonctions de commandes/repository
+    
     monkeypatch.setattr("backend.commandes.repository.fetch_admin_commandes", lambda limit=100: [])
-    # (supprimé) monkeypatch.setattr("backend.commandes.repository.get_commande_by_token", lambda token: None)
-    # Patch les fonctions de payments/repository
+    
     monkeypatch.setattr("backend.payments.repository.insert_commande", lambda **kwargs: {"status": "ok"})
     monkeypatch.setattr("backend.payments.repository.insert_commande_with_token", lambda **kwargs: {"status": "ok"})
     monkeypatch.setattr("backend.payments.repository.insert_commande_service", lambda **kwargs: {"status": "ok"})
     monkeypatch.setattr("backend.payments.repository.fetch_offres_by_ids", lambda ids: [])
 
-    # Patch la health info
+   
     monkeypatch.setattr("backend.health.service.health_supabase_info", lambda: {"connect_ok": True})

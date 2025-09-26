@@ -326,227 +326,7 @@ header {
   background: #555;
 }
 
-/* Layout */
-.container {
-  max-width: 980px;
-  margin: 24px auto;
-  padding: 0 16px;
-}
-
-.hero {
-  padding: 0;
-}
-
-.hero h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
-}
-
-.hero p {
-  margin: 0 0 16px;
-  color: var(--muted);
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .navbar-links {
-    display: none;
-    position: absolute;
-    right: 32px;
-    top: 64px;
-    margin: 0;
-    background: #fff;
-    flex-direction: column;
-    gap: 0;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    border-radius: 8px;
-    min-width: 160px;
-    z-index: 100;
-    padding: 8px 12px;
-  }
-
-  .navbar-links.open {
-    display: flex;
-  }
-
-  .hamburger {
-    display: flex !important;
-  }
-}
-
-@media (min-width: 1025px) {
-  .hamburger {
-    display: none !important;
-  }
-
-  .navbar-links {
-    display: flex !important;
-    position: static;
-    gap: 24px;
-    box-shadow: none;
-    border-radius: 0;
-    min-width: unset;
-    z-index: auto;
-    margin: 0 auto;
-  }
-}
-
-
-
-/* carousel */
-.carousel {
-  position: relative;
-  width: 100vw; /* pleine largeur viewport */
-  height: calc(100vh - var(--navbar-height)); /* pleine hauteur visible moins navbar */
-  overflow: hidden;
-  margin-top: 0;
-  z-index: 1;
-  border-radius: 0; /* pleine largeur = pas d’arrondi */
-}
-
-.carousel-container { 
-  position: relative; 
-  width: 100%; 
-  margin: 0 auto; 
-}
-
-
-.carousel-track { 
-  position: relative; 
-  width: 100%; 
-  height: 100%; }
-
-
-.carousel-img {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transform: scale(1);
-  transition: opacity 0.6s ease, transform 1.5s ease;
-  pointer-events: none;
-  filter: none; /* supprimer le grisage */
-}
-
-
-.carousel-img.active {
-  opacity: 1;
-  z-index: 1;
-  pointer-events: auto;
-}
-
-
-
-
-/* Désactiver le filtre (overlay) du carrousel */
-.carousel::after {
-  content: none !important;
-  background: none !important;
-}
-
-/* Mise en évidence du contenu hero par-dessus l’overlay */
-.carousel .hero-content {
-  position: absolute;
-  left: 32px;
-  bottom: 32px;
-  color: #fff;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  max-width: 70%;
-  pointer-events: auto;
-  display: block;
-  opacity: 1;
-
-  z-index: 3; /* au-dessus de l’overlay */
-  background: rgba(0, 0, 0, 0.35);
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
-  padding: 16px 20px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
-}
-
-.carousel .hero-content h1 {
-  font-size: 2.2rem;
-  line-height: 1.2;
-  margin: 0 0 10px 0;
-  letter-spacing: 0.2px;
-}
-
-.carousel .hero-content p {
-  font-size: 1.05rem;
-  margin: 0 0 12px 0;
-  color: #f3f4f6;
-}
-
-/* Bouton mis en avant */
-.btn-primary {
-  background: #e6b800;
-  color: var(--dark);
-  padding: 0.75rem 2rem;
-  border-radius: var(--radius);
-  font-weight: 600;
-  transition: all 0.3s ease;
-  text-decoration: none;
-}
-
-.btn-primary:hover {
-  background: #e6e20071;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
-
-@media (max-width: 768px) {
-  .carousel .hero-content {
-    left: 16px;
-    right: 16px;
-    bottom: 16px;
-    padding: 14px 16px;
-  }
-  .carousel .hero-content h1 { font-size: 1.6rem; }
-  .carousel .hero-content p { font-size: 0.98rem; }
-  .hero .btn-primary { padding: 10px 16px; }
-}
-.carousel-title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #fff;
-  font-size: 2.8rem;
-  font-weight: bold;
-  text-align: center;
-  text-shadow: 0 2px 16px rgba(0,0,0,0.7);
-  z-index: 2;
-  width: 90vw;
-  pointer-events: none;
-}
-
-/* faire déborder la section hero de .container pour pleine largeur */
-.container .hero {
-  position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
-  width: 100vw;
-}
-
-
-/* supprimer l’espace entre le header (navbar) et le carrousel */
-header + .container,
-header + main,
-header + main.container,
-header + main .container:first-child {
-  margin-top: 0;
-  padding-top: 0;
-}
-
-
-/* ===== Events ===== */
+/* Section événements déjà existante (.event-card, .event-content, .event-btn, .arrow) */
 .events-section {
   padding: 80px 32px;
   background: #fff;
@@ -607,51 +387,79 @@ header + main .container:first-child {
   object-fit: cover;
 }
 
-.event-content {
-  padding: 24px;
-}
-
-.event-content h3 {
-  font-size: 1.5rem;
-  color: #222;
-  margin: 0 0 12px 0;
-}
-
-.event-content p {
-  color: #666;
-  line-height: 1.6;
-  margin: 0 0 24px 0;
-}
-
-.event-btn {
-  background: #222;
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
+/* ====== ÉVÉNEMENTS — icônes plus grandes et centrées ====== */
+.event-icon {
+  width: 100%;
+  height: 220px;         /* plus grand */
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  font-size: 5.5rem;     /* icône agrandie */
+  line-height: 1;
+  text-align: center;
+}
+
+.event-card:hover .event-icon {
+  transform: scale(1.06); /* léger effet au survol */
+}
+
+/* S’assure que le contenu des cartes est centré */
+.event-content {
+  text-align: center;
+}
+
+/* Centre le bouton d’action dans la carte */
+.event-btn {
+  margin: 0 auto;
+}
+
+.event-content {
+  padding: 1.5rem;       /* override des 24px existants */
+  text-align: center;    /* centrage horizontal */
+}
+
+.event-content h3 {
+  font-size: 1.3rem;     /* override des 1.5rem existants */
+  margin-bottom: 0.5rem;
+  color: var(--dark);
+}
+
+.event-content p {
+  color: var(--gray);    /* remplace var(--gray-dark) qui n'existe pas */
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.2rem;
+}
+
+/* Bouton aligné au centre */
+.event-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  width: 44px;           /* override des 40px existants */
+  height: 44px;          /* override des 40px existants */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  margin: 0 auto;        /* centre le bouton */
 }
 
 .event-btn:hover {
-  background: #fff;
-  color: #222;
-  border: 2px solid #222;
+  background: #005ea2;   /* override du hover existant */
+  transform: scale(1.1);
 }
 
 .arrow {
-  font-size: 1.2rem;
+  font-weight: bold;
+  font-size: 1.1rem;     /* override des 1.2rem existants */
   transition: transform 0.3s;
 }
 
 .event-btn:hover .arrow {
-  transform: scale(1.2);
+  transform: translateX(2px); /* override du scale existant */
 }
 
 .event-btn:hover {
@@ -936,4 +744,242 @@ summary:hover { color: #e31837; } /* Rouge JO */
     justify-content: center;
   }
 }
+
+/* ========== CAROUSEL — HERO CONTENT ========== */
+.hero {
+  position: relative;
+  min-height: calc(100vh - var(--navbar-height));
+}
+
+.carousel-container {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - var(--navbar-height));
+  overflow: hidden;
+}
+
+.hero-content {
+  position: absolute;
+  inset: 0;                        /* occupe toute la zone du hero */
+  display: grid;
+  place-items: center;             /* centre parfaitement le contenu */
+  text-align: center;
+  padding: 0 1rem;
+  z-index: 2;                      /* au-dessus des images et de l’overlay */
+  color: #fff;
+}
+
+.hero-content h1 {
+  font-size: 3rem;
+  line-height: 1.1;
+  margin: 0 0 1rem;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+}
+
+.hero-content p {
+  max-width: 800px;
+  margin: 0 auto 1.5rem;
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.9);
+}
+
+/* Bouton principal (CTA) */
+.btn-primary {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 0.85rem 1.4rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  border: none;
+}
+
+.btn-primary:hover {
+  background: #005ea2;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .carousel-container, .hero {
+    min-height: 60vh;
+    height: 60vh;
+  }
+  .hero-content h1 {
+    font-size: 2rem;
+  }
+  .hero-content p {
+    font-size: 1rem;
+  }
+}
+
+/* ========== CAROUSEL — RESTAURATION ========== */
+.hero {
+  position: relative;
+  min-height: calc(100vh - var(--navbar-height));
+  display: block;
+}
+
+.carousel-container {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - var(--navbar-height));
+  overflow: hidden;
+}
+
+/* Overlay de lecture (haut -> bas) */
+.carousel-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--carousel-overlay-start),
+    var(--carousel-overlay-end)
+  );
+  z-index: 1;
+}
+
+.carousel,
+.carousel-track {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Slides: empilées, couvrent toute la zone, fondu + zoom progressif */
+.carousel-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;                /* géré ensuite par JS */
+  transform: scale(1);       /* géré ensuite par JS */
+  transition: opacity 0.8s ease, transform 8s linear;
+  will-change: opacity, transform;
+}
+
+/* Première image visible avant l'init JS pour éviter un écran vide */
+.carousel-img:first-child {
+  opacity: 1;
+}
+
+/* Contenu par-dessus l’overlay */
+.hero-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: white;
+  max-width: 800px;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  z-index: 2;
+}
+
+.hero-content h1 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.hero-content p {
+  font-size: 1.15rem;
+  margin-bottom: 2rem;
+  font-weight: 300;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
+.btn-primary {
+  display: inline-block;
+  background: #ffcc00; /* Jaune olympique */
+  color: #202124;
+  padding: 1rem 2.2rem;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.15rem;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3);
+  letter-spacing: 0.5px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #e6b800;
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 16px rgba(255, 204, 0, 0.5);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1024px) {
+  .carousel-container {
+    height: 420px;
+  }
+
+  .hero-content h1 {
+    font-size: 2.3rem;
+  }
+
+  .hero-content p {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .carousel-container {
+    height: 350px;
+    border-radius: 10px;
+  }
+
+  .hero-content {
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .hero-content h1 {
+    font-size: 2rem;
+  }
+
+  .hero-content p {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-primary {
+    padding: 0.9rem 1.8rem;
+    font-size: 1.05rem;
+  }
+}
+
+/* Responsif: hauteur réduite sur mobile */
+@media (max-width: 768px) {
+  .carousel-container {
+    height: 60vh;
+  }
+  .hero {
+    min-height: 60vh;
+  }
+}
+
+
+
+
 
