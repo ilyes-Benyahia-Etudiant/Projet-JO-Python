@@ -282,6 +282,15 @@ def require_scanner(user: Dict[str, Any] = Depends(get_current_user)):
 # Applique à la route /admin-scan
 @router.get("/scan", response_class=HTMLResponse)
 def admin_scan_get(request: Request, token: Optional[str] = Query(None), user: dict = Depends(require_scanner)):
+    """
+    Page Admin /scan (HTML): présente l’UI de scan et l’état d’un billet si un token est fourni.
+    - Sécurité: require_scanner
+    - Normalise le token composite user_key.token pour extraire la partie droite.
+    - Si billet trouvé:
+      - status: 'AlreadyValidated' si une validation existe, sinon 'Scanned'
+      - ajoute ticket et dernière validation au contexte
+    - Désactive le cache et attache le cookie CSRF si manquant.
+    """
     csrf = get_or_create_csrf_token(request)
 
     # Contexte par défaut
@@ -320,6 +329,15 @@ def admin_scan_get(request: Request, token: Optional[str] = Query(None), user: d
 @router.post("/scan/validate")
 @router.post("/scan/validate/", )
 async def admin_scan_validate(request: Request, user: dict = Depends(require_scanner)):
+    """
+    POST Admin /scan/validate: déclenche la validation d’un billet puis redirige.
+    - Sécurité: require_scanner + vérification CSRF
+    - Flux:
+      1) Récupère le token formulaire
+      2) Appelle validate_ticket_token(...)
+      3) Redirige vers /admin/scan?token=<token> pour afficher l’état à jour
+    - Gestion d’erreur: retourne vers /admin/scan avec le token et un message générique en cas d’exception
+    """
     # CSRF + récupération formulaire
     form = await request.form()
     if not validate_csrf_token(request, form):

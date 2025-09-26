@@ -1,9 +1,19 @@
+"""
+Gestionnaires d’exceptions (version 1).
+- Transforme 401/403 en redirection HTML vers /auth avec message (si Accept: text/html et pas /api/*).
+- Conserve la réponse JSON standard pour les clients API (Accept JSON ou chemins /api/*).
+"""
 import urllib.parse
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.status import HTTP_303_SEE_OTHER
 
 def register_exception_handlers(app: FastAPI) -> None:
+    """
+    Enregistre le handler HTTPException.
+    - UX web: redirection vers /auth avec détail encodé (query ?error=...).
+    - UX API: code et body JSON FastAPI standards pour debug et intégration front.
+    """
     @app.exception_handler(HTTPException)
     async def html_redirect_on_auth_errors(request, exc: HTTPException):
       if exc.status_code in (401, 403):

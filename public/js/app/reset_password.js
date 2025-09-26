@@ -1,5 +1,9 @@
 "use strict";
-// reset_password.ts - logique dédiée à la page de réinitialisation
+/**
+ * reset_password.ts - Logique front pour la page de mise à jour du mot de passe.
+ * Récupère le token dans l’URL, valide le formulaire et appelle l’API,
+ * affiche des messages et redirige vers /auth en cas de succès.
+ */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -10,6 +14,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 (function () {
+    /**
+     * Extrait un token depuis ?token=... ou depuis le hash (#access_token / #token / #code)
+     */
     function getTokenFromUrl() {
         try {
             const qs = new URLSearchParams(window.location.search);
@@ -25,6 +32,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             return "";
         }
     }
+    /**
+     * Affiche un message global en préservant le style serveur (.msg.ok/.msg.err).
+     */
     function showMessage(type, text) {
         const css = type === "error" ? "err" : "ok";
         const card = document.querySelector(".card");
@@ -39,6 +49,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         }
         el.textContent = text;
     }
+    /**
+     * Enveloppe fetch() – utilise window.Http.request si disponible.
+     */
     function httpRequest(url, init) {
         var _a;
         const w = window;
@@ -46,6 +59,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
             return w.Http.request(url, init);
         return fetch(url, init);
     }
+    /**
+     * Bind et traite la soumission du formulaire de mise à jour mot de passe.
+     * Valide la présence du token et du nouveau mot de passe avant l’appel API.
+     */
     function bindResetForm() {
         const form = document.getElementById("web-update-password-form");
         if (!form)

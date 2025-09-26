@@ -1,11 +1,28 @@
 document.addEventListener("DOMContentLoaded", () => {
+  /**
+   * Représente un article dans le panier côté client.
+   * - id: identifiant unique (correspond à l’offre)
+   * - title: libellé affiché
+   * - price: prix unitaire en EUR
+   * - quantity: quantité souhaitée
+   */
   interface CartItem {
     id: string;
     title: string;
     price: number;
     quantity: number;
+    eventId?: string;
+    eventName?: string;
+    eventType?: string;
+    eventDate?: string;
   }
 
+  /**
+   * Gestionnaire du panier:
+   * - persiste dans localStorage
+   * - met à jour dynamiquement la vue (liste, totaux, badges)
+   * - centralise les interactions UI via un seul gestionnaire d’événements
+   */
   class Cart {
     private readonly STORAGE_KEY = "cart.v1";
     private cart: CartItem[] = [];
@@ -27,6 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
       this.cart = this.loadCart();
       this.bindEvents();
       this.render();
+      // Met à jour les badges même si les éléments du panier n'existent pas sur la page
+      this.updateCartCountBadge();
     }
 
     // ===== GESTION DU PANIER =====
@@ -54,6 +73,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     private countItems(): number {
       return this.cart.reduce((sum, item) => sum + item.quantity, 0);
+    }
+
+    /**
+     * Retourne un libellé "1 article" ou "N articles" pour le compteur.
+     */
+    private formatItemsCount(count: number): string {
+      return `${count} ${count > 1 ? "articles" : "article"}`;
     }
 
     // ===== UI =====
@@ -90,6 +116,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     private renderItem = (item: CartItem): string => {
       const lineTotal = item.price * item.quantity;
+      // Construit une ligne “événement • date” si dispo
+      const eventLine = [item.eventName || item.eventType || "", item.eventDate || ""]
+        .filter(Boolean)
+        .join(" • ");
       return `
         <div class="cart-item">
           <div class="cart-item-icon" aria-hidden="true">
@@ -101,6 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <div class="cart-item-info">
             <div class="cart-item-title" title="${item.title}">${item.title}</div>
+            ${eventLine ? `<div class="cart-item-subtitle" style="color:#666;font-size:0.9em;">${eventLine}</div>` : ""}
             <div class="cart-item-price">${this.formatCurrency(item.price)}</div>
           </div>
           <div class="quantity-group">
@@ -126,42 +157,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===== TOAST — ✅ CORRIGÉ POUR AFFICHAGE GARANTI =====
-
     private ensureToastEl(): HTMLElement {
-        console.log("ensureToastEl appelée – Vérification/création de l'élément toast");
-        let el = document.getElementById("toast-success");
+        let el = document.getElementById("toast-success") as HTMLElement | null;
         if (!el) {
-            console.log("Élément toast non trouvé, création d'un nouveau");
             el = document.createElement("div");
             el.id = "toast-success";
             el.setAttribute("role", "status");
             el.setAttribute("aria-live", "polite");
+            el.setAttribute("aria-live", "polite");
             document.body.appendChild(el);
-        } else {
-            console.log("Élément toast existant trouvé");
         }
-        return el as HTMLElement;
+        return el;
     }
 
     private showToast(message: string) {
-        console.log(`showToast appelée avec message: "${message}"`);
         const el = this.ensureToastEl();
+        // toast succès: s'assurer qu'on n'a pas la classe erreur
+        el.classList.remove("error");
         el.classList.remove("show");
         void (el as any).offsetWidth; // relance la transition CSS
         el.textContent = message || "Article ajouté au panier";
         el.classList.add("show");
-        console.log("Classe 'show' ajoutée au toast – il devrait s'afficher maintenant");
         window.setTimeout(() => {
             el.classList.remove("show");
-            console.log("Classe 'show' retirée après 3s");
         }, 3000);
     }
 
-    addItem = ({ id, title, price, quantity = 1 }: Partial<CartItem> & { id: string }) => {
+    addItem = ({ id, title, price, quantity = 1, eventId, eventName, eventType, eventDate }: Partial<CartItem> & { id: string }) => {
         console.log(`addItem appelée pour ID: ${id}, Titre: ${title}`);
         const existing = this.findItem(id);
         if (existing) {
             existing.quantity += quantity || 1;
+            // Hydrate l'événement si manquant
+            if (!existing.eventId && eventId) existing.eventId = eventId;
+            if (!existing.eventName && eventName) existing.eventName = eventName;
+            if (!existing.eventType && eventType) existing.eventType = eventType;
+            if (!existing.eventDate && eventDate) existing.eventDate = eventDate;
             console.log("Article existant mis à jour");
         } else {
             this.cart.push({
@@ -169,12 +200,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 title: title || "Article",
                 price: price || 0,
                 quantity: quantity || 1,
+                eventId,
+                eventName,
+                eventType,
+                eventDate,
             });
             console.log("Nouvel article ajouté au panier");
         }
         this.saveCart();
+
+        // Met à jour les badges même si render() ne peut pas s'exécuter sur cette page
+        this.updateCartCountBadge();
+
         this.render();
-        this.showToast(`“${title || "Article"}” ajouté au panier`);
+
+        // Toast avec compteur compact
+        const currentCount = this.countItems();
+        this.showToast(`“${title || "Article"}” ajouté au panier • ${this.formatItemsCount(currentCount)}`);
+
         console.log("Fin de addItem – toast devrait être affiché");
     };
 
@@ -184,6 +227,9 @@ document.addEventListener("DOMContentLoaded", () => {
       this.render();
     }
 
+    /**
+     * Met à jour la quantité d’un article (min = 1) puis persiste et re-render.
+     */
     updateQuantity(id: string, quantity: number) {
       const item = this.findItem(id);
       if (item) {
@@ -193,6 +239,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    /**
+     * Vide le panier, persiste, re-render, et referme le drawer.
+     */
     clearCart() {
       this.cart = [];
       this.saveCart();
@@ -213,7 +262,36 @@ document.addEventListener("DOMContentLoaded", () => {
           const id = addBtn.dataset.id;
           const title = addBtn.dataset.title || "Article";
           const price = parseFloat(addBtn.dataset.price || "0");
-          if (id) this.addItem({ id, title, price });
+
+          // 1) Essaye via data-ev-* posés par billeterie.js
+          let eventId = addBtn.dataset.evId || "";
+          let eventName = addBtn.dataset.evNom || "";
+          let eventType = addBtn.dataset.evType || "";
+          let eventDate = addBtn.dataset.evDate || "";
+
+          // 2) Fallback: si non renseigné, récupère depuis localStorage (selectedEvent.v1)
+          if (!eventId) {
+            const ev = (() => {
+              try {
+                const raw = localStorage.getItem("selectedEvent.v1");
+                const ev = raw ? JSON.parse(raw) : null;
+                return {
+                  eventId: ev?.id || "",
+                  eventName: ev?.nom || "",
+                  eventType: ev?.type || "",
+                  eventDate: ev?.date || "",
+                };
+              } catch {
+                return {};
+              }
+            })();
+            eventId = ev.eventId || eventId;
+            eventName = ev.eventName || eventName;
+            eventType = ev.eventType || eventType;
+            eventDate = ev.eventDate || eventDate;
+          }
+
+          if (id) this.addItem({ id, title, price, eventId, eventName, eventType, eventDate });
           return;
         }
 
@@ -266,7 +344,14 @@ document.addEventListener("DOMContentLoaded", () => {
           if (data.url) window.location.href = data.url;
           else alert("URL de paiement introuvable.");
         } catch (err: any) {
-          alert("Erreur de paiement: " + (err?.message || err));
+          const msg = String(err?.message || err || "");
+          const unauthorized = /HTTP\s*401|Non\s*authentifié|Session expirée/i.test(msg);
+          if (unauthorized) {
+            const params = new URLSearchParams({ error: "Authentifiez-vous pour finaliser le paiement" });
+            window.location.assign("/auth?" + params.toString());
+            return;
+          }
+          alert("Erreur de paiement: " + (msg || "Une erreur est survenue."));
         }
       });
 
@@ -292,3 +377,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // ✅ Initialisation
   new Cart();
 });
+
+
+class Cart {
+    // Fallback: lit l'événement sélectionné (défini par billeterie.js) si data-ev-* ne sont pas présents
+    private getSelectedEventFromStorage(): { eventId?: string; eventName?: string; eventType?: string; eventDate?: string } {
+      try {
+        const raw = localStorage.getItem("selectedEvent.v1");
+        const ev = raw ? JSON.parse(raw) : null;
+        return {
+          eventId: ev?.id || "",
+          eventName: ev?.nom || "",
+          eventType: ev?.type || "",
+          eventDate: ev?.date || "",
+        };
+      } catch {
+        return {};
+      }
+    }
+}

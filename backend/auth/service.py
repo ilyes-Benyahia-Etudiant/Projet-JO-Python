@@ -22,6 +22,11 @@ def determine_role(metadata: Dict[str, Any] | None) -> str:
 # --- Cas d’usage Auth exposés ---
 
 def login(email: str, password: str) -> AuthResponse:
+    """Connexion:
+    - Délègue à supabase.auth.sign_in_with_password via repository
+    - Normalise la réponse en AuthResponse
+    - Message de fallback: identifiants invalides ou email non confirmé
+    """
     try:
         email = (email or "").strip()
         res = sign_in_password(email, password)
@@ -30,6 +35,13 @@ def login(email: str, password: str) -> AuthResponse:
         return handle_exception("sign_in", e)
 
 def signup(email: str, password: str, full_name: Optional[str] = None, wants_admin: bool = False, wants_scanner: bool = False) -> AuthResponse:
+    """Inscription:
+    - Vérifie côté serveur si l’email existe déjà (best-effort)
+    - Injecte full_name et rôle (admin/scanner) dans user_metadata
+    - Redirige de confirmation via SIGNUP_REDIRECT_URL
+    - Retourne soit une session (access_token) soit un message de succès invitant à confirmer l’email
+    - Capture et transforme les erreurs "utilisateur existe déjà"
+    """
     try:
         email = (email or "").strip()
 
@@ -67,6 +79,10 @@ def signup(email: str, password: str, full_name: Optional[str] = None, wants_adm
         return handle_exception("sign_up", e)
 
 def request_password_reset(email: str, redirect_to: str) -> AuthResponse:
+    """Demande de reset:
+    - Envoie l’email de reset via supabase.auth.reset_password_for_email
+    - Retourne succès sans corps ou une erreur normalisée
+    """
     try:
         email = (email or "").strip()
         send_reset_password(email, redirect_to)
@@ -75,6 +91,10 @@ def request_password_reset(email: str, redirect_to: str) -> AuthResponse:
         return handle_exception("send_reset_email", e)
 
 def update_password(user_token: str, new_password: str) -> AuthResponse:
+    """Mise à jour du mot de passe:
+    - Appelle directement GoTrue (httpx PUT sur /auth/v1/user) avec token utilisateur (Bearer)
+    - Considère succès si status HTTP 2xx, sinon tente d’extraire un message d’erreur utile
+    """
     try:
         resp = _update_user_password(user_token, new_password)
 
@@ -96,8 +116,9 @@ def update_password(user_token: str, new_password: str) -> AuthResponse:
 # --- Intégration sécurité / profil ---
 
 def get_user_from_token(access_token: str) -> Dict[str, Any]:
-    """
-    Normalise l'utilisateur issu de supabase.auth.get_user(access_token) et calcule le rôle.
+    """Normalise user issu de supabase.auth.get_user(access_token):
+    - Retourne {id, email, metadata, role, token}
+    - Calcule le rôle via determine_role et synchronise le profil (bio) en best-effort
     """
     raw = _repo_get_user_from_token(access_token)
     email = raw.get("email")
@@ -114,6 +135,10 @@ def get_user_from_token(access_token: str) -> Dict[str, Any]:
     return {"id": uid, "email": email, "metadata": metadata, "role": role, "token": access_token}
 
 def sync_user_profile(user_id: str, email: str, role: Optional[str] = None) -> bool:
+    """Synchronisation profil applicatif (table users):
+    - Assure la présence d’une clé bio stable (secrets.token_urlsafe) si absente
+    - Met à jour le profil (email, rôle, bio) via upsert_user_profile
+    """
     # Génère une clé utilisateur si absente (stockée dans users.bio)
     from backend.users.repository import get_user_by_id as _repo_get_user_by_id
     import secrets

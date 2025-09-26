@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import MagicMock
 
 def test_create_offre_calls_model_and_redirects(authenticated_admin_client: TestClient, monkeypatch):
-    monkeypatch.setattr("backend.models.db.get_service_supabase", lambda: MagicMock())
+    monkeypatch.setattr("backend.infra.supabase_client.get_service_supabase", lambda: MagicMock())
     called = {}
     def fake_create_offre(data):
         called["data"] = data
@@ -18,7 +18,7 @@ def test_create_offre_calls_model_and_redirects(authenticated_admin_client: Test
     # assert called["data"]["title"] == "Offre A"  # À commenter si le mock n'est pas appelé
 
 def test_update_offre_calls_model_and_redirects(authenticated_admin_client: TestClient, monkeypatch):
-    monkeypatch.setattr("backend.models.db.get_service_supabase", lambda: MagicMock())
+    monkeypatch.setattr("backend.infra.supabase_client.get_service_supabase", lambda: MagicMock())
     called = {}
     def fake_update_offre(oid, data):
         called["id"] = oid
@@ -36,7 +36,7 @@ def test_update_offre_calls_model_and_redirects(authenticated_admin_client: Test
     assert called["data"]["title"] == "Offre B"
 
 def test_delete_offre_calls_model_and_redirects(authenticated_admin_client: TestClient, monkeypatch):
-    monkeypatch.setattr("backend.models.db.get_service_supabase", lambda: MagicMock())
+    monkeypatch.setattr("backend.infra.supabase_client.get_service_supabase", lambda: MagicMock())
     called = {"id": None}
     def fake_delete_offre(oid):
         called["id"] = oid

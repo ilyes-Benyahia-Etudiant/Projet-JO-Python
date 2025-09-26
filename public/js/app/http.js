@@ -9,6 +9,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var _a;
+/**
+ * Helper HTTP léger pour uniformiser fetch() à travers l'app:
+ * - Injecte automatiquement le cookie CSRF pour les méthodes non idempotentes
+ * - Sérialise/désérialise JSON et gère les entêtes par défaut
+ * - Fournit des utilitaires getJson/postJson qui lèvent en cas d'erreur HTTP
+ */
 class Http {
     static normalizeExpected(expected) {
         if (!expected)
@@ -76,11 +82,19 @@ class Http {
         }
         return null;
     }
+    /**
+     * Récupère le token CSRF depuis les cookies si présent.
+     * Retourne null si le token n'est pas disponible ou en contexte non-DOM.
+     */
     static getCsrfToken() {
         return this.getCookie("csrf_token");
     }
 }
 _a = Http;
+/**
+ * Fusionne les options de requête et injecte automatiquement le token CSRF
+ * pour les méthodes non-sûres (POST, PUT, PATCH, DELETE).
+ */
 Http.mergeInit = (init = {}) => {
     var _b;
     const headers = new Headers(init.headers || {});
@@ -96,10 +110,18 @@ Http.mergeInit = (init = {}) => {
     }
     return Object.assign(Object.assign({}, init), { headers, credentials: (_b = init.credentials) !== null && _b !== void 0 ? _b : "same-origin" });
 };
+/**
+ * Enveloppe fetch() avec l’injection CSRF et les credentials same-origin par défaut.
+ * Ne lève pas en cas d'erreur HTTP; préférez json()/getJson()/postJson() pour ça.
+ */
 Http.request = (url, init = {}) => {
     const finalInit = _a.mergeInit(init);
     return fetch(url, finalInit);
 };
+/**
+ * Appelle request(), tente de parser JSON, et lève une Error si res.ok est falsy.
+ * La Error contient un message construit depuis detail/message/texte de la réponse.
+ */
 Http.json = (url_1, ...args_1) => __awaiter(void 0, [url_1, ...args_1], void 0, function* (url, init = {}) {
     const res = yield _a.request(url, init);
     let data = undefined;
@@ -126,9 +148,15 @@ Http.json = (url_1, ...args_1) => __awaiter(void 0, [url_1, ...args_1], void 0, 
     }
     return data;
 });
+/**
+ * Raccourci GET qui retourne le JSON de la réponse ou lève en cas d'erreur HTTP.
+ */
 Http.getJson = (url, init = {}) => {
     return _a.json(url, Object.assign(Object.assign({}, init), { method: "GET" }));
 };
+/**
+ * Raccourci POST JSON (pose Content-Type: application/json si manquant) et lève en cas d'erreur HTTP.
+ */
 Http.postJson = (url, body, init = {}) => {
     const headers = new Headers(init.headers || {});
     if (!headers.has("Content-Type"))

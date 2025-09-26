@@ -1,3 +1,16 @@
+/**
+ * Module front de la page Admin Scan.
+ * Objectif:
+ * - Activer la caméra et scanner des QR codes (lib jsQR) pour extraire un token.
+ * - Pré-remplir et soumettre le formulaire de recherche /admin/scan?token=... (GET).
+ * - Envoyer une validation (POST /admin/scan/validate) avec protection CSRF.
+ * - Afficher des feedbacks UI (toast, bannière de statut) et masquer automatiquement.
+ * Dépendance:
+ * - jsQR: doit être chargé globalement (par le template admin-scan.html).
+ * Intégration back:
+ * - GET /admin/scan (recherche billet) et POST /admin/scan/validate (validation).
+ * - CSRF: cookie 'csrf_token' et header 'X-CSRF-Token' (middleware côté backend).
+ */
 (() => {
   'use strict';
 
@@ -12,12 +25,22 @@
   let hideTimer = null; // Timer unique pour le masquage
 
   /*** Helpers génériques ***/
+  /**
+   * Récupère la valeur d'un cookie par son nom.
+   * @param {string} name - Nom du cookie.
+   * @returns {string|null} Valeur décodée ou null si absent.
+   */
   const getCookie = (name) => {
     const parts = ('; ' + document.cookie).split('; ' + name + '=');
     return parts.length < 2 ? null : decodeURIComponent(parts.pop().split(';').shift());
   };
 
   /*** UI utils ***/
+  /**
+   * Affiche un toast éphémère en haut de page.
+   * @param {string} message - Contenu du message.
+   * @param {'success'|'warning'|'error'|'info'} [type='info'] - Type de toast pour la couleur.
+   */
   function showToast(message, type = 'info') {
     let el = document.getElementById('scan-toast');
     if (!el) {
@@ -256,6 +279,12 @@
   }
 
   /*** Init ***/
+  /**
+   * Point d’entrée du module:
+   * - Lie les events (start/stop caméra, submit validation).
+   * - Focus sur le champ token et soumet automatiquement si pré-rempli (cas: lien avec token).
+   * - Applique l’auto-hide si nécessaire et arrête la caméra au déchargement.
+   */
   function init() {
     ensureDomRefs();
 

@@ -114,7 +114,7 @@ async def test_api_signup_failure_email_exists(mock_response, monkeypatch):
     def mock_sign_up_fail(*args, **kwargs):
         return AuthResponse(success=False, error="Email déjà utilisé")
 
-    monkeypatch.setattr("backend.views.api_v1_auth.sign_up", mock_sign_up_fail)
+    monkeypatch.setattr("backend.auth.views.svc_signup", mock_sign_up_fail)
     monkeypatch.setattr("backend.config.ADMIN_SECRET_HASH", None)
 
     with pytest.raises(HTTPException) as exc_info:

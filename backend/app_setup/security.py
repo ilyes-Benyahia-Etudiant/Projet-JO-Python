@@ -1,7 +1,18 @@
+"""
+Middleware de sécurité minimaliste (alternative factorisée).
+- Ajoute les en-têtes de sécurité standard (X-Frame-Options, HSTS, etc.)
+- Construit une politique CSP stricte mais compatible avec la doc Swagger.
+- A utiliser si l’on ne souhaite pas activer la vérification CSRF (voir middlewares.register_security_middleware).
+"""
 from fastapi import FastAPI
 from backend.config import SUPABASE_URL, COOKIE_SECURE
 
 def register_security_middleware(app: FastAPI) -> None:
+    """
+    Ajoute les en-têtes de sécurité + CSP sur toutes les réponses.
+    - S’appuie sur COOKIE_SECURE pour activer HSTS lorsque déployé en HTTPS.
+    - Inclut les CDNs nécessaires pour Swagger/Redoc via script/style-src.
+    """
     @app.middleware("http")
     async def security_headers(request, call_next):
         response = await call_next(request)

@@ -1,3 +1,8 @@
+"""Couche d'accès données pour les événements.
+- Lecture: via get_supabase() (respect des policies RLS).
+- Écriture (create/update/delete): via get_service_supabase() (clé service).
+- Tolérance aux erreurs: renvoie valeurs neutres ([], None, False) en cas d'exception.
+"""
 from typing import List, Optional, Dict, Any
 from backend.infra.supabase_client import get_supabase, get_service_supabase
 import logging
@@ -5,6 +10,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 def list_evenements() -> List[dict]:
+    """Liste tous les événements.
+    - Table: evenements
+    - Tri: date_evenement asc
+    - Erreur: [] si exception
+    """
     try:
         res = get_supabase().table("evenements").select("*").order("date_evenement", desc=False).execute()
         return res.data or []
@@ -12,6 +22,9 @@ def list_evenements() -> List[dict]:
         return []
 
 def get_evenement(evenement_id: str) -> Optional[dict]:
+    """Récupère un événement par id.
+    - Retour: dict ou None si introuvable/erreur
+    """
     if not evenement_id:
         return None
     try:
@@ -28,6 +41,10 @@ def get_evenement(evenement_id: str) -> Optional[dict]:
         return None
 
 def create_evenement(data: Dict[str, Any]) -> Optional[dict]:
+    """Crée un événement (clé service).
+    - Retour: première ligne insérée si disponible, sinon {"status":"ok"}.
+    - Erreur: None et journalisation.
+    """
     try:
         res = get_service_supabase().table("evenements").insert(data).execute()
         rows = getattr(res, "data", None) or []
@@ -39,6 +56,10 @@ def create_evenement(data: Dict[str, Any]) -> Optional[dict]:
         return None
 
 def update_evenement(evenement_id: str, data: Dict[str, Any]) -> Optional[dict]:
+    """Met à jour un événement (clé service).
+    - Retour: ligne mise à jour si disponible, sinon {"status":"ok"}.
+    - Erreur: None et journalisation.
+    """
     try:
         res = (
             get_service_supabase()
@@ -56,6 +77,9 @@ def update_evenement(evenement_id: str, data: Dict[str, Any]) -> Optional[dict]:
         return None
 
 def delete_evenement(evenement_id: str) -> bool:
+    """Supprime un événement (clé service).
+    - Retour: True si succès, False si exception (journalisée).
+    """
     try:
         get_service_supabase().table("evenements").delete().eq("id", evenement_id).execute()
         return True

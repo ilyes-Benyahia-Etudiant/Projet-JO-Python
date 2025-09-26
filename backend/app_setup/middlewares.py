@@ -19,7 +19,24 @@ CSRF_EXEMPT_PATHS = {
     "/api/v1/payments/webhook",
 }
 
+"""
+Middlewares transverses de l’application.
+- register_basic_middlewares: session, CORS, TrustedHost et confiance en X-Forwarded-*.
+- register_security_middleware: en-têtes de sécurité, CSP, et protection CSRF (cookies + header/form).
+- register_no_cache_middleware: empêche la mise en cache sur /session et /admin.
+- register_force_https_middleware: force la redirection HTTPS (utile derrière proxy).
+Notes:
+- L’ordre d’ajout est important: le middleware HTTPS est ajouté en dernier pour s’exécuter en premier.
+- Les chemins d’exception CSRF incluent les webhooks Stripe.
+"""
 def register_basic_middlewares(app: FastAPI) -> None:
+    """
+    Ajoute les middlewares « de base »:
+    - SessionMiddleware: session basée sur cookie pour la navigation web.
+    - CORSMiddleware: autorise les origines définies (dev/prod).
+    - TrustedHostMiddleware: limite les hôtes acceptés (défense host header).
+    - ProxyHeadersMiddleware (si dispo): fait confiance aux en-têtes du proxy (x-forwarded-*).
+    """
     app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "replace_me_with_a_long_random_secret"))
     app.add_middleware(
         CORSMiddleware,
@@ -37,6 +54,14 @@ def register_basic_middlewares(app: FastAPI) -> None:
         app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 
 def register_security_middleware(app: FastAPI) -> None:
+    """
+    Middleware de sécurité:
+    - CSRF: vérifie X-CSRF-Token (ou champ form) contre le cookie csrf_token sur requêtes mutatives.
+      Exemptions: webhooks Stripe et assets statiques.
+    - En-têtes: X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS (si secure).
+    - CSP: restreint les origines script/style/connect, ajoute les CDNs nécessaires à la doc Swagger.
+    - Dépose un cookie CSRF si manquant (httponly=False pour que le front lise la valeur).
+    """
     @app.middleware("http")
     async def security_headers(request: Request, call_next):
         method = request.method.upper()
@@ -124,6 +149,11 @@ def register_security_middleware(app: FastAPI) -> None:
         return response
 
 def register_no_cache_middleware(app: FastAPI) -> None:
+    """
+    Empêche la mise en cache des pages sensibles:
+    - S’applique aux GET sur /session et sous-arbre /admin.
+    - Ajoute les en-têtes Cache-Control/Pragma/Expires pour forcer le rechargement.
+    """
     @app.middleware("http")
     async def no_cache_for_protected(request: Request, call_next):
         response = await call_next(request)
@@ -136,6 +166,11 @@ def register_no_cache_middleware(app: FastAPI) -> None:
 
 
 def register_force_https_middleware(app: FastAPI) -> None:
+    """
+    Force la redirection HTTP -> HTTPS lorsqu’un proxy place x-forwarded-proto=http.
+    - Ajouté en dernier afin qu’il s’exécute en premier dans la pile des middlewares.
+    - Important pour éviter les mixed-content et renforcer la sécurité.
+    """
     @app.middleware("http")
     async def force_https(request: Request, call_next):
         if request.headers.get("x-forwarded-proto") == "http":

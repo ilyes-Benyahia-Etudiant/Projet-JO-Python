@@ -1,6 +1,13 @@
 // Script minimal pour compter les billets via API Python et updater la pastille
+/**
+ * session.ts - Mets à jour la pastille du nombre de billets via l’API Python.
+ * Rafraîchit au chargement, quand la page redevient visible, ou après paiement réussi.
+ */
+
 document.addEventListener("DOMContentLoaded", () => {
-  // Fonction pour mettre à jour la pastille
+  /**
+   * Met à jour le badge visuellement et pour l’accessibilité (aria-label).
+   */
   const setBadge = (el: HTMLElement | null, count: number) => {
     if (!el) return;
     if (count > 0) {
@@ -14,7 +21,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // Fonction pour fetcher le count depuis l'API Python (avec retry et logs)
+  /**
+   * Récupère le count de billets utilisateur via l’API.
+   * - Log le statut et le count pour faciliter le débogage
+   * - Retry jusqu’à 2 fois en cas d’erreur réseau
+   */
   const refreshTicketsCount = async (retry = 0) => {
     try {
       const res = await fetch("/api/v1/tickets/count", { credentials: "include" });

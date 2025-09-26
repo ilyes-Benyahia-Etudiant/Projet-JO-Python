@@ -14,6 +14,11 @@ from backend.admin.service import get_offre_by_id
 router = APIRouter(prefix="/api/v1/validation", tags=["Validation API"])
 
 def ensure_can_scan(user: Dict[str, Any]):
+    """
+    Vérifie que l'utilisateur est autorisé à scanner/valider des billets.
+    - Autorisés: is_admin=True ou role in {"admin", "scanner"}
+    - Lève: HTTPException 403 sinon.
+    """
     # Autoriser admins et opérateurs 'scanner'
     if not (user.get("is_admin") or user.get("role") in ("admin", "scanner")):
         raise HTTPException(status_code=403, detail="Accès scanner ou admin requis")
@@ -21,8 +26,16 @@ def ensure_can_scan(user: Dict[str, Any]):
 @router.post("/scan")
 def scan_and_validate(payload: Dict[str, Any], user: dict = Depends(require_user)):
     """
-    Scanner/Valider un billet.
-    Body: { "token": "<ticket_token>" }
+    Scanner/Valider un billet (API).
+    - Body: {"token": "<composite_token>"} où composite_token = "<user_key>.<ticket_token>"
+    - Flux:
+      1) ensure_can_scan => contrôle droits (admin/scanner)
+      2) validate_ticket_token(...) => applique les règles de validation (voir service)
+    - Réponses:
+      - {"status": "ok", ...} si validé
+      - {"status": "already_validated", ...} si déjà validé
+      - 404 si billet introuvable
+      - 400 si format invalide ou autre erreur de validation
     """
     ensure_can_scan(user)
     token = (payload or {}).get("token")
@@ -41,7 +54,14 @@ def scan_and_validate(payload: Dict[str, Any], user: dict = Depends(require_user
 @router.get("/ticket/{token}")
 def get_ticket_status(token: str, user: dict = Depends(require_user)):
     """
-    Consulter l'état d'un billet pour l'administration.
+    Consultation de l'état d'un billet pour l'administration (API).
+    - Autorisation: ensure_can_scan
+    - Normalisation token: si "user_key.token", on conserve la partie droite "token"
+    - Retour:
+      - {"ticket": {...}, "validation": {...}|None, "status": "validated"|"not_validated"|...}
+    - Erreurs:
+      - 400 si token invalide
+      - 404 si billet introuvable
     """
     ensure_can_scan(user)
     # Nettoyer guillemets/espaces et n'utiliser que l'UUID (partie droite après le point)
@@ -77,6 +97,15 @@ def validate_ticket(
     event_time: Optional[str] = Query(None, alias="time", description="Heure/date de l'événement (optionnel)"),
     event_place: Optional[str] = Query(None, alias="place", description="Lieu de l'événement (optionnel)"),
 ):
+    """
+    Page publique de validation visuelle d’un billet (HTML).
+    - Paramètres URL: token (obligatoire), event/time/place (facultatifs)
+    - Récupère le ticket et construit un contexte pour templates/validate.html
+    - Affiche les infos acheteur et l’intitulé de l’offre si disponible
+    - Réponses:
+      - 200 'success' si le billet est trouvé
+      - 401 'error' sinon
+    """
     token = (token or "").strip()
     if not token:
         return templates.TemplateResponse(

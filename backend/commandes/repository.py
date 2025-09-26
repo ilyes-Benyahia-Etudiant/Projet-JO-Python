@@ -1,3 +1,11 @@
+"""Couche d'accès données pour les commandes.
+- fetch_admin_commandes: liste à destination de l’admin avec jointures users et offres.
+- create_pending_commande: crée une commande 'pending' et retourne (id, token).
+- fulfill_commande: complète la commande avec l’identifiant Stripe (session_id).
+Notes:
+- Écritures via get_service_supabase() (clé service).
+- Stratégie d’erreurs: valeurs neutres et logs pour éviter les crashs.
+"""
 from typing import List, Dict, Any, Optional
 from backend.infra.supabase_client import get_supabase, get_service_supabase
 import logging
@@ -5,8 +13,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 def fetch_admin_commandes(limit: int = 100) -> List[dict]:
-    """
-    Commandes pour l'admin, avec jointures sur users et offres
+    """Commandes pour l'admin, avec jointures sur users et offres.
+    - Select: id, token, price_paid, created_at, users(email), offres(title, price)
+    - Tri: created_at desc, limit paramétrable
     """
     try:
         res = (
@@ -22,6 +31,10 @@ def fetch_admin_commandes(limit: int = 100) -> List[dict]:
         return []
 
 def create_pending_commande(offre_id: str, user_id: str, price_paid: float) -> Optional[Dict[str, Any]]:
+    """Crée une commande 'pending' pour l’utilisateur et l’offre.
+    - Écrit les champs: offre_id, user_id, price_paid.
+    - Retourne: première ligne (id, token) si dispo, sinon None.
+    """
     try:
         res = (
             get_service_supabase()
@@ -40,6 +53,9 @@ def create_pending_commande(offre_id: str, user_id: str, price_paid: float) -> O
         return None
 
 def fulfill_commande(token: str, stripe_session_id: str) -> bool:
+    """Complète la commande: associe stripe_session_id à la commande identifiée par token.
+    - Retour: True si au moins une ligne mise à jour, False sinon.
+    """
     try:
         res = (
             get_service_supabase()

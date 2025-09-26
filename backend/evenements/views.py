@@ -1,4 +1,9 @@
 # Imports (début du fichier)
+"""Endpoints API pour la gestion des événements.
+- CRUD admin: création, mise à jour, suppression (protégés par require_admin).
+- Listing: un endpoint interne (/) et un endpoint public ("") pour la billetterie, avec normalisation du schéma.
+- Gestion d'erreurs: 404 quand introuvable, 400 pour validations, 500 en cas d'échec Supabase.
+"""
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -11,11 +16,17 @@ router = APIRouter(prefix="/api/v1/evenements", tags=["Evenements API"])
 
 @router.get("/")
 def list_evenements():
+    """Liste interne des événements (non normalisée).
+    Retourne directement le résultat du repository (toutes colonnes).
+    """
     items = evenements_repository.list_evenements()
     return JSONResponse({"items": items})
 
 @router.get("/{evenement_id}")
 def get_evenement(evenement_id: str):
+    """Récupère un événement par son identifiant.
+    - 404 si introuvable.
+    """
     item = evenements_repository.get_evenement(evenement_id)
     if not item:
         raise HTTPException(status_code=404, detail="Evenement introuvable")
@@ -23,6 +34,10 @@ def get_evenement(evenement_id: str):
 
 @router.post("/", dependencies=[Depends(require_admin)])
 async def create_evenement(request: Request):
+    """Crée un événement (admin uniquement).
+    - Valide les champs requis.
+    - En cas d’échec repository: 400.
+    """
     body: Dict[str, Any] = await request.json()
     data = {
         "type_evenement": (body.get("type_evenement") or "").strip(),
@@ -39,6 +54,10 @@ async def create_evenement(request: Request):
 
 @router.put("/{evenement_id}", dependencies=[Depends(require_admin)])
 async def update_evenement(evenement_id: str, request: Request):
+    """Met à jour un événement (admin uniquement).
+    - Accepte les champs présents seulement.
+    - 400 si aucune donnée fournie ou si échec repository.
+    """
     body: Dict[str, Any] = await request.json()
     data: Dict[str, Any] = {}
     for k in ("type_evenement", "nom_evenement", "lieu", "date_evenement"):
@@ -53,6 +72,9 @@ async def update_evenement(evenement_id: str, request: Request):
 
 @router.delete("/{evenement_id}", dependencies=[Depends(require_admin)])
 def delete_evenement(evenement_id: str):
+    """Supprime un événement (admin uniquement).
+    - 400 si l’opération échoue dans le repository.
+    """
     ok = evenements_repository.delete_evenement(evenement_id)
     if not ok:
         raise HTTPException(status_code=400, detail="Echec de suppression")

@@ -16,6 +16,7 @@ from . import stripe_client
 from .repository import get_offers_map
 from .metadata import extract_metadata_from_session
 
+# module backend.payments.service
 def process_cart_purchase(
     *,
     user_id: str,
@@ -24,8 +25,12 @@ def process_cart_purchase(
     cancel_url: str,
 ) -> Dict[str, Any]:
     """
-    Prépare la session Stripe à partir d'un user_id et d'un panier.
-    success_url et cancel_url doivent être fournis par l'appelant (vue).
+    Prépare et crée une session Stripe Checkout à partir d’un panier.
+    Étapes:
+      1) Agréger les quantités
+      2) Charger les offres
+      3) Construire line_items + metadata
+      4) Créer la session via stripe_client.create_session
     """
     quantities = cart_logic.aggregate_quantities(cart)
     offers = get_offers_map(list(quantities.keys()))
@@ -43,6 +48,7 @@ def process_cart_purchase(
 def confirm_session_by_id(session_id: str) -> Dict[str, Any]:
     """
     Récupère la session stripe et ses métadonnées (user_id, cart).
+    Retour: {"session": <dict>, "metadata": (user_id, cart)}.
     """
     session = stripe_client.get_session(session_id)
     meta = extract_metadata_from_session(session)
@@ -55,8 +61,10 @@ def process_cart_purchase(
     use_service: bool = False
 ) -> int:
     """
-    Insère une ligne 'commandes' par ticket acheté.
-    cart_list: [{ "id": "<offre_id>", "quantity": <int> }, ...]
+    Insère les commandes (une par ticket) à partir d’un panier confirmé.
+    - Contexte: webhook Stripe ou confirmation manuelle
+    - Insertion: via repository.* selon use_service / user_token
+    Retour: nombre de lignes insérées.
     """
     ids = [str(x.get("id") or "") for x in cart_list if x.get("id")]
     offers_by_id = get_offers_map(ids)
@@ -88,8 +96,9 @@ def process_cart_purchase(
 
 def confirm_session_by_id(session_id: str, current_user_id: str, user_token: Optional[str]) -> int:
     """
-    Récupère la session Stripe, vérifie l'état du paiement et la propriété,
-    puis insère les commandes et renvoie le nombre créé.
+    Confirme une session Stripe (sans webhook) et insère les commandes si payment_status='paid'.
+    - Vérifie l’appartenance via metadata.user_id
+    - Appelle process_cart_purchase(...) pour l’insertion
     """
     stripe_client.require_stripe()
     session = stripe_client.get_session(session_id)

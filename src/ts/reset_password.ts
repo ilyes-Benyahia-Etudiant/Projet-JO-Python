@@ -1,6 +1,13 @@
-// reset_password.ts - logique dédiée à la page de réinitialisation
+/**
+ * reset_password.ts - Logique front pour la page de mise à jour du mot de passe.
+ * Récupère le token dans l’URL, valide le formulaire et appelle l’API,
+ * affiche des messages et redirige vers /auth en cas de succès.
+ */
 
 (function () {
+  /**
+   * Extrait un token depuis ?token=... ou depuis le hash (#access_token / #token / #code)
+   */
   function getTokenFromUrl(): string {
     try {
       const qs = new URLSearchParams(window.location.search);
@@ -15,6 +22,9 @@
     }
   }
 
+  /**
+   * Affiche un message global en préservant le style serveur (.msg.ok/.msg.err).
+   */
   function showMessage(type: "ok" | "error", text: string) {
     const css = type === "error" ? "err" : "ok";
     const card = document.querySelector<HTMLElement>(".card");
@@ -28,12 +38,19 @@
     el.textContent = text;
   }
 
+  /**
+   * Enveloppe fetch() – utilise window.Http.request si disponible.
+   */
   function httpRequest(url: string, init?: RequestInit) {
     const w: any = window as any;
     if (w?.Http?.request) return w.Http.request(url, init);
     return fetch(url, init as RequestInit);
   }
 
+  /**
+   * Bind et traite la soumission du formulaire de mise à jour mot de passe.
+   * Valide la présence du token et du nouveau mot de passe avant l’appel API.
+   */
   function bindResetForm() {
     const form = document.getElementById("web-update-password-form") as HTMLFormElement | null;
     if (!form) return;

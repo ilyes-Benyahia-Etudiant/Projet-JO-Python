@@ -45,6 +45,12 @@ CSRF_EXEMPT_PATHS = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Ancienne implémentation locale du cycle de vie (startup/shutdown).
+    - Gère l’initialisation de FastAPILimiter (Redis ou fakeredis) avec fallback configurable.
+    - Migre vers backend.app_setup.lifespan utilisé par create_app().
+    Conservée pour référence/débogage, non utilisée par create_app().
+    """
     # Migration de l'init du rate limiter ici (anciennement on_event('startup'))
     logger = logging.getLogger("uvicorn.error")
     try:
@@ -108,6 +114,21 @@ from backend.app_setup.static import mount_static_files
 from backend.app_setup.lifespan import lifespan as app_lifespan
 
 def create_app() -> FastAPI:
+    """
+    Crée et configure l’instance FastAPI de l’application.
+    Étapes et ordre (important pour la sécurité et le comportement):
+      1) register_basic_middlewares: session, CORS, TrustedHost, ProxyHeaders.
+      2) mount_static_files: expose /public, /static, /js.
+      3) register_security_middleware: en-têtes de sécurité + CSP.
+      4) register_no_cache_middleware: empêche la mise en cache sur /session et /admin.
+      5) register_exception_handlers: gestion des 401/403 HTML -> redirection /auth, JSON pour l’API.
+      6) register_routes: routes de base (/, /index.html, favicon).
+      7) register_routers: enregistre tous les routers (web, API, admin, health).
+      8) include_router(evenements_router): compat locale (router explicite).
+      9) register_force_https_middleware: ajouté en dernier pour s’exécuter en premier (redirection HTTPS).
+    Retourne:
+      - FastAPI: l’application prête à être servie (ASGI).
+    """
     app = FastAPI(title="JO API", lifespan=app_lifespan)
     register_basic_middlewares(app)
     mount_static_files(app)
@@ -130,4 +151,9 @@ app = create_app()
 
 # Ancienne fonction conservée pour compat éventuelle (n’effectue plus rien)
 async def init_rate_limiter():
+    """
+    Conservé pour compatibilité historique.
+    - L’initialisation du rate limiting est désormais gérée via le lifespan (backend.app_setup.lifespan).
+    - Ne fait plus rien.
+    """
     return

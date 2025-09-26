@@ -2,7 +2,18 @@
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 function updateCarousel() {}
 
+/**
+ * carousel.ts - Carrousel très léger avec effet de zoom progressif:
+ * - cycling automatique toutes les N secondes
+ * - animation CSS-like via requestAnimationFrame
+ */
+
 document.addEventListener("DOMContentLoaded", () => {
+  /**
+   * Carousel d’images:
+   * - show(index) affiche la slide active et relance l’animation de zoom
+   * - next() passe à la slide suivante (boucle)
+   */
   class Carousel {
     private readonly slides: HTMLElement[];
     private currentIndex = 0;
@@ -20,6 +31,9 @@ document.addEventListener("DOMContentLoaded", () => {
       setInterval(this.next, this.intervalMs);
     };
 
+    /**
+     * Anime un zoom progressif de “from” à “to” sur la durée donnée.
+     */
     private animateZoom = (el: HTMLElement, from = 1, to = 1.1, duration = 1500) => {
       let scale = from;
       const start = performance.now();

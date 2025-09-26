@@ -20,8 +20,21 @@ from backend.payments.service import (
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/payments", tags=["Payments API"])
 
+# module backend.payments.views
 @router.post("/checkout", dependencies=[Depends(optional_rate_limit(times=10, seconds=60))])
 async def create_checkout_session(request: Request, user: dict = Depends(require_user)):
+    """
+    Crée une session Checkout Stripe pour le panier de l’utilisateur authentifié.
+    - Entrée JSON: { "items": [ { "id": "<offre_id>", "quantity": <int> }, ... ] }
+    - Sécurité: require_user + rate limit (10 req / 60s)
+    - Étapes:
+      1) Agréger les quantités (payments_cart.aggregate_quantities)
+      2) Charger les offres (payments_repo.get_offers_map)
+      3) Construire line_items + metadata (payments_cart.*)
+      4) Créer la session Stripe (stripe_client.create_session) et renvoyer {id, url}
+    - Fallback tests: en mode tests (PYTEST_CURRENT_TEST), bascule sur backend.models mocké
+    - Erreurs: 400 si payload/panier invalide ou session non créée
+    """
     # Body attendu:
     # {
     #   "items": [ { "id": "<offre_id>", "quantity": 2 }, ... ]
@@ -73,28 +86,26 @@ async def create_checkout_session(request: Request, user: dict = Depends(require
 @router.post("/webhook", include_in_schema=False)
 async def webhook_stripe(request: Request):
     """
-    Webhook Stripe: crée les commandes à partir des métadonnées (user_id + cart).
+    Webhook Stripe (Checkout): consomme checkout.session.completed pour créer les commandes.
+    - Signature: valide via stripe_client.parse_event (Stripe-Signature + STRIPE_WEBHOOK_SECRET)
+    - Métadonnées: extrait (user_id, cart) via payments_metadata.extract_metadata
+    - Insertion: payments_service.process_cart_purchase(user_id, cart_list)
+    - Réponses: {"status": "ok", "created": <int>} ou {"status": "ignored"}
+    - Erreurs: 400 si signature/payload invalide
     """
     try:
-        import os
-        if os.environ.get("PYTEST_CURRENT_TEST"):
-            # Fallback tests: utiliser backend.models.* (patché par conftest.py)
-            import backend.models as models
-            event: Dict[str, Any] = await models.parse_event(request)
-            if (event or {}).get("type") == "checkout.session.completed":
-                user_id, cart_list = models.extract_metadata(event)
-                created = models.process_cart_purchase(user_id, cart_list)
-                logger.info("payments.webhook[test-fallback] created=%s items=%s user_id=%s", created, len(cart_list or []), user_id)
-                return JSONResponse({"status": "ok", "created": created})
-            return JSONResponse({"status": "ignored"})
-        # Chemin normal: microservice payments
+        # Utiliser toujours les fonctions du microservice (patchées en tests)
         event = await stripe_client.parse_event(request)
         if (event or {}).get("type") == "checkout.session.completed":
             user_id, cart_list = payments_metadata.extract_metadata(event)
-            created = insert_from_cart(user_id=user_id, cart_list=cart_list)
+            # Importer le module pour bénéficier des monkeypatchs de tests
+            from backend.payments import service as payments_service
+            created = payments_service.process_cart_purchase(user_id=user_id, cart_list=cart_list)
             logger.info("payments.webhook created=%s items=%s user_id=%s", created, len(cart_list or []), user_id)
             return JSONResponse({"status": "ok", "created": created})
         return JSONResponse({"status": "ignored"})
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Erreur webhook_stripe")
         raise HTTPException(status_code=400, detail="Invalid Stripe webhook payload")
@@ -103,6 +114,9 @@ async def webhook_stripe(request: Request):
 async def confirm_checkout_get(request: Request, session_id: str, user: dict = Depends(require_user)):
     """
     Alternative sans webhook: confirme la session Stripe et insère les commandes.
+    - Vérifie payment_status='paid' et la propriété (user_id)
+    - Appelle confirm_session_insert(...) puis insère les commandes
+    - Erreurs: 400 si paiement non confirmé, 403 si session d’un autre utilisateur
     """
     try:
         user_token = request.cookies.get(COOKIE_NAME)
@@ -117,7 +131,9 @@ async def confirm_checkout_get(request: Request, session_id: str, user: dict = D
 @router.post("/confirm")
 async def confirm_checkout_post(request: Request, user: dict = Depends(require_user)):
     """
-    Variante POST: accepte session_id en query ou dans le JSON body.
+    Variante POST: accepte session_id en query ou JSON body {"session_id": "..."}.
+    - Délègue à confirm_checkout_get pour la logique.
+    - Erreurs: 400 si session_id manquant.
     """
     session_id = request.query_params.get("session_id")
     if not session_id:
@@ -133,8 +149,10 @@ async def confirm_checkout_post(request: Request, user: dict = Depends(require_u
 @router.get("/offres")
 def get_offres_by_ids(ids: str, user: Dict[str, Any] = Depends(require_user)) -> Dict[str, Any]:
     """
-    Retourne une liste d'offres {id, title, price} pour hydrater le panier côté client.
-    Paramètre: ids séparés par des virgules (UUIDs).
+    Retourne une liste d'offres normalisées {id, title, price} pour hydrater le panier.
+    - Paramètre: ids séparés par des virgules (UUIDs).
+    - Normalisation: filtre et caste les champs renvoyés.
+    - Authentification requise.
     """
     id_list = [i.strip() for i in (ids or "").split(",") if i.strip()]
     if not id_list:

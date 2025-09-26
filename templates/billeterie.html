@@ -17,8 +17,8 @@
 
 </head>
 
-- <body>
-+ <body class="billeterie-page">
+
+<body class="billeterie-page">
  
   <header>
     <nav class="navbar">
@@ -191,31 +191,6 @@
 <!-- Ajout: panier + logique billeterie -->
 <script src="/public/js/app/cart.js"></script>
 <script src="/public/js/app/billeterie.js"></script>
-<section id="evenements" style="margin-top:32px;">
-  <h2>Découvrez nos événements</h2>
-  <div id="events-list" class="cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;"></div>
-</section>
-
-<script>
-  (async function loadEvents(){
-    try {
-      const res = await fetch("/api/v1/evenements", { credentials: "same-origin" });
-      if (!res.ok) return;
-      const events = await res.json();
-      const cont = document.getElementById("events-list");
-      if (!cont) return;
-      cont.innerHTML = (events || []).map(ev => `
-        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:8px;">
-          <div style="font-weight:600;">${ev.title || "Événement"}</div>
-          <div style="color:#666;">${ev.date ? new Date(ev.date).toLocaleDateString() : ""} ${ev.lieu ? "— " + ev.lieu : ""}</div>
-          <p style="margin:8px 0;">${(ev.description || "").slice(0,120)}${(ev.description||"").length>120?"…":""}</p>
-          <a href="/session" class="btn">Choisir une offre</a>
-        </div>
-      `).join("");
-    } catch(e) {
-      console.warn("chargement événements échoué", e);
-    }
-  })();
-</script>
+<!-- Le doublon des événements et son script de chargement ont été supprimés -->
 </body>
 </html>

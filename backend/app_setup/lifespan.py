@@ -1,3 +1,11 @@
+"""
+Lifespan FastAPI: initialisation/arrêt des ressources partagées.
+- Initialise FastAPILimiter (Redis) avec options de test (fakeredis).
+- Variables d’environnement supportées:
+  - DISABLE_FASTAPI_LIMITER_INIT_FOR_TESTS=1: désactive complètement (tests)
+  - USE_FAKE_REDIS_FOR_TESTS=1: utilise fakeredis (tests)
+  - LOCAL_RATE_LIMIT_FALLBACK=1: active un fallback local si l’init échoue
+"""
 import os
 import logging
 import redis
@@ -12,6 +20,11 @@ except Exception:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Configure le rate limiting et gère les fallbacks.
+    - En cas d’échec de Redis et sans fallback, le rate limiting est désactivé proprement.
+    - Les logs indiquent l’état effectif (enabled/disabled) pour observabilité.
+    """
     logger = logging.getLogger("uvicorn.error")
     try:
         if os.getenv("DISABLE_FASTAPI_LIMITER_INIT_FOR_TESTS") == "1":

@@ -1,4 +1,14 @@
+/**
+ * navbar.ts - Contrôle du menu hamburger mobile:
+ * - toggle de l’état ouvert/fermé
+ * - mise à jour d’aria-expanded pour l’accessibilité
+ * - fermeture du menu au clic sur un lien
+ */
+
 document.addEventListener("DOMContentLoaded", () => {
+  /**
+   * Gère l’ouverture/fermeture du menu responsive et l’accessibilité associée.
+   */
   class Navbar {
     private readonly hamburger: HTMLElement | null;
     private readonly navLinks: HTMLElement | null;

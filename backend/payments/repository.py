@@ -2,26 +2,24 @@
 Accès aux données pour la feature 'payments'.
 """
 from typing import Iterable, Dict, Any
-from backend.infra.supabase_client import (
-    get_supabase,
-    get_service_supabase,
-    get_user_supabase,
-)
-from typing import List, Optional
 import logging
-
+# Remplacer l'import direct des fonctions par l'import du module
+import backend.infra.supabase_client as supabase_client
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
+# module backend.payments.repository
 def fetch_offres_by_ids(ids: List[str]) -> List[dict]:
     """
-    Récupère les offres par leurs IDs.
+    Récupère les offres par leurs IDs (table 'offres').
+    - Retourne [] si ids vide ou en cas d’erreur.
     """
     if not ids:
         return []
     try:
         res = (
-            get_supabase()
+            supabase_client.get_supabase()
             .table("offres")
             .select("*")
             .in_("id", [str(i) for i in ids])
@@ -34,7 +32,7 @@ def fetch_offres_by_ids(ids: List[str]) -> List[dict]:
 
 def get_offers_map(ids: Iterable[str]) -> Dict[str, Dict[str, Any]]:
     """
-    Récupère les offres et renvoie un dict {id: offre}.
+    Retourne un dict {id: offre} à partir d’une liste d’IDs.
     """
     offers = fetch_offres_by_ids(list(ids))
     return {str(o.get("id")): o for o in offers}
@@ -45,7 +43,7 @@ def _insert_commande(*, user_id: str, offre_id: str, token: str, price_paid: str
     """
     try:
         (
-            get_supabase()
+            supabase_client.get_supabase()
             .table("commandes")
             .insert({"user_id": user_id, "offre_id": offre_id, "token": token, "price_paid": price_paid})
             .execute()
@@ -60,7 +58,7 @@ def _insert_commande_with_token(*, user_id: str, offre_id: str, token: str, pric
     Insert avec le token utilisateur explicite (respecte RLS) — utile côté API.
     """
     try:
-        client = get_user_supabase(user_token)
+        client = supabase_client.get_user_supabase(user_token)
         (
             client
             .table("commandes")
@@ -78,7 +76,7 @@ def _insert_commande_service(*, user_id: str, offre_id: str, token: str, price_p
     """
     try:
         res = (
-            get_service_supabase()
+            supabase_client.get_service_supabase()
             .table("commandes")
             .insert({"user_id": user_id, "offre_id": offre_id, "token": token, "price_paid": price_paid})
             .select("*")
@@ -91,10 +89,13 @@ def _insert_commande_service(*, user_id: str, offre_id: str, token: str, price_p
         return None
 
 def insert_commande(**kwargs):
+    """Wrapper public vers _insert_commande (RLS, client utilisateur)."""
     return _insert_commande(**kwargs)
 
 def insert_commande_with_token(**kwargs):
+    """Wrapper public vers _insert_commande_with_token (RLS via user_token explicite)."""
     return _insert_commande_with_token(**kwargs)
 
 def insert_commande_service(**kwargs):
+    """Wrapper public vers _insert_commande_service (service-role, bypass RLS, typiquement webhook)."""
     return _insert_commande_service(**kwargs)

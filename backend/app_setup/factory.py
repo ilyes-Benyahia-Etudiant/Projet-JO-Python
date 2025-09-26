@@ -1,3 +1,7 @@
+"""
+Factory d’application recommandée pour les entrypoints (ex: backend.asgi).
+Ordonne les étapes d’initialisation de manière lisible et testable.
+"""
 from fastapi import FastAPI
 from .lifespan import lifespan
 from .middlewares import register_basic_middlewares, register_no_cache_middleware
@@ -9,6 +13,14 @@ from .routers import register_routers
 from backend.utils.csrf import register_csrf_middleware
 
 def create_app() -> FastAPI:
+    """
+    Construit l’app FastAPI avec le lifespan et enregistre:
+      - middlewares de base, statiques, CSRF, sécurité, no-cache
+      - gestionnaires d’exceptions et routes simples
+      - tous les routers (web, API, admin, health)
+    Retour:
+      FastAPI prêt à être utilisé par le serveur ASGI.
+    """
     app = FastAPI(title="Projet JO Python", lifespan=lifespan)
     register_basic_middlewares(app)
     mount_static_files(app)

@@ -1,0 +1,210 @@
+/* 🎯 Thème Olympique Moderne — Réinitialisation du mot de passe */
+:root {
+  --primary: #0077e6;      /* Bleu olympique */
+  --secondary: #ffcc00;    /* Jaune olympique */
+  --success: #00c853;      /* Vert */
+  --danger: #ea4335;       /* Rouge */
+  --dark: #202124;
+  --light: #f8f9fa;
+  --gray-light: #e9ecef;
+  --gray: #adb5bd;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow: 0 4px 16px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 50%, #f3e5f5 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  color: var(--dark);
+  line-height: 1.6;
+}
+
+.card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 40px;
+  box-shadow: var(--shadow);
+  max-width: 560px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg,
+    var(--primary),
+    var(--secondary),
+    #202124,
+    var(--success),
+    var(--danger)
+  );
+  z-index: 1;
+}
+
+h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 32px;
+  color: var(--dark);
+  position: relative;
+}
+
+h1::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 4px;
+  background: var(--secondary);
+  margin: 16px auto 0;
+  border-radius: 2px;
+}
+
+.msg {
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  margin: 20px 0;
+  font-weight: 500;
+  text-align: center;
+  animation: fadeIn 0.4s ease;
+  border: 1px solid transparent;
+  background-color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.msg.ok {
+  border-color: var(--success);
+  background: rgba(0, 200, 83, 0.08);
+  color: var(--success);
+}
+
+.msg.err {
+  border-color: var(--danger);
+  background: rgba(234, 67, 53, 0.08);
+  color: var(--danger);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--dark);
+  letter-spacing: 0.2px;
+}
+
+.input {
+  padding: 16px;
+  border: 2px solid var(--gray-light);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-family: inherit;
+  transition: var(--transition);
+  outline: none;
+  background-color: white;
+  min-height: 54px;
+}
+
+.input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 119, 230, 0.2);
+}
+
+.input::placeholder {
+  color: var(--gray);
+}
+
+.btn {
+  padding: 16px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn:hover {
+  background: #005ea2;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 576px) {
+  .card {
+    padding: 28px 20px;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    margin-bottom: 28px;
+  }
+
+  h1::after {
+    width: 50px;
+    margin-top: 12px;
+  }
+
+  .input {
+    padding: 16px;
+    font-size: 1.05rem;
+  }
+
+  .btn {
+    padding: 16px;
+    font-size: 1.05rem;
+  }
+
+  .msg {
+    padding: 14px 16px;
+    font-size: 0.95rem;
+  }
+
+  label {
+    font-size: 0.95rem;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

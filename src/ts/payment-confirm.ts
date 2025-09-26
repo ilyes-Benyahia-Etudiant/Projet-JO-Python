@@ -1,3 +1,10 @@
+/**
+ * payment-confirm.ts - Confirmation de paiement Stripe en “background”.
+ * Si la page contient ?session_id et pas encore ?confirmed=1 :
+ * - appelle l’API /payments/confirm
+ * - vide le panier client
+ * - remplace l’URL avec confirmed=1 et reload pour rafraîchir la vue
+ */
 (function () {
   try {
     const url = new URL(window.location.href);

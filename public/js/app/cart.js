@@ -9,6 +9,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 document.addEventListener("DOMContentLoaded", () => {
+    /**
+     * Gestionnaire du panier:
+     * - persiste dans localStorage
+     * - met à jour dynamiquement la vue (liste, totaux, badges)
+     * - centralise les interactions UI via un seul gestionnaire d’événements
+     */
     class Cart {
         constructor() {
             this.STORAGE_KEY = "cart.v1";
@@ -23,10 +29,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 countBadges: [
                     document.getElementById("cart-count-pill"),
                     document.getElementById("cart-fab-badge"),
-                ],
+                ].filter(Boolean),
             };
             this.renderItem = (item) => {
                 const lineTotal = item.price * item.quantity;
+                // Construit une ligne “événement • date” si dispo
+                const eventLine = [item.eventName || item.eventType || "", item.eventDate || ""]
+                    .filter(Boolean)
+                    .join(" • ");
                 return `
         <div class="cart-item">
           <div class="cart-item-icon" aria-hidden="true">
@@ -38,6 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <div class="cart-item-info">
             <div class="cart-item-title" title="${item.title}">${item.title}</div>
+            ${eventLine ? `<div class="cart-item-subtitle" style="color:#666;font-size:0.9em;">${eventLine}</div>` : ""}
             <div class="cart-item-price">${this.formatCurrency(item.price)}</div>
           </div>
           <div class="quantity-group">
@@ -57,11 +68,20 @@ document.addEventListener("DOMContentLoaded", () => {
           </button>
         </div>`;
             };
-            this.addItem = ({ id, title, price, quantity = 1 }) => {
+            this.addItem = ({ id, title, price, quantity = 1, eventId, eventName, eventType, eventDate }) => {
                 console.log(`addItem appelée pour ID: ${id}, Titre: ${title}`);
                 const existing = this.findItem(id);
                 if (existing) {
                     existing.quantity += quantity || 1;
+                    // Hydrate l'événement si manquant
+                    if (!existing.eventId && eventId)
+                        existing.eventId = eventId;
+                    if (!existing.eventName && eventName)
+                        existing.eventName = eventName;
+                    if (!existing.eventType && eventType)
+                        existing.eventType = eventType;
+                    if (!existing.eventDate && eventDate)
+                        existing.eventDate = eventDate;
                     console.log("Article existant mis à jour");
                 }
                 else {
@@ -70,19 +90,27 @@ document.addEventListener("DOMContentLoaded", () => {
                         title: title || "Article",
                         price: price || 0,
                         quantity: quantity || 1,
+                        eventId,
+                        eventName,
+                        eventType,
+                        eventDate,
                     });
                     console.log("Nouvel article ajouté au panier");
                 }
                 this.saveCart();
+                // Met à jour les badges même si render() ne peut pas s'exécuter sur cette page
+                this.updateCartCountBadge();
                 this.render();
-                this.showToast(`“${title || "Article"}” ajouté au panier`);
+                // Toast avec compteur compact
+                const currentCount = this.countItems();
+                this.showToast(`“${title || "Article"}” ajouté au panier • ${this.formatItemsCount(currentCount)}`);
                 console.log("Fin de addItem – toast devrait être affiché");
             };
             this.cart = this.loadCart();
-            // Mise à jour immédiate du badge au chargement de la page
-            this.updateCartCountBadge();
             this.bindEvents();
             this.render();
+            // Met à jour les badges même si les éléments du panier n'existent pas sur la page
+            this.updateCartCountBadge();
         }
         // ===== GESTION DU PANIER =====
         loadCart() {
@@ -106,23 +134,25 @@ document.addEventListener("DOMContentLoaded", () => {
         countItems() {
             return this.cart.reduce((sum, item) => sum + item.quantity, 0);
         }
+        /**
+         * Retourne un libellé "1 article" ou "N articles" pour le compteur.
+         */
+        formatItemsCount(count) {
+            return `${count} ${count > 1 ? "articles" : "article"}`;
+        }
         // ===== UI =====
         updateCartCountBadge() {
             const count = this.countItems();
             this.$.countBadges.forEach((badge) => {
-                if (!badge) return; // Evite l'erreur quand un des badges n'existe pas sur la page
                 badge.textContent = String(count);
                 badge.style.display = count > 0 ? "inline-flex" : "none";
-                badge.setAttribute(
-                    "aria-label",
-                    count > 0 ? `Articles dans le panier: ${count}` : "Articles dans le panier: 0"
-                );
+                badge.setAttribute("aria-label", count > 0
+                    ? `Articles dans le panier: ${count}`
+                    : "Aucun article");
             });
         }
         render() {
             const { items, empty, total } = this.$;
-            // Toujours mettre à jour la pastille, même si la page ne contient pas le drawer panier
-            this.updateCartCountBadge();
             if (!items || !empty || !total)
                 return;
             if (this.cart.length === 0) {
@@ -142,32 +172,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         // ===== TOAST — ✅ CORRIGÉ POUR AFFICHAGE GARANTI =====
         ensureToastEl() {
-            console.log("ensureToastEl appelée – Vérification/création de l'élément toast");
             let el = document.getElementById("toast-success");
             if (!el) {
-                console.log("Élément toast non trouvé, création d'un nouveau");
                 el = document.createElement("div");
                 el.id = "toast-success";
                 el.setAttribute("role", "status");
                 el.setAttribute("aria-live", "polite");
+                el.setAttribute("aria-live", "polite");
                 document.body.appendChild(el);
-            }
-            else {
-                console.log("Élément toast existant trouvé");
             }
             return el;
         }
         showToast(message) {
-            console.log(`showToast appelée avec message: "${message}"`);
             const el = this.ensureToastEl();
+            // toast succès: s'assurer qu'on n'a pas la classe erreur
+            el.classList.remove("error");
             el.classList.remove("show");
             void el.offsetWidth; // relance la transition CSS
             el.textContent = message || "Article ajouté au panier";
             el.classList.add("show");
-            console.log("Classe 'show' ajoutée au toast – il devrait s'afficher maintenant");
             window.setTimeout(() => {
                 el.classList.remove("show");
-                console.log("Classe 'show' retirée après 3s");
             }, 3000);
         }
         removeItem(id) {
@@ -175,6 +200,9 @@ document.addEventListener("DOMContentLoaded", () => {
             this.saveCart();
             this.render();
         }
+        /**
+         * Met à jour la quantité d’un article (min = 1) puis persiste et re-render.
+         */
         updateQuantity(id, quantity) {
             const item = this.findItem(id);
             if (item) {
@@ -183,6 +211,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 this.render();
             }
         }
+        /**
+         * Vide le panier, persiste, re-render, et referme le drawer.
+         */
         clearCart() {
             this.cart = [];
             this.saveCart();
@@ -201,8 +232,35 @@ document.addEventListener("DOMContentLoaded", () => {
                     const id = addBtn.dataset.id;
                     const title = addBtn.dataset.title || "Article";
                     const price = parseFloat(addBtn.dataset.price || "0");
+                    // 1) Essaye via data-ev-* posés par billeterie.js
+                    let eventId = addBtn.dataset.evId || "";
+                    let eventName = addBtn.dataset.evNom || "";
+                    let eventType = addBtn.dataset.evType || "";
+                    let eventDate = addBtn.dataset.evDate || "";
+                    // 2) Fallback: si non renseigné, récupère depuis localStorage (selectedEvent.v1)
+                    if (!eventId) {
+                        const ev = (() => {
+                            try {
+                                const raw = localStorage.getItem("selectedEvent.v1");
+                                const ev = raw ? JSON.parse(raw) : null;
+                                return {
+                                    eventId: (ev === null || ev === void 0 ? void 0 : ev.id) || "",
+                                    eventName: (ev === null || ev === void 0 ? void 0 : ev.nom) || "",
+                                    eventType: (ev === null || ev === void 0 ? void 0 : ev.type) || "",
+                                    eventDate: (ev === null || ev === void 0 ? void 0 : ev.date) || "",
+                                };
+                            }
+                            catch (_a) {
+                                return {};
+                            }
+                        })();
+                        eventId = ev.eventId || eventId;
+                        eventName = ev.eventName || eventName;
+                        eventType = ev.eventType || eventType;
+                        eventDate = ev.eventDate || eventDate;
+                    }
                     if (id)
-                        this.addItem({ id, title, price });
+                        this.addItem({ id, title, price, eventId, eventName, eventType, eventDate });
                     return;
                 }
                 // Actions dans le panier
@@ -260,7 +318,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         alert("URL de paiement introuvable.");
                 }
                 catch (err) {
-                    alert("Erreur de paiement: " + ((err === null || err === void 0 ? void 0 : err.message) || err));
+                    const msg = String((err === null || err === void 0 ? void 0 : err.message) || err || "");
+                    const unauthorized = /HTTP\s*401|Non\s*authentifié|Session expirée/i.test(msg);
+                    if (unauthorized) {
+                        const params = new URLSearchParams({ error: "Authentifiez-vous pour finaliser le paiement" });
+                        window.location.assign("/auth?" + params.toString());
+                        return;
+                    }
+                    alert("Erreur de paiement: " + (msg || "Une erreur est survenue."));
                 }
             }));
             // Touche Échap
@@ -282,3 +347,21 @@ document.addEventListener("DOMContentLoaded", () => {
     // ✅ Initialisation
     new Cart();
 });
+class Cart {
+    // Fallback: lit l'événement sélectionné (défini par billeterie.js) si data-ev-* ne sont pas présents
+    getSelectedEventFromStorage() {
+        try {
+            const raw = localStorage.getItem("selectedEvent.v1");
+            const ev = raw ? JSON.parse(raw) : null;
+            return {
+                eventId: (ev === null || ev === void 0 ? void 0 : ev.id) || "",
+                eventName: (ev === null || ev === void 0 ? void 0 : ev.nom) || "",
+                eventType: (ev === null || ev === void 0 ? void 0 : ev.type) || "",
+                eventDate: (ev === null || ev === void 0 ? void 0 : ev.date) || "",
+            };
+        }
+        catch (_a) {
+            return {};
+        }
+    }
+}

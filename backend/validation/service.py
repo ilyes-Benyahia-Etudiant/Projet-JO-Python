@@ -2,15 +2,29 @@ from backend.validation.repository import get_ticket_by_token, get_last_validati
 from typing import Tuple, Dict, Any, Optional
 
 class ValidationError(Exception):
+    """
+    Erreur de validation ticket.
+    - code: identifiant court de la raison (ex: 'invalid', 'not_found')
+    - Utilisable pour remonter des erreurs contrôlées côté API/HTML.
+    """
     def __init__(self, message: str, code: str = "invalid"):
         super().__init__(message)
         self.code = code
 
 def validate_ticket_token(token: str, admin_id: str, admin_token: Optional[str] = None) -> Tuple[str, Dict[str, Any]]:
     """
-    Valide un billet à partir d'une clé scannée.
-    Exige la clé composite 'user_key.token_achat'.
-    Retourne l'un des statuts: 'validated', 'already_validated', 'not_found', 'invalid'.
+    Valide un billet à partir d'une clé scannée (composite).
+    - Format attendu: "<user_key>.<ticket_token>"
+    - Étapes:
+      1) Vérifie le format composite et nettoie guillemets/espaces
+      2) Récupère le ticket via raw_token (partie droite)
+      3) Vérifie la correspondance stricte user_key == users.bio
+      4) insert_validation(..., status='validated'): si None => déjà validé
+      5) get_last_validation: renvoie l’état le plus récent
+    - Statuts possibles:
+      - 'validated' | 'already_validated' | 'not_found' | 'invalid' | 'Scanned'
+    - Retour:
+      - Tuple (status, payload) où payload contient: token, commande_id, offre, user, validation...
     """
     provided_user_key: Optional[str] = None
     raw = (token or "").strip().strip('"').strip("'")

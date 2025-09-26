@@ -9,10 +9,12 @@ try:
 except Exception:
     WEBHOOK_SECRET = ""
 
+# module backend.payments.stripe_client
 def require_stripe() -> stripe:
     """
-    Retourne le module stripe prêt à l'emploi.
-    Si tu dois configurer une clé, tu peux le faire ici via stripe.api_key.
+    Prépare et retourne le module stripe prêt à l’emploi.
+    - Configure stripe.api_key via STRIPE_SECRET_KEY si disponible.
+    - En absence de clé, les appels Stripe échoueront côté SDK (ex: No API key provided).
     """
     # Exemple: stripe.api_key = os.getenv("STRIPE_API_KEY") or settings.STRIPE_API_KEY
     try:
@@ -33,7 +35,12 @@ def create_session(
     metadata: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    Crée une session de paiement Stripe Checkout et retourne l'objet session (dict-like).
+    Crée une session Stripe Checkout.
+    - line_items: lignes Stripe (price/quantity ou price_data)
+    - mode: généralement "payment"
+    - success_url / cancel_url: URLs de redirection
+    - metadata: ex {"user_id": "...", "cart": "[...]"}
+    Retour: dict session (ex: {"id": "cs_test_...", "url": "https://..."})
     """
     require_stripe()
     session = stripe.checkout.Session.create(
@@ -48,13 +55,20 @@ def create_session(
     return dict(session)
 
 def get_session(session_id: str) -> Dict[str, Any]:
+    """
+    Récupère une session Stripe Checkout par son identifiant.
+    Retour: dict session incluant "id", "payment_status", "metadata", etc.
+    """
     require_stripe()
     session = stripe.checkout.Session.retrieve(session_id)
     return dict(session)
 
 async def parse_event(request: Request):
     """
-    Version attendue par la vue: lit le payload et l'en-tête de signature depuis la requête.
+    Parse et valide un événement Stripe signé (webhook).
+    - Lit le body brut + en-tête Stripe-Signature
+    - Valide la signature via Webhook.construct_event (STRIPE_WEBHOOK_SECRET)
+    Retour: l’objet event si la signature est valide.
     """
     require_stripe()
     payload = await request.body()

@@ -1,3 +1,8 @@
+"""Couche d'accès données pour les offres (billetterie).
+- Lecture: via get_supabase().
+- Écriture (admin): via get_service_supabase().
+- Stratégie d'erreurs: valeurs neutres et logs côté serveur.
+"""
 from typing import List, Optional, Dict, Any
 from backend.infra.supabase_client import get_supabase, get_service_supabase
 import logging
@@ -5,6 +10,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 def list_offres() -> List[dict]:
+    """Liste toutes les offres disponibles pour la vitrine.
+    - Table: offres
+    - Erreur: [] si exception
+    """
     try:
         res = get_supabase().table("offres").select("*").execute()
         return res.data or []
@@ -12,6 +21,9 @@ def list_offres() -> List[dict]:
         return []
 
 def get_offre(offre_id: str) -> Optional[dict]:
+    """Récupère une offre par id.
+    - Retour: dict ou None si introuvable/erreur
+    """
     if not offre_id:
         return None
     try:
@@ -28,6 +40,10 @@ def get_offre(offre_id: str) -> Optional[dict]:
         return None
 
 def create_offre(data: Dict[str, Any]) -> Optional[dict]:
+    """Crée une offre (admin, clé service).
+    - Retour: première ligne insérée si disponible, sinon {"status":"ok"}.
+    - Erreur: None + log.
+    """
     try:
         res = get_service_supabase().table("offres").insert(data).execute()
         rows = getattr(res, "data", None) or []
@@ -39,6 +55,10 @@ def create_offre(data: Dict[str, Any]) -> Optional[dict]:
         return None
 
 def update_offre(offre_id: str, data: Dict[str, Any]) -> Optional[dict]:
+    """Met à jour une offre (admin, clé service).
+    - Retour: ligne mise à jour si disponible, sinon {"status":"ok"}.
+    - Erreur: None + log.
+    """
     try:
         res = (
             get_service_supabase()
@@ -56,6 +76,9 @@ def update_offre(offre_id: str, data: Dict[str, Any]) -> Optional[dict]:
         return None
 
 def delete_offre(offre_id: str) -> bool:
+    """Supprime une offre (admin, clé service).
+    - Retour: True si succès, False si exception (journalisée).
+    """
     try:
         get_service_supabase().table("offres").delete().eq("id", offre_id).execute()
         return True

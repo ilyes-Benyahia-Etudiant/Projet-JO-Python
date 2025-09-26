@@ -4,6 +4,11 @@ from uuid import uuid4
 
 # Les fixtures `app` et `client` sont fournies par `conftest.py`
 
+def _csrf_headers(client):
+    token = "test-csrf-token"
+    client.cookies.set("csrf_token", token)
+    return {"X-CSRF-Token": token}
+
 @pytest.mark.functional
 class TestAuthFlow:
     """
@@ -27,7 +32,7 @@ class TestAuthFlow:
         # Préparer des mocks pour éviter tout appel réel à Supabase
         user_data = {"id": "mock-id", "email": unique_email, "role": "user"}
 
-        def mk_signup_success(email, password, full_name, wants_admin=False):
+        def mk_signup_success(email, password, full_name, wants_admin=False, wants_scanner=False, **kwargs):
             class Result:
                 success = True
                 user = user_data
@@ -37,7 +42,7 @@ class TestAuthFlow:
                     return self.session.get("access_token")
             return Result()
 
-        def mk_signup_exists(email, password, full_name, wants_admin=False):
+        def mk_signup_exists(email, password, full_name, wants_admin=False, wants_scanner=False, **kwargs):
             class Result:
                 success = False
                 error = "Utilisateur existe déjà"
@@ -64,7 +69,7 @@ class TestAuthFlow:
             return Result()
 
         # 1. Échec de connexion (utilisateur n'existe pas encore)
-        monkeypatch.setattr("backend.views.api_v1_auth.sign_in", mk_signin_fail)
+        monkeypatch.setattr("backend.auth.views.svc_login", mk_signin_fail)
         response = client.post(
             "/api/v1/auth/login",
             json={"email": unique_email, "password": password}
@@ -73,7 +78,7 @@ class TestAuthFlow:
         assert "Invalid login credentials" in response.json()["detail"]
 
         # 2. Inscription (succès avec session)
-        monkeypatch.setattr("backend.views.api_v1_auth.sign_up", mk_signup_success)
+        monkeypatch.setattr("backend.auth.views.svc_signup", mk_signup_success)
         signup_data = {"email": unique_email, "password": password, "full_name": "Test User"}
         response = client.post("/api/v1/auth/signup", json=signup_data)
         assert response.status_code == 200
@@ -86,15 +91,18 @@ class TestAuthFlow:
         assert "httponly" in response.headers["set-cookie"].lower()
 
         # 3. Échec de réinscription (email déjà pris)
-        monkeypatch.setattr("backend.views.api_v1_auth.sign_up", mk_signup_exists)
-        response = client.post("/api/v1/auth/signup", json=signup_data)
+        monkeypatch.setattr("backend.auth.views.svc_signup", mk_signup_exists)
+        response = client.post("/api/v1/auth/signup", json=signup_data, headers=_csrf_headers(client))
         assert response.status_code == 400
         assert "Utilisateur existe déjà" in response.json()["detail"]
 
         # 4. Connexion réussie
-        monkeypatch.setattr("backend.views.api_v1_auth.sign_in", mk_signin_success)
-        login_data = {"email": unique_email, "password": password}
-        response = client.post("/api/v1/auth/login", json=login_data)
+        monkeypatch.setattr("backend.auth.views.svc_login", mk_signin_success)
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": unique_email, "password": password},
+            headers=_csrf_headers(client)
+        )
         assert response.status_code == 200
         body = response.json()
         assert "access_token" in body and body.get("token_type") == "bearer"
@@ -106,7 +114,7 @@ class TestAuthFlow:
         assert "httponly" in response.headers["set-cookie"].lower()
 
         # 6. Déconnexion (le TestClient gère les cookies entre requêtes)
-        response = client.post("/api/v1/auth/logout")
+        response = client.post("/api/v1/auth/logout", headers=_csrf_headers(client))
         assert response.status_code == 200
         assert response.json() == {"message": "Déconnexion réussie"}
 

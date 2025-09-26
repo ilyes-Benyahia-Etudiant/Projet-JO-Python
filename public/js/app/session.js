@@ -1,4 +1,9 @@
 "use strict";
+// Script minimal pour compter les billets via API Python et updater la pastille
+/**
+ * session.ts - Mets à jour la pastille du nombre de billets via l’API Python.
+ * Rafraîchit au chargement, quand la page redevient visible, ou après paiement réussi.
+ */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,9 +13,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-// Script minimal pour compter les billets via API Python et updater la pastille
 document.addEventListener("DOMContentLoaded", () => {
-    // Fonction pour mettre à jour la pastille
+    /**
+     * Met à jour le badge visuellement et pour l’accessibilité (aria-label).
+     */
     const setBadge = (el, count) => {
         if (!el)
             return;
@@ -25,7 +31,11 @@ document.addEventListener("DOMContentLoaded", () => {
             el.setAttribute("aria-label", "Aucun billet");
         }
     };
-    // Fonction pour fetcher le count depuis l'API Python (avec retry et logs)
+    /**
+     * Récupère le count de billets utilisateur via l’API.
+     * - Log le statut et le count pour faciliter le débogage
+     * - Retry jusqu’à 2 fois en cas d’erreur réseau
+     */
     const refreshTicketsCount = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (retry = 0) {
         var _a;
         try {

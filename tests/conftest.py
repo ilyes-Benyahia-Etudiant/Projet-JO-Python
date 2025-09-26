@@ -70,18 +70,13 @@ def _override_require_user(app):
 # Mocks Stripe + évitement d’accès DB dans la couche Models pour les paiements
 @pytest.fixture(autouse=True)
 def _mock_payments_and_stripe(monkeypatch):
-    import backend.models as models
-
     # Neutralise la nécessité d’une vraie clé Stripe
-    monkeypatch.setattr(models, "require_stripe", lambda: None, raising=True)
+    monkeypatch.setattr("backend.payments.stripe_client.require_stripe", lambda: None, raising=True)
 
-    # Fake session Stripe
-    class _FakeSession:
-        def __init__(self, url="https://example.test/checkout"):
-            self.url = url
-
-    def _fake_create_session(base_url: str, line_items, metadata):
-        return _FakeSession("https://example.test/checkout")
+    # Fake session Stripe (adapte à la signature stripe_client.create_session)
+    def _fake_create_session(*, line_items, mode, success_url, cancel_url, metadata):
+        # retourne un dict-compatible à ce que le code attend
+        return {"id": "cs_test_fake", "url": "https://example.test/checkout"}
 
     # Fake parse_event (webhook)
     async def _fake_parse_event(request):
@@ -99,11 +94,12 @@ def _mock_payments_and_stripe(monkeypatch):
     def _fake_process_cart_purchase(user_id, cart_list, use_service=True):
         return 1
 
-    monkeypatch.setattr(models, "create_session", _fake_create_session, raising=True)
-    monkeypatch.setattr(models, "parse_event", _fake_parse_event, raising=True)
-    monkeypatch.setattr(models, "get_offers_map", _fake_get_offers_map, raising=True)
-    monkeypatch.setattr(models, "to_line_items", _fake_to_line_items, raising=True)
-    monkeypatch.setattr(models, "process_cart_purchase", _fake_process_cart_purchase, raising=True)
+    # Patch des nouvelles cibles
+    monkeypatch.setattr("backend.payments.stripe_client.create_session", _fake_create_session, raising=True)
+    monkeypatch.setattr("backend.payments.stripe_client.parse_event", _fake_parse_event, raising=True)
+    monkeypatch.setattr("backend.payments.repository.get_offers_map", _fake_get_offers_map, raising=True)
+    monkeypatch.setattr("backend.payments.cart.to_line_items", _fake_to_line_items, raising=True)
+    monkeypatch.setattr("backend.payments.service.process_cart_purchase", _fake_process_cart_purchase, raising=True)
 
 
 # Mock database dependency for all tests
@@ -128,9 +124,7 @@ def mock_db_dependency(monkeypatch):
 
     # Patch les fonctions de commandes/repository
     monkeypatch.setattr("backend.commandes.repository.fetch_admin_commandes", lambda limit=100: [])
-    monkeypatch.setattr("backend.commandes.repository.fetch_user_commandes", lambda user_id, limit=50: [])
-    monkeypatch.setattr("backend.commandes.repository.get_commande_by_token", lambda token: None)
-
+    # (supprimé) monkeypatch.setattr("backend.commandes.repository.get_commande_by_token", lambda token: None)
     # Patch les fonctions de payments/repository
     monkeypatch.setattr("backend.payments.repository.insert_commande", lambda **kwargs: {"status": "ok"})
     monkeypatch.setattr("backend.payments.repository.insert_commande_with_token", lambda **kwargs: {"status": "ok"})

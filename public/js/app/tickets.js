@@ -1,4 +1,10 @@
 "use strict";
+/**
+ * tickets.ts - Page “Mes billets”
+ * - Confirme un paiement si on revient de Stripe (query ?session_id)
+ * - Charge la liste des billets et insère les QR codes (lazy fetch image/URI)
+ * - Affiche un toast de succès/erreur pour le feedback utilisateur
+ */
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -13,6 +19,10 @@ class TicketsManager {
         this.init = () => {
             this.confirmIfReturnedFromStripe().finally(() => this.loadTickets());
         };
+        /**
+         * Charge la liste des billets utilisateur depuis l’API puis les rend.
+         * Enchaîne un fetch des QR codes pour chaque billet affiché.
+         */
         this.loadTickets = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 const HttpAny = window.Http;
@@ -28,6 +38,9 @@ class TicketsManager {
                 this.showError("Erreur lors du chargement des billets. Veuillez réessayer plus tard.");
             }
         });
+        /**
+         * Rend la liste des billets ou affiche un message vide s’il n’y en a pas.
+         */
         this.renderTickets = (tickets) => {
             if (!this.ticketsListElement)
                 return;
@@ -37,6 +50,9 @@ class TicketsManager {
             }
             this.ticketsListElement.innerHTML = tickets.map(this.createTicketHTML).join('');
         };
+        /**
+         * Génére le HTML pour un billet, avec un slot pour le QR code.
+         */
         this.createTicketHTML = (ticket) => {
             return `
       <div class="event-card" data-token="${ticket.token || ''}">
@@ -70,6 +86,10 @@ class TicketsManager {
         this.emptyMessageElement = document.getElementById('tickets-empty');
         this.init();
     }
+    /**
+     * Si on revient de Stripe avec un session_id, tente la confirmation côté API,
+     * nettoie l’URL, vide le panier local et affiche un toast de succès.
+     */
     confirmIfReturnedFromStripe() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -102,6 +122,9 @@ class TicketsManager {
             }
         });
     }
+    /**
+     * Récupère et injecte les QR codes des billets déjà rendus dans le DOM.
+     */
     fetchQRCodes(tickets) {
         return __awaiter(this, void 0, void 0, function* () {
             const HttpAny = window.Http;
@@ -127,27 +150,21 @@ class TicketsManager {
     }
     // Ajout: Toast générique (success/erreur)
     showToast(message, type = "success") {
-        const toast = document.createElement("div");
-        toast.textContent = message;
-        toast.style.position = "fixed";
-        toast.style.right = "16px";
-        toast.style.bottom = "16px";
-        toast.style.zIndex = "9999";
-        toast.style.padding = "12px 16px";
-        toast.style.borderRadius = "6px";
-        toast.style.color = "#fff";
-        toast.style.fontWeight = "600";
-        toast.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-        toast.style.background = type === "success" ? "#16a34a" : "#dc2626"; // vert / rouge
-        toast.style.opacity = "0";
-        toast.style.transition = "opacity 150ms ease";
-        document.body.appendChild(toast);
-        requestAnimationFrame(() => {
-            toast.style.opacity = "1";
-        });
+        let el = document.getElementById("toast-success");
+        if (!el) {
+            el = document.createElement("div");
+            el.id = "toast-success";
+            el.setAttribute("role", "status");
+            el.setAttribute("aria-live", "polite");
+            document.body.appendChild(el);
+        }
+        el.textContent = message;
+        el.classList.toggle("error", type === "error");
+        el.classList.remove("show");
+        void el.offsetWidth; // relance la transition CSS
+        el.classList.add("show");
         setTimeout(() => {
-            toast.style.opacity = "0";
-            setTimeout(() => toast.remove(), 200);
+            el.classList.remove("show");
         }, 3000);
     }
 }

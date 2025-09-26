@@ -1,3 +1,9 @@
+"""
+Routes web pour l'interface Admin de scan/validation.
+- GET /admin/scan: page HTML avec caméra, saisie token, et état unifié du billet.
+- POST /admin/scan/validate: valide un billet et renvoie une réponse JSON.
+- Normalisation d’état (UI): Invalid | Scanned | Validated | AlreadyValidated | Error.
+"""
 from fastapi import APIRouter, Request, Form, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -13,6 +19,16 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 def normalize_status_from_payload(payload: dict):
+    """
+    Convertit la réponse API en statut UI unifié.
+    - Entrée: payload JSON renvoyé par l'API de validation
+    - Sorties: "Invalid" | "Scanned" | "Validated" | "AlreadyValidated"
+    - Logique:
+      - status == validated => Validated
+      - status == already_validated => AlreadyValidated
+      - ticket présent sans validation => Scanned
+      - sinon => Invalid
+    """
     # Retourne l'un de: "Invalid" | "Scanned" | "Validated" | "AlreadyValidated"
     if not payload:
         return "Invalid"
@@ -33,7 +49,12 @@ def normalize_status_from_payload(payload: dict):
 
 @router.get("/admin/scan", response_class=HTMLResponse)
 async def get_admin_scan(request: Request, token: str | None = Query(default=None)):
-    """Affiche la page de scan en se basant uniquement sur l'état réel du billet."""
+    """
+    Affiche la page de scan Admin.
+    - Si token est fourni, interroge l’API pour déterminer l’état du billet et prépare le contexte.
+    - Gère les erreurs réseau en affichant "Erreur de communication API.".
+    - Ajoute le jeton CSRF au contexte et désactive le cache.
+    """
     csrf_token_value = get_csrf_token(request)
     context = {
         "request": request, "csrf_token": csrf_token_value, "token": token or "",
@@ -68,7 +89,12 @@ async def get_admin_scan(request: Request, token: str | None = Query(default=Non
 @router.post("/admin/scan/validate")
 async def post_admin_validate(request: Request, token: str = Form(...)):
     """
-    Valide un billet directement et retourne une réponse JSON.
+    Valide un billet côté Admin et renvoie une réponse JSON.
+    - Utilise validate_ticket_service(...).
+    - Réponses:
+      - 200: {"status": "validated", "message": "..."} si succès
+      - 400: {"status": "error", "message": "..."} si non validé
+      - 500: {"status": "error", "message": "Erreur interne du serveur: ..."} en cas d'exception
     """
     try:
         validation_payload = TicketValidationRequest(token=token)
