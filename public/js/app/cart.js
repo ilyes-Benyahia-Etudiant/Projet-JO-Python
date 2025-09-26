@@ -237,23 +237,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     let eventName = addBtn.dataset.evNom || "";
                     let eventType = addBtn.dataset.evType || "";
                     let eventDate = addBtn.dataset.evDate || "";
-                    // 2) Fallback: si non renseigné, récupère depuis localStorage (selectedEvent.v1)
+                    // 2) Fallback utilitaire si non renseigné
                     if (!eventId) {
-                        const ev = (() => {
-                            try {
-                                const raw = localStorage.getItem("selectedEvent.v1");
-                                const ev = raw ? JSON.parse(raw) : null;
-                                return {
-                                    eventId: (ev === null || ev === void 0 ? void 0 : ev.id) || "",
-                                    eventName: (ev === null || ev === void 0 ? void 0 : ev.nom) || "",
-                                    eventType: (ev === null || ev === void 0 ? void 0 : ev.type) || "",
-                                    eventDate: (ev === null || ev === void 0 ? void 0 : ev.date) || "",
-                                };
-                            }
-                            catch (_a) {
-                                return {};
-                            }
-                        })();
+                        const ev = JSON.parse(localStorage.getItem("selectedEvent") || "{}");
                         eventId = ev.eventId || eventId;
                         eventName = ev.eventName || eventName;
                         eventType = ev.eventType || eventType;
@@ -347,21 +333,3 @@ document.addEventListener("DOMContentLoaded", () => {
     // ✅ Initialisation
     new Cart();
 });
-class Cart {
-    // Fallback: lit l'événement sélectionné (défini par billeterie.js) si data-ev-* ne sont pas présents
-    getSelectedEventFromStorage() {
-        try {
-            const raw = localStorage.getItem("selectedEvent.v1");
-            const ev = raw ? JSON.parse(raw) : null;
-            return {
-                eventId: (ev === null || ev === void 0 ? void 0 : ev.id) || "",
-                eventName: (ev === null || ev === void 0 ? void 0 : ev.nom) || "",
-                eventType: (ev === null || ev === void 0 ? void 0 : ev.type) || "",
-                eventDate: (ev === null || ev === void 0 ? void 0 : ev.date) || "",
-            };
-        }
-        catch (_a) {
-            return {};
-        }
-    }
-}

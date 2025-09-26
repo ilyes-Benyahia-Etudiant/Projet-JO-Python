@@ -217,7 +217,6 @@ document.addEventListener("DOMContentLoaded", () => {
         // Toast avec compteur compact
         const currentCount = this.countItems();
         this.showToast(`“${title || "Article"}” ajouté au panier • ${this.formatItemsCount(currentCount)}`);
-
         console.log("Fin de addItem – toast devrait être affiché");
     };
 
@@ -269,22 +268,9 @@ document.addEventListener("DOMContentLoaded", () => {
           let eventType = addBtn.dataset.evType || "";
           let eventDate = addBtn.dataset.evDate || "";
 
-          // 2) Fallback: si non renseigné, récupère depuis localStorage (selectedEvent.v1)
+          // 2) Fallback utilitaire si non renseigné
           if (!eventId) {
-            const ev = (() => {
-              try {
-                const raw = localStorage.getItem("selectedEvent.v1");
-                const ev = raw ? JSON.parse(raw) : null;
-                return {
-                  eventId: ev?.id || "",
-                  eventName: ev?.nom || "",
-                  eventType: ev?.type || "",
-                  eventDate: ev?.date || "",
-                };
-              } catch {
-                return {};
-              }
-            })();
+            const ev = JSON.parse(localStorage.getItem("selectedEvent") || "{}");
             eventId = ev.eventId || eventId;
             eventName = ev.eventName || eventName;
             eventType = ev.eventType || eventType;
@@ -377,22 +363,3 @@ document.addEventListener("DOMContentLoaded", () => {
   // ✅ Initialisation
   new Cart();
 });
-
-
-class Cart {
-    // Fallback: lit l'événement sélectionné (défini par billeterie.js) si data-ev-* ne sont pas présents
-    private getSelectedEventFromStorage(): { eventId?: string; eventName?: string; eventType?: string; eventDate?: string } {
-      try {
-        const raw = localStorage.getItem("selectedEvent.v1");
-        const ev = raw ? JSON.parse(raw) : null;
-        return {
-          eventId: ev?.id || "",
-          eventName: ev?.nom || "",
-          eventType: ev?.type || "",
-          eventDate: ev?.date || "",
-        };
-      } catch {
-        return {};
-      }
-    }
-}
