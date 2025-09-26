@@ -46,6 +46,29 @@ main {
   
 }
 
+/* Centrage spécifique à la page Billetterie (hors footer) */
+.billeterie-page main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 1rem 0; /* réduit l’espace global du main */
+}
+
+.billeterie-page main > .events-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* centre chaque section */
+}
+
+/* Message d’aide centré et contenu limité en largeur */
+.billeterie-page #client-msg {
+  max-width: 980px;
+  margin: 12px auto;
+  display: block;
+  text-align: center;
+}
+
 /* ========== OFFRES ========== */
 .events-section {
   padding: 4rem 0;
@@ -272,6 +295,52 @@ body .events-section {
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+
+/* Grille: rester au centre si de l’espace excédentaire */
+.billeterie-page .events-grid {
+  justify-content: center; /* centre les pistes de la grille si possible */
+}
+
+/* Spacing serré et centrage pour la page Billetterie */
+.billeterie-page #client-msg {
+  margin: 6px auto 10px !important; /* rapproche la toast des sections */
+}
+
+.billeterie-page .events-section {
+  padding: 1.25rem 0;  /* était 4rem 0 */
+  margin-top: 12px;    /* était 112px */
+}
+
+.billeterie-page .section-title {
+  margin-bottom: 1rem; /* était 3rem */
+  text-align: center;
+}
+
+.billeterie-page .events-grid {
+  gap: 1rem;           /* était 2rem */
+  justify-content: center;
+}
+
+/* Cards événements: contenu bien centré */
+.billeterie-page .event-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.billeterie-page .event-card img.event-img,
+.billeterie-page .event-card .event-img {
+  width: 100%;
+  align-self: stretch;
+}
+
+/* Le bloc contenu prend toute la largeur et reste centré */
+.billeterie-page .event-card .event-content {
+  width: 100%;
+  text-align: center;
 }
 
 
